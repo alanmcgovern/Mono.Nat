@@ -101,14 +101,19 @@ namespace Nat
             Console.WriteLine();
             Console.WriteLine();
             this.lastSeen = DateTime.Now;
+            Console.WriteLine(deviceDetails);
+            Console.WriteLine();
+            int index = deviceDetails.IndexOf("location", StringComparison.InvariantCultureIgnoreCase);
+            Console.WriteLine(index);
 
-            string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.OrdinalIgnoreCase) + 10).Split('\r')[0];
+            string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 10).Split('\r')[0];
             Console.WriteLine("temp split:");
             temp = temp.Trim();
             Console.WriteLine("**" + temp + "**");
+            Console.ReadLine();
             // FIXME: Is this reliable enough. What if we get a hostname as opposed to a proper http address
             // Are we going to get addresses with the "http://" attached?
-            if (temp.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            if (temp.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
             {
                 temp = temp.Substring(7);
                 Console.WriteLine("Temp 2: " + temp);

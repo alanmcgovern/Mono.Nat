@@ -172,6 +172,7 @@ namespace Nat
 #warning Get a nicer way to signal the thread to die. Also stop the blocking on receive()
             while (true)
             {
+                Console.WriteLine("listening started");
                 byte[] data = this.udpClient.Receive(ref this.searchEndPoint);
                 this.ReplyReceived(data);
             }
@@ -184,6 +185,8 @@ namespace Nat
         /// <param name="data"></param>
         private void ReplyReceived(byte[] data)
         {
+            Console.WriteLine("Device Found");
+
             try
             {
                 // Convert it to a string for easy parsing
@@ -191,7 +194,7 @@ namespace Nat
 
                 // No matter what reply we receive, we only want it if the device has a WANIPConnection service
                 // We don't care about *anything* else.
-                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.OrdinalIgnoreCase) != -1)
+                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) != -1)
                 {
                     // We have an internet gateway device now
                     NatDevice d = new NatDevice(dataString);
