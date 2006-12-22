@@ -191,7 +191,7 @@ namespace Nat
 
                 // No matter what reply we receive, we only want it if the device has a WANIPConnection service
                 // We don't care about *anything* else.
-                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1") != -1)
+                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     // We have an internet gateway device now
                     NatDevice d = new NatDevice(dataString);

@@ -96,14 +96,15 @@ namespace Nat
         {
             this.lastSeen = DateTime.Now;
 
-            string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location") + 10).Split('\r')[0];
+            string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.OrdinalIgnoreCase) + 10).Split('\r')[0];
             // FIXME: Is this reliable enough. What if we get a hostname as opposed to a proper http address
             // Are we going to get addresses with the "http://" attached?
-            if (temp.StartsWith("http://"))
+            if (temp.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
                 temp = temp.Substring(7);
                 string hostAddressAndPort = temp.Remove(temp.IndexOf('/'));
-                this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))), Convert.ToInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
+                this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
+                                                   Convert.ToInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
                 this.serviceDescriptionUrl = temp.Substring(temp.IndexOf('/'));
             }
         }
@@ -188,6 +189,7 @@ namespace Nat
         /// <param name="result"></param>
         public void EndCheckIsPortMapped(IAsyncResult result)
         {
+            throw new NotImplementedException();
         }
 
 
