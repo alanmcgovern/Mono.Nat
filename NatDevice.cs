@@ -94,6 +94,12 @@ namespace Nat
         /// <param name="deviceDetails"></param>
         public NatDevice(string deviceDetails)
         {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("Device details: ");
+            Console.WriteLine(deviceDetails);
+            Console.WriteLine();
+            Console.WriteLine();
             this.lastSeen = DateTime.Now;
 
             string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.OrdinalIgnoreCase) + 10).Split('\r')[0];
@@ -106,6 +112,10 @@ namespace Nat
                 this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
                                                    Convert.ToInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
                 this.serviceDescriptionUrl = temp.Substring(temp.IndexOf('/'));
+            }
+            else
+            {
+                Console.WriteLine("Couldn't decode address");
             }
         }
         #endregion
@@ -442,6 +452,14 @@ namespace Nat
                     }
                 }
 
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine("ServicesXML: ");
+                Console.WriteLine(servicesXml);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
                 XmlNamespaceManager ns = new XmlNamespaceManager(xmldoc.NameTable);
                 ns.AddNamespace("ns", "urn:schemas-upnp-org:device-1-0");
                 XmlNodeList nodes = xmldoc.SelectNodes("//*/ns:serviceList", ns);
@@ -454,6 +472,11 @@ namespace Nat
                         //If the service is a WANIPConnection, then we have what we want
                         if (service["serviceType"].InnerText == "urn:schemas-upnp-org:service:WANIPConnection:1")
                         {
+                            Console.WriteLine();
+                            Console.WriteLine();
+                            Console.WriteLine("This device is a WANIPConnect:1");
+                            Console.WriteLine();
+                            Console.WriteLine();
                             this.controlUrl = service["controlURL"].InnerText;
                             this.callback(this);
                             return;

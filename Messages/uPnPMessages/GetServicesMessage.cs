@@ -29,6 +29,7 @@
 
 
 using System.Net;
+using System;
 
 namespace Nat.UPnPMessages
 {
@@ -39,6 +40,12 @@ namespace Nat.UPnPMessages
 
        public GetServicesMessage(string description, EndPoint hostAddress)
        {
+           if (string.IsNullOrEmpty(description))
+               Console.WriteLine("Description is null");
+
+           if (hostAddress == null)
+               Console.WriteLine("hostaddress is null");
+
            this.servicesDescriptionUrl = description;
            this.hostAddress = hostAddress;
        }
