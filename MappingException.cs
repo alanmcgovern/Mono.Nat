@@ -47,11 +47,13 @@ namespace Nat
         }
         private string errorText;
 
+
         #region Constructors
         public MappingException()
             : base()
         {
         }
+
 
         public MappingException(string message)
             : base(message)
@@ -64,10 +66,13 @@ namespace Nat
             this.errorCode = errorCode;
             this.errorText = errorText;
         }
+
+
         public MappingException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
+
 
         public MappingException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context)
