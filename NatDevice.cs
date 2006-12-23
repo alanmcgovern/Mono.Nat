@@ -94,39 +94,39 @@ namespace Nat
         /// <param name="deviceDetails"></param>
         public NatDevice(string deviceDetails)
         {
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("Device details: ");
-            Console.WriteLine(deviceDetails);
-            Console.WriteLine();
-            Console.WriteLine();
             this.lastSeen = DateTime.Now;
-            Console.WriteLine(deviceDetails);
-            Console.WriteLine();
-            int index = deviceDetails.IndexOf("location", StringComparison.InvariantCultureIgnoreCase);
-            Console.WriteLine(index);
 
-            string temp = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 10).Split('\r')[0];
-            Console.WriteLine("temp split:");
-            temp = temp.Trim();
-            Console.WriteLine("**" + temp + "**");
-            Console.ReadLine();
+            // Split the string at the "location" section so i can extract the ipaddress and service description url
+            string locationDetails = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 9).Split('\r')[0];
+
+            // Make sure we have no excess whitespace
+            locationDetails = locationDetails.Trim();
+
             // FIXME: Is this reliable enough. What if we get a hostname as opposed to a proper http address
             // Are we going to get addresses with the "http://" attached?
-            if (temp.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
+            if (locationDetails.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
             {
-                temp = temp.Substring(7);
-                Console.WriteLine("Temp 2: " + temp);
-                string hostAddressAndPort = temp.Remove(temp.IndexOf('/'));
-                Console.WriteLine("Host+port: " + hostAddressAndPort);
+                // This bit strings out the "http://" from the string
+                locationDetails = locationDetails.Substring(7);
+
+                // We then split off the end of the string to get something like: 192.168.0.3:241 in our string
+                string hostAddressAndPort = locationDetails.Remove(locationDetails.IndexOf('/'));
+
+                // From this we parse out the IP address and Port
                 this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
                                                    Convert.ToInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
-                this.serviceDescriptionUrl = temp.Substring(temp.IndexOf('/'));
-                Console.WriteLine("Service desc: " + serviceDescriptionUrl);
+
+                // The service description URL is the remainder of the "locationDetails" string. The bit that was originally after the ip
+                // and port information
+                this.serviceDescriptionUrl = locationDetails.Substring(locationDetails.IndexOf('/'));
             }
             else
             {
-                Console.WriteLine("Couldn't decode address");
+                Console.WriteLine();
+                Console.WriteLine("Couldn't decode address. Please send following string to the developer: ");
+                Console.WriteLine(deviceDetails);
+                Console.WriteLine();
+                Console.WriteLine();
             }
         }
         #endregion
@@ -454,6 +454,9 @@ namespace Nat
                     catch
                     {
                         // If we can't receive the entire XML within 500ms, then drop the connection
+                        // Unfortunately not all routers supply a valid ContentLength (mine doesn't)
+                        // so this hack is needed to keep testing our recieved data until it gets successfully
+                        // parsed by the xmldoc. Without this, the code will never pick up my router.
                         if (abortCount++ > 50)
                         {
                             response.Close();
@@ -463,14 +466,6 @@ namespace Nat
                     }
                 }
 
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine("ServicesXML: ");
-                Console.WriteLine(servicesXml);
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
                 XmlNamespaceManager ns = new XmlNamespaceManager(xmldoc.NameTable);
                 ns.AddNamespace("ns", "urn:schemas-upnp-org:device-1-0");
                 XmlNodeList nodes = xmldoc.SelectNodes("//*/ns:serviceList", ns);
@@ -483,22 +478,19 @@ namespace Nat
                         //If the service is a WANIPConnection, then we have what we want
                         if (service["serviceType"].InnerText == "urn:schemas-upnp-org:service:WANIPConnection:1")
                         {
-                            Console.WriteLine();
-                            Console.WriteLine();
-                            Console.WriteLine("This device is a WANIPConnect:1");
-                            Console.WriteLine();
-                            Console.WriteLine();
                             this.controlUrl = service["controlURL"].InnerText;
                             this.callback(this);
                             return;
                         }
                     }
                 }
+
                 //If we get here, it means that we didn't get WANIPConnection service, which means no uPnP forwarding
                 //So we don't invoke the callback, so this device is never added to our lists
             }
             catch (WebException ex)
             {
+#warning At the moment i just drop the connection. Should i retry once more?
             }
         }
         #endregion
