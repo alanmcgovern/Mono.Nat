@@ -69,13 +69,13 @@ namespace Nat
         /// <summary>
         /// The IPAddresses that this computer has at the moment
         /// </summary>
-        internal static IPAddress[] localAddresses;
+        internal static IPAddress[] localAddresses = Dns.GetHostAddresses(Dns.GetHostName());
 
 
         /// <summary>
         /// The time in seconds between each search
         /// </summary>
-        private const int SearchPeriod = 360;
+        private const int SearchPeriod = 120 * 1000; // search once every 2 minutes
 
 
         /// <summary>
@@ -102,11 +102,11 @@ namespace Nat
         #region Constructors
         public NatController()
         {
-            localAddresses = Dns.GetHostAddresses(Dns.GetHostName());
             this.devices = new List<NatDevice>();
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
             this.udpClient = new UdpClient();
-            listenThread = new Thread(new ThreadStart(ListenThread));
+            this.listenThread = new Thread(new ThreadStart(ListenThread));
+            this.searchTimer.Elapsed += new ElapsedEventHandler(timerTick);
         }
         #endregion
 
@@ -130,9 +130,9 @@ namespace Nat
                 return;
 
             this.Search();
+            this.searchTimer.Start();
             this.listenThread.IsBackground = true;
             this.listenThread.Start();
-            //this.searchTimer.Start();
         }
 
 
@@ -162,6 +162,17 @@ namespace Nat
             for (int i = 0; i < 5; i++)
                 this.udpClient.Send(data, data.Length, this.searchEndPoint);
         }
+        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void timerTick(object sender, ElapsedEventArgs e)
+        {
+            this.Search();
+        }
 
 
         /// <summary>
@@ -169,7 +180,7 @@ namespace Nat
         /// </summary>
         private void ListenThread()
         {
-#warning Get a nicer way to signal the thread to die. Also stop the blocking on receive()
+#warning Get a nicer way to signal the thread to die. Also stop the blocking on receive(). Can be done when mono has full support of UPnP client
             while (true)
             {
                 Console.WriteLine("listening started");
@@ -185,8 +196,6 @@ namespace Nat
         /// <param name="data"></param>
         private void ReplyReceived(byte[] data)
         {
-            Console.WriteLine("Device Found");
-
             try
             {
                 // Convert it to a string for easy parsing
