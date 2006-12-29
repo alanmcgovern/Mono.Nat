@@ -30,6 +30,7 @@
 
 using System;
 using System.Xml;
+using Nat;
 
 namespace Nat.UPnPMessages
 {
@@ -56,6 +57,9 @@ namespace Nat.UPnPMessages
 
             if ((node = doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm)) != null)
                 return new DeletePortMapResponseMessage();
+
+            if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
+                return new ExternalIPAddressMessage(node["NewExternalIPAddress"].InnerText);
 
 
             Console.WriteLine();

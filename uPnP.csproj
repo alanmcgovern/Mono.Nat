@@ -7,7 +7,7 @@
     <ProjectGuid>{68C6DB79-8078-49F3-AB53-66E2EAA42179}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>uPnP</RootNamespace>
+    <RootNamespace>Nat</RootNamespace>
     <AssemblyName>uPnP</AssemblyName>
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <NoStdLib>False</NoStdLib>
@@ -42,11 +42,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncResults\PortMapAsyncResult.cs" />
+    <Compile Include="Enums\MapState.cs" />
+    <Compile Include="EventArgs\DeviceEventArgs.cs" />
+    <Compile Include="Messages\ExternalIPAddressMessage.cs" />
     <Compile Include="Messages\IMessage.cs" />
     <Compile Include="Mapping.cs" />
     <Compile Include="Messages\uPnPMessages\AddMappingResponseMessage.cs" />
@@ -57,9 +61,11 @@
     <Compile Include="Messages\uPnPMessages\DiscoverDeviceMessage.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Messages\uPnPMessages\GetExternalIPAddressMessage.cs" />
     <Compile Include="Messages\uPnPMessages\GetServicesMessage.cs" />
     <Compile Include="Messages\uPnPMessages\Message.cs" />
-    <Compile Include="NatDevice.cs" />
+    <Compile Include="INatDevice.cs" />
+    <Compile Include="UPnPNatDevice.cs" />
     <Compile Include="Enums\ProtocolType.cs" />
     <Compile Include="NatController.cs" />
     <Compile Include="MappingException.cs" />

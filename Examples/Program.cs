@@ -4,6 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Nat;
+using System.Net;
+using Nat;
+using System.Threading;
 
 namespace TestClient
 {
@@ -15,8 +18,8 @@ namespace TestClient
             NatController c = new NatController();
 
             c.StartSearching();
-            c.DeviceFound += new EventHandler<EventArgs>(c_DeviceFound);
-            c.DeviceLost += new EventHandler<EventArgs>(c_DeviceLost);
+            c.DeviceFound += new EventHandler<DeviceEventArgs>(c_DeviceFound);
+            c.DeviceLost += new EventHandler<DeviceEventArgs>(c_DeviceLost);
             while (i++ < 15)
             {
                 System.Threading.Thread.Sleep(1000);
@@ -34,16 +37,17 @@ namespace TestClient
             throw new Exception("The method or operation is not implemented.");
         }
 
-        private static NatDevice d;
-        static void c_DeviceFound(object sender, EventArgs e)
+        private static INatDevice d;
+        static void c_DeviceFound(object sender, DeviceEventArgs e)
         {
             Console.WriteLine("Found a uPnP device...");
-            NatDevice device = sender as NatDevice;
-            d = device;
-            System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(Mapper));
-            t.IsBackground = false;
+            d = e.Device;
+            Thread t = new Thread(new ThreadStart(Mapper));
             t.Start();
-            System.Threading.Thread.Sleep(15);
+            while (t.IsAlive)
+            {
+                System.Threading.Thread.Sleep(150);
+            }
         }
 
 
@@ -74,7 +78,7 @@ namespace TestClient
             m = new Mapping(15661, Protocol.TCP);
             Console.WriteLine("Trying to delete mapping: " + m.Port + " " + m.Protocol.ToString());
             result = d.BeginDeletePortMap(m, null, m);
-                result.AsyncWaitHandle.WaitOne();
+            result.AsyncWaitHandle.WaitOne();
 
             try
             {

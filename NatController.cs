@@ -35,16 +35,17 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using Nat.UPnPMessages;
 using System.Threading;
+using Nat;
 
 namespace Nat
 {
-    public delegate void NatDeviceFoundCallback(NatDevice d);
+    public delegate void NatDeviceFoundCallback(UPnPNatDevice d);
 
     public class NatController
     {
         #region Events
-        public event EventHandler<EventArgs> DeviceFound;
-        public event EventHandler<EventArgs> DeviceLost;
+        public event EventHandler<DeviceEventArgs> DeviceFound;
+        public event EventHandler<DeviceEventArgs> DeviceLost;
         #endregion
 
 
@@ -52,11 +53,11 @@ namespace Nat
         /// <summary>
         /// The list of all Internet Gateway Devices that support uPnP port forwarding
         /// </summary>
-        public List<NatDevice> Devices
+        public List<INatDevice> Devices
         {
             get { return this.devices; }
         }
-        private List<NatDevice> devices;
+        private List<INatDevice> devices;
 
 
         /// <summary>
@@ -102,7 +103,7 @@ namespace Nat
         #region Constructors
         public NatController()
         {
-            this.devices = new List<NatDevice>();
+            this.devices = new List<INatDevice>();
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
             this.udpClient = new UdpClient();
             this.listenThread = new Thread(new ThreadStart(ListenThread));
@@ -183,7 +184,6 @@ namespace Nat
 #warning Get a nicer way to signal the thread to die. Also stop the blocking on receive(). Can be done when mono has full support of UPnP client
             while (true)
             {
-                Console.WriteLine("listening started");
                 byte[] data = this.udpClient.Receive(ref this.searchEndPoint);
                 this.ReplyReceived(data);
             }
@@ -206,7 +206,7 @@ namespace Nat
                 if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) != -1)
                 {
                     // We have an internet gateway device now
-                    NatDevice d = new NatDevice(dataString);
+                    UPnPNatDevice d = new UPnPNatDevice(dataString);
 
                     if (this.devices.Contains(d))
                     {
@@ -233,7 +233,7 @@ namespace Nat
         /// to map ports.
         /// </summary>
         /// <param name="d">The device which has just finished setting up</param>
-        private void DeviceSetupComplete(NatDevice d)
+        private void DeviceSetupComplete(INatDevice d)
         {
             lock (this.devices)
             {
@@ -243,7 +243,7 @@ namespace Nat
 
                 this.devices.Add(d);
                 if (this.DeviceFound != null)
-                    this.DeviceFound(d, new EventArgs());
+                    this.DeviceFound(this, new DeviceEventArgs(d));
             }
         }
         #endregion

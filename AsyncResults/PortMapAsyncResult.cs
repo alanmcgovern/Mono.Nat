@@ -91,12 +91,12 @@ namespace Nat
         private HttpWebRequest request;
 
 
-        internal MappingException SavedException
+        internal IMessage SavedMessage
         {
-            get { return this.savedException; }
-            set { this.savedException = value; }
+            get { return this.savedMessage; }
+            set { this.savedMessage = value; }
         }
-        private MappingException savedException;
+        private IMessage savedMessage;
 
 
         public PortMapAsyncResult(bool usingManHeader, HttpWebRequest request, AsyncCallback callback, object asyncState)

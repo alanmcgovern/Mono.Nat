@@ -42,12 +42,12 @@ namespace Nat.UPnPMessages
         }
         private Mapping mapping;
 
-        private NatDevice device;
+        private UPnPNatDevice device;
         #endregion
 
 
         #region Constructors
-        public DeletePortMappingMessage(Mapping mapping, NatDevice device)
+        public DeletePortMappingMessage(Mapping mapping, UPnPNatDevice device)
         {
             this.mapping = mapping;
             this.device = device;

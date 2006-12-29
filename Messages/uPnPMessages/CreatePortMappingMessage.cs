@@ -57,13 +57,13 @@ namespace Nat.UPnPMessages
         private Mapping mapping;
 
 
-        private NatDevice device;
+        private UPnPNatDevice device;
         #endregion
 
 
         #region Constructors
         public CreatePortMappingMessage(Mapping mapping, IPAddress localIpAddress,
-                                    string portMappingDescription, NatDevice device)
+                                    string portMappingDescription, UPnPNatDevice device)
         {
             this.mapping = mapping;
             this.localIpAddress = localIpAddress;
@@ -74,7 +74,6 @@ namespace Nat.UPnPMessages
 
 
         #region IMessage Members
-
         public HttpWebRequest Encode(bool useManHeader)
         {
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);

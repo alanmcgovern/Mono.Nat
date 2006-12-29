@@ -33,16 +33,17 @@ using System.IO;
 using System.Net;
 using System.Xml;
 using Nat.UPnPMessages;
+using Nat;
 
 namespace Nat
 {
-    public class NatDevice : IEquatable<NatDevice>
+    public class UPnPNatDevice : IEquatable<UPnPNatDevice>, INatDevice
     {
         #region Member Variables
         /// <summary>
         /// The time that this device was last seen
         /// </summary>
-        internal DateTime LastSeen
+        public DateTime LastSeen
         {
             get { return this.lastSeen; }
             set { this.lastSeen = value; }
@@ -92,7 +93,7 @@ namespace Nat
         /// 
         /// </summary>
         /// <param name="deviceDetails"></param>
-        public NatDevice(string deviceDetails)
+        public UPnPNatDevice(string deviceDetails)
         {
             this.lastSeen = DateTime.Now;
 
@@ -134,15 +135,16 @@ namespace Nat
 
         #region Public Methods
         /// <summary>
-        /// Checks if the specified port/protocol combination has already been mapped
+        /// Begins an async call to get the external ip address of the router
         /// </summary>
-        /// <param name="port">The port to check</param>
-        /// <param name="protocol">The protocol to check</param>
+        /// <param name="callback"></param>
+        /// <param name="asyncState"></param>
         /// <returns></returns>
-        public IAsyncResult BeginCheckIsPortMapped(Mapping mapping)
+        public IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState)
         {
-            throw new NotImplementedException();
+            return this.BeginGetExternalIPInternal(callback, asyncState);
         }
+
 
         /// <summary>
         ///  Maps the specified port to this computer
@@ -196,21 +198,14 @@ namespace Nat
 
             // If we have a saved exception, it means something went wrong during the mapping
             // so we just rethrow the exception and let the user figure out what they should do.
-            if (mappingResult.SavedException != null)
-                throw mappingResult.SavedException;
+            if (mappingResult.SavedMessage is ErrorMessage)
+            {
+                ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
+                throw new MappingException(msg.ErrorCode, msg.Description);
+            }
 
             // If all goes well, we just return
             return;
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="result"></param>
-        public void EndCheckIsPortMapped(IAsyncResult result)
-        {
-            throw new NotImplementedException();
         }
 
 
@@ -232,22 +227,47 @@ namespace Nat
 
             // If we have a saved exception, it means something went wrong during the mapping
             // so we just rethrow the exception and let the user figure out what they should do.
-            if (mappingResult.SavedException != null)
-                throw mappingResult.SavedException;
+            if (mappingResult.SavedMessage is ErrorMessage)
+            {
+                ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
+                throw new MappingException(msg.ErrorCode, msg.Description);
+            }
 
             // If all goes well, we just return
             return;
         }
 
 
+        /// <summary>
+        /// Ends an async request to get the external ip address of the router
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public IPAddress EndGetExternalIP(IAsyncResult result)
+        {
+            PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
+
+            if (!result.IsCompleted)
+                result.AsyncWaitHandle.WaitOne();
+
+            if (mappingResult.SavedMessage is ErrorMessage)
+            {
+                ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
+                throw new MappingException(msg.ErrorCode, msg.Description);
+            }
+
+            return ((ExternalIPAddressMessage)mappingResult.SavedMessage).ExternalIPAddress;
+        }
+
+
         public override bool Equals(object obj)
         {
-            NatDevice d = obj as NatDevice;
+            UPnPNatDevice d = obj as UPnPNatDevice;
             return (d == null) ? false : this.Equals(d);
         }
 
 
-        public bool Equals(NatDevice other)
+        public bool Equals(UPnPNatDevice other)
         {
             return (this.hostEndPoint.ToString() == other.hostEndPoint.ToString()
                     && this.controlUrl == other.controlUrl
@@ -305,6 +325,29 @@ namespace Nat
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="callback"></param>
+        /// <param name="asyncState"></param>
+        /// <returns></returns>
+        private IAsyncResult BeginGetExternalIPInternal(AsyncCallback callback, object asyncState)
+        {
+            bool appendManHeader = false;
+            // Create the port map message
+            GetExternalIPAddressMessage message = new GetExternalIPAddressMessage(this);
+
+            // Encode it into a HttpWebRequest
+            HttpWebRequest request = message.Encode(appendManHeader);
+
+            // Create the asyncresult needed return back to the user.
+            PortMapAsyncResult mappingResult = new PortMapAsyncResult(appendManHeader, request, callback, asyncState);
+            request.BeginGetResponse(EndGetExternalIPInternal, mappingResult);
+
+            return mappingResult;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="s"></param>
         /// <param name="length"></param>
         /// <returns></returns>
@@ -345,29 +388,35 @@ namespace Nat
         {
             HttpWebResponse response = null;
             PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
+
             try
             {
-                response = (HttpWebResponse)mappingResult.Request.EndGetResponse(result);
+                try
+                {
+                    response = (HttpWebResponse)mappingResult.Request.EndGetResponse(result);
+                }
+                catch (WebException ex)
+                {
+                    // Even if the request "failed" i want to continue on to read out the response from the router
+                    response = ex.Response as HttpWebResponse;
+                }
+
+                IMessage message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+                mappingResult.SavedMessage = message;
+
+                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
+                mappingResult.IsCompleted = true;
+                mappingResult.AsyncWaitHandle.Set();
+
+                // Invoke the callback if one was supplied
+                if (mappingResult.CompletionCallback != null)
+                    mappingResult.CompletionCallback(mappingResult);
             }
-            catch (WebException ex)
+
+            finally
             {
-                // Even if the request "failed" i want to continue on to read out the response from the router
-                response = ex.Response as HttpWebResponse;
+                response.Close();
             }
-
-            IMessage message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-            ErrorMessage error = message as ErrorMessage;
-
-            if (error != null)
-                mappingResult.SavedException = new MappingException(error.ErrorCode, error.Description);
-
-            mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-            mappingResult.IsCompleted = true;
-            mappingResult.AsyncWaitHandle.Set();
-
-            // Invoke the callback if one was supplied
-            if (mappingResult.CompletionCallback != null)
-                mappingResult.CompletionCallback(mappingResult);
         }
 
 
@@ -377,31 +426,79 @@ namespace Nat
         /// <param name="result"></param>
         private void EndDeletePortMapInternal(IAsyncResult result)
         {
+            IMessage message;
+            HttpWebResponse response = null;
+            PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
+            try
+            {
+                try
+                {
+                    response = mappingResult.Request.EndGetResponse(result) as HttpWebResponse;
+                }
+                catch (WebException ex)
+                {
+                    response = ex.Response as HttpWebResponse;
+                    if (response == null)
+                        message = new ErrorMessage((int)ex.Status, ex.Message);
+                }
+
+                if (response != null)
+                {
+                    message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+                    mappingResult.SavedMessage = message;
+                }
+
+                mappingResult.IsCompleted = true;
+                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
+                mappingResult.AsyncWaitHandle.Set();
+
+                // Invoke the callback if one was supplied
+                if (mappingResult.CompletionCallback != null)
+                    mappingResult.CompletionCallback(mappingResult);
+            }
+            finally
+            {
+                response.Close();
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="result"></param>
+        private void EndGetExternalIPInternal(IAsyncResult result)
+        {
             HttpWebResponse response = null;
             PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
 
             try
             {
-                response = mappingResult.Request.EndGetResponse(result) as HttpWebResponse;
+                try
+                {
+                    response = (HttpWebResponse)mappingResult.Request.EndGetResponse(result);
+                }
+                catch (WebException ex)
+                {
+                    // Even if the request "failed" i want to continue on to read out the response from the router
+                    response = ex.Response as HttpWebResponse;
+                }
+
+                IMessage message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+                mappingResult.SavedMessage = message;
+
+                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
+                mappingResult.IsCompleted = true;
+                mappingResult.AsyncWaitHandle.Set();
+
+                // Invoke the callback if one was supplied
+                if (mappingResult.CompletionCallback != null)
+                    mappingResult.CompletionCallback(mappingResult);
             }
-            catch (WebException ex)
+            finally
             {
-                response = ex.Response as HttpWebResponse;
+                response.Close();
             }
-
-            IMessage message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-            ErrorMessage error = message as ErrorMessage;
-
-            if (error != null)
-                mappingResult.SavedException = new MappingException(error.ErrorCode, error.Description);
-
-            mappingResult.IsCompleted = true;
-            mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-            mappingResult.AsyncWaitHandle.Set();
-
-            // Invoke the callback if one was supplied
-            if (mappingResult.CompletionCallback != null)
-                mappingResult.CompletionCallback(mappingResult);
         }
 
 
@@ -426,6 +523,7 @@ namespace Nat
         /// <param name="result"></param>
         private void ServicesReceived(IAsyncResult result)
         {
+            HttpWebResponse response = null;
             try
             {
                 int abortCount = 0;
@@ -434,7 +532,7 @@ namespace Nat
                 string servicesXml = null;
                 XmlDocument xmldoc = new XmlDocument();
                 HttpWebRequest request = result.AsyncState as HttpWebRequest;
-                HttpWebResponse response = request.EndGetResponse(result) as HttpWebResponse;
+                response = request.EndGetResponse(result) as HttpWebResponse;
                 Stream s = response.GetResponseStream();
 
                 if (response.StatusCode != HttpStatusCode.OK)
@@ -492,7 +590,24 @@ namespace Nat
             {
 #warning At the moment i just drop the connection. Should i retry once more?
             }
+            finally
+            {
+                response.Close();
+            }
         }
         #endregion
+
+
+        public IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+
+
+        public Mapping[] EndGetAllMappings(IAsyncResult result)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+
     }
 }
