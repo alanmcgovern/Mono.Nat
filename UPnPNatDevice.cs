@@ -115,7 +115,7 @@ namespace Nat
 
                 // From this we parse out the IP address and Port
                 this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
-                                                   Convert.ToInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
+                                                   Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
 
                 // The service description URL is the remainder of the "locationDetails" string. The bit that was originally after the ip
                 // and port information
@@ -415,7 +415,8 @@ namespace Nat
 
             finally
             {
-                response.Close();
+                if (response != null)
+                    response.Close();
             }
         }
 
@@ -458,7 +459,8 @@ namespace Nat
             }
             finally
             {
-                response.Close();
+                if (response != null)
+                    response.Close();
             }
         }
 
@@ -497,7 +499,8 @@ namespace Nat
             }
             finally
             {
-                response.Close();
+                if (response != null)
+                    response.Close();
             }
         }
 
@@ -592,7 +595,8 @@ namespace Nat
             }
             finally
             {
-                response.Close();
+                if (response != null)
+                    response.Close();
             }
         }
         #endregion

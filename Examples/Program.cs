@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Text;
 using Nat;
 using System.Net;
-using Nat;
 using System.Threading;
 
 namespace TestClient
@@ -28,7 +27,7 @@ namespace TestClient
             Console.WriteLine("If you haven't seen a port map/unmap by now, no router has been found.");
             Console.WriteLine();
             Console.WriteLine("Press a key to exit...");
-            Console.ReadLine();
+            Console.Read();
         }
 
         static void c_DeviceLost(object sender, EventArgs e)

@@ -82,8 +82,8 @@ namespace Nat.UPnPMessages
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping\"");
             string tempVariable = false ? "192.168.0.111" : this.localIpAddress.ToString();
 
-            string body = "<s:Envelope"
-               + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+            string body = "<s:Envelope "
+               + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
                + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                + "<s:Body>"
                + "<u:AddPortMapping "

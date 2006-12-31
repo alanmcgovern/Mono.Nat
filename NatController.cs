@@ -105,7 +105,7 @@ namespace Nat
         {
             this.devices = new List<INatDevice>();
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
-            this.udpClient = new UdpClient();
+            this.udpClient = new UdpClient(new IPEndPoint(localAddresses[0], 0));
             this.listenThread = new Thread(new ThreadStart(ListenThread));
             this.searchTimer.Elapsed += new ElapsedEventHandler(timerTick);
         }
@@ -159,8 +159,8 @@ namespace Nat
             DiscoverDeviceMessage message = new DiscoverDeviceMessage();
             byte[] data = message.Encode();
 
-            // UDP is a bit unreliable, so send 5 requests at a time
-            for (int i = 0; i < 5; i++)
+            // UDP is a bit unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
+            for (int i = 0; i < 3; i++)
                 this.udpClient.Send(data, data.Length, this.searchEndPoint);
         }
         

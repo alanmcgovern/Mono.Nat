@@ -64,8 +64,8 @@ namespace Nat.UPnPMessages
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#DeletePortMapping\"");
 
-            string body = "<s:Envelope"
-                            + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+            string body = "<s:Envelope "
+                            + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
                             + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                             + "<s:Body>"
                             + "<u:DeletePortMapping "
