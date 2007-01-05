@@ -31,23 +31,23 @@
 using System.Net;
 using System.IO;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
     internal class DeletePortMappingMessage
     {
         #region Member Variables
-        public Mapping Mapping
-        {
-            get { return this.mapping; }
-        }
+//        public Mapping Mapping
+//        {
+//            get { return this.mapping; }
+//        }
         private Mapping mapping;
 
-        private UPnPNatDevice device;
+        private UpnpNatDevice device;
         #endregion
 
 
         #region Constructors
-        public DeletePortMappingMessage(Mapping mapping, UPnPNatDevice device)
+        public DeletePortMappingMessage(Mapping mapping, UpnpNatDevice device)
         {
             this.mapping = mapping;
             this.device = device;
@@ -57,7 +57,7 @@ namespace Nat.UPnPMessages
 
         #region IMessage Members
 
-        public HttpWebRequest Encode(bool useManHeader)
+        public HttpWebRequest Encode()
         {
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
             req.Method = "POST";
@@ -71,8 +71,8 @@ namespace Nat.UPnPMessages
                             + "<u:DeletePortMapping "
                             + "xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:1\">"
                             + "<NewRemoteHost></NewRemoteHost>"
-                            + "<NewExternalPort>" + this.mapping.Port.ToString().ToUpper() + "</NewExternalPort>"
-                            + "<NewProtocol>" + this.mapping.Protocol.ToString().ToUpper() + "</NewProtocol>"
+                            + "<NewExternalPort>" + this.mapping.Port.ToString(System.Globalization.CultureInfo.InvariantCulture) + "</NewExternalPort>"
+                            + "<NewProtocol>" + this.mapping.Protocol.ToString().ToUpper(System.Globalization.CultureInfo.InvariantCulture) + "</NewProtocol>"
                             + "</u:DeletePortMapping>"
                             + "</s:Body>"
                             + "</s:Envelope>\r\n\r\n";

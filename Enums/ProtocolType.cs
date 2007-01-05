@@ -32,7 +32,7 @@ namespace Nat
 {
     public enum Protocol
     {
-        TCP,
-        UDP
+        Tcp,
+        Udp
     }
 }

@@ -28,24 +28,28 @@
 
 
 
+
 using System;
-using System.Net;
-using System.Timers;
-using System.Net.Sockets;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using Nat.UPnPMessages;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
-using Nat;
+using System.Timers;
+using Nat.UpnpMessages;
 
 namespace Nat
 {
-    public delegate void NatDeviceFoundCallback(UPnPNatDevice d);
+    internal delegate void NatDeviceFoundCallback(UpnpNatDevice d);
 
-    public class NatController
+    public class NatController : IDisposable
     {
-        #region Events
+		bool alreadyDisposed;
+
+		#region Events
         public event EventHandler<DeviceEventArgs> DeviceFound;
-        public event EventHandler<DeviceEventArgs> DeviceLost;
+        //TODO: Not used in code public event EventHandler<DeviceEventArgs> DeviceLost;
         #endregion
 
 
@@ -53,17 +57,17 @@ namespace Nat
         /// <summary>
         /// The list of all Internet Gateway Devices that support uPnP port forwarding
         /// </summary>
-        public List<INatDevice> Devices
+        public ReadOnlyCollection<INatDevice> Devices
         {
-            get { return this.devices; }
+        	get { return new ReadOnlyCollection<INatDevice>(this.devices); }
         }
         private List<INatDevice> devices;
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="d"></param>
+//        / <summary>
+//        / 
+//        / </summary>
+//        / <param name="d"></param>
         //internal delegate void NatDeviceFoundCallback(NatDevice d);
 
 
@@ -156,8 +160,7 @@ namespace Nat
         /// </summary>
         private void Search()
         {
-            DiscoverDeviceMessage message = new DiscoverDeviceMessage();
-            byte[] data = message.Encode();
+            byte[] data = DiscoverDeviceMessage.Encode();
 
             // UDP is a bit unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (int i = 0; i < 3; i++)
@@ -196,17 +199,20 @@ namespace Nat
         /// <param name="data"></param>
         private void ReplyReceived(byte[] data)
         {
+            // Convert it to a string for easy parsing
+            string dataString = null;
+
+            // No matter what, this method should never throw an exception. If something goes wrong
+            // we should still be in a position to handle the next reply correctly.
             try
             {
-                // Convert it to a string for easy parsing
-                string dataString = System.Text.UTF8Encoding.UTF8.GetString(data);
-
+                dataString = System.Text.UTF8Encoding.UTF8.GetString(data);
                 // No matter what reply we receive, we only want it if the device has a WANIPConnection service
                 // We don't care about *anything* else.
                 if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) != -1)
                 {
                     // We have an internet gateway device now
-                    UPnPNatDevice d = new UPnPNatDevice(dataString);
+                    UpnpNatDevice d = new UpnpNatDevice(dataString);
 
                     if (this.devices.Contains(d))
                     {
@@ -223,8 +229,14 @@ namespace Nat
                     }
                 }
             }
-            finally
-            { }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Unhandled exception when trying to decode a device's response Send me the following data: ");
+                Trace.WriteLine("ErrorMessage:");
+                Trace.WriteLine(ex.Message);
+                Trace.WriteLine("Data string:");
+                Trace.WriteLine(dataString);
+            }
         }
 
 
@@ -247,5 +259,27 @@ namespace Nat
             }
         }
         #endregion
+    	
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		void Dispose(bool disposeManagedResources)
+		{
+			if(alreadyDisposed) return;
+			if(!disposeManagedResources) return;
+
+			this.searchTimer.Dispose();	// Always initialized by the constructor
+			((IDisposable)this.udpClient).Dispose();	// Always initialized by the constructor
+			alreadyDisposed = true;
+		}
+		
+		
+		~NatController()
+		{
+			Dispose(false);
+		}
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -14,3 +15,5 @@ using System.Runtime.InteropServices;
 [assembly: Guid("c8e81e95-9f15-4eb8-8982-3d2c9cd95dee")]
 [assembly: AssemblyVersion("0.5.0.0")]
 [assembly: AssemblyFileVersion("0.5.0.0")]
+
+[assembly: CLSCompliant(true)]

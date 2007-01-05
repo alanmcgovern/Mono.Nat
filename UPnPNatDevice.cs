@@ -29,15 +29,17 @@
 
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Xml;
-using Nat.UPnPMessages;
+using Nat.UpnpMessages;
 using Nat;
 
 namespace Nat
 {
-    public class UPnPNatDevice : IEquatable<UPnPNatDevice>, INatDevice
+    public class UpnpNatDevice : IEquatable<UpnpNatDevice>, INatDevice
     {
         #region Member Variables
         /// <summary>
@@ -64,10 +66,10 @@ namespace Nat
         /// <summary>
         /// The relative url of the xml file that describes the list of services is at
         /// </summary>
-        internal string ServiceDescriptionUrl
-        {
-            get { return this.serviceDescriptionUrl; }
-        }
+        //        internal string ServiceDescriptionUrl
+        //        {
+        //            get { return this.serviceDescriptionUrl; }
+        //        }
         private string serviceDescriptionUrl;
 
 
@@ -89,11 +91,7 @@ namespace Nat
 
 
         #region Constructors
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="deviceDetails"></param>
-        public UPnPNatDevice(string deviceDetails)
+        internal UpnpNatDevice(string deviceDetails)
         {
             this.lastSeen = DateTime.Now;
 
@@ -115,7 +113,7 @@ namespace Nat
 
                 // From this we parse out the IP address and Port
                 this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
-                                                   Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1)));
+                                                   Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
 
                 // The service description URL is the remainder of the "locationDetails" string. The bit that was originally after the ip
                 // and port information
@@ -123,11 +121,8 @@ namespace Nat
             }
             else
             {
-                Console.WriteLine();
-                Console.WriteLine("Couldn't decode address. Please send following string to the developer: ");
-                Console.WriteLine(deviceDetails);
-                Console.WriteLine();
-                Console.WriteLine();
+                Trace.WriteLine("Couldn't decode address. Please send following string to the developer: ");
+                Trace.WriteLine(deviceDetails);
             }
         }
         #endregion
@@ -137,9 +132,6 @@ namespace Nat
         /// <summary>
         /// Begins an async call to get the external ip address of the router
         /// </summary>
-        /// <param name="callback"></param>
-        /// <param name="asyncState"></param>
-        /// <returns></returns>
         public IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState)
         {
             return this.BeginGetExternalIPInternal(callback, asyncState);
@@ -149,36 +141,70 @@ namespace Nat
         /// <summary>
         ///  Maps the specified port to this computer
         /// </summary>
-        /// <param name="port">The port to map</param>
-        /// <param name="protocol">The protocol to map</param>
         public IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
         {
             // Initially try without the M- header
-            return this.BeginCreatePortMapInternal(mapping, string.Empty, callback, asyncState, false);
+            return this.BeginCreatePortMapInternal(mapping, string.Empty, callback, asyncState);
         }
 
 
         /// <summary>
         /// Automatically fowards the specified port to this computer
         /// </summary>
-        /// <param name="port">The port to forward</param>
-        /// <param name="protocol">The protocol to forward</param>
         /// <param name="portMapDescription">The description to use for the mapped port</param>
         public IAsyncResult BeginCreatePortMap(Mapping mapping, string portMapDescription, AsyncCallback callback, object asyncState)
         {
             // Initially try without the M- header
-            return this.BeginCreatePortMapInternal(mapping, portMapDescription, callback, asyncState, false);
+            return this.BeginCreatePortMapInternal(mapping, portMapDescription, callback, asyncState);
         }
 
 
         /// <summary>
         /// Removes a port mapping from this computer  
         /// </summary>
-        /// <param name="port">The port to unmap</param>
-        /// <param name="protocol">The protocol to unmap</param>
         public IAsyncResult BeginDeletePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
         {
-            return this.BeginDeletePortMapInternal(mapping, false, callback, asyncState);
+            return this.BeginDeletePortMapInternal(mapping, callback, asyncState);
+        }
+
+
+        public IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        /// <summary>
+        /// Creates a port mapping on the upnp router.
+        /// </summary>
+        /// <param name="mapping">Port details</param>
+        public void CreatePortMap(Mapping mapping)
+        {
+            IAsyncResult result = BeginCreatePortMap(mapping, null, mapping);
+            EndCreatePortMap(result);
+        }
+
+
+        /// <summary>
+        /// Creates a port mapping on the upnp router.
+        /// </summary>
+        /// <param name="mapping">Port details</param>
+        /// <param name="description">Description that identifies this mapping.</param>
+        public void CreatePortMap(Mapping mapping, string description)
+        {
+            IAsyncResult result = BeginCreatePortMap(mapping, description, null, mapping);
+            EndCreatePortMap(result);
+        }
+
+
+        /// <summary>
+        /// Removes a port mapping on the upnp router
+        /// </summary>
+        /// <param name="mapping">Port details</param>
+        public void DeletePortMap(Mapping mapping)
+        {
+            IAsyncResult result = BeginDeletePortMap(mapping, null, mapping);
+            EndDeletePortMap(result);
         }
 
 
@@ -188,6 +214,8 @@ namespace Nat
         /// <param name="result"></param>
         public void EndCreatePortMap(IAsyncResult result)
         {
+            if (result == null) throw new ArgumentNullException("result");
+
             PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
             if (mappingResult == null)
                 throw new ArgumentException("Invalid AsyncResult", "result");
@@ -215,8 +243,10 @@ namespace Nat
         /// <param name="result"></param>
         public void EndDeletePortMap(IAsyncResult result)
         {
-            PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
+            if (result == null)
+                throw new ArgumentNullException();
 
+            PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
             if (mappingResult == null)
                 throw new ArgumentException("Invalid AsyncResult", "result");
 
@@ -238,14 +268,22 @@ namespace Nat
         }
 
 
+        public Mapping[] EndGetAllMappings(IAsyncResult result)
+        {
+            throw new NotImplementedException();
+        }
+
+
         /// <summary>
         /// Ends an async request to get the external ip address of the router
         /// </summary>
-        /// <param name="result"></param>
-        /// <returns></returns>
         public IPAddress EndGetExternalIP(IAsyncResult result)
         {
+            if (result == null) throw new ArgumentNullException("result");
+
             PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
+            if (mappingResult == null)
+                throw new ArgumentException("Invalid AsyncResult", "result");
 
             if (!result.IsCompleted)
                 result.AsyncWaitHandle.WaitOne();
@@ -262,16 +300,26 @@ namespace Nat
 
         public override bool Equals(object obj)
         {
-            UPnPNatDevice d = obj as UPnPNatDevice;
-            return (d == null) ? false : this.Equals(d);
+            return (obj is UpnpNatDevice) ? this.Equals((UpnpNatDevice)obj) : false;
         }
 
 
-        public bool Equals(UPnPNatDevice other)
+        public bool Equals(UpnpNatDevice other)
         {
-            return (this.hostEndPoint.ToString() == other.hostEndPoint.ToString()
-                    && this.controlUrl == other.controlUrl
-                    && this.serviceDescriptionUrl == other.serviceDescriptionUrl);
+            return (other == null) ? false : (this.hostEndPoint.ToString() == other.hostEndPoint.ToString()
+                                           && this.controlUrl == other.controlUrl
+                                           && this.serviceDescriptionUrl == other.serviceDescriptionUrl);
+        }
+
+
+        /// <summary>
+        /// Retrieves all portmappings currently configured on the upnp router
+        /// </summary>
+        /// <returns></returns>
+        public Mapping[] GetAllMappings()
+        {
+            IAsyncResult result = BeginGetAllMappings(null, null);
+            return EndGetAllMappings(result);
         }
 
 
@@ -279,81 +327,63 @@ namespace Nat
         {
             return (this.hostEndPoint.GetHashCode() ^ this.controlUrl.GetHashCode() ^ this.serviceDescriptionUrl.GetHashCode());
         }
+
+
+        /// <summary>
+        /// Returns the IP address of the upnp router that is currently used.
+        /// </summary>
+        /// <returns>Address of the upnp router.</returns>
+        public IPAddress GetExternalIP()
+        {
+            IAsyncResult result = BeginGetExternalIP(null, null);
+            return EndGetExternalIP(result);
+        }
         #endregion
 
 
         #region Private and Internal methods
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="port"></param>
-        /// <param name="protocol"></param>
-        /// <param name="portMapDescription"></param>
-        /// <param name="appendManHeader"></param>
-        private IAsyncResult BeginCreatePortMapInternal(Mapping mapping, string portMapDescription, AsyncCallback callback, object asyncState, bool appendManHeader)
+        private IAsyncResult BeginCreatePortMapInternal(Mapping mapping, string portMapDescription, AsyncCallback callback, object asyncState)
         {
             // Create the port map message
             CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatController.localAddresses[0], portMapDescription, this);
 
             // Encode it into a HttpWebRequest
-            HttpWebRequest request = message.Encode(appendManHeader);
+            HttpWebRequest request = message.Encode();
 
             // Create the asyncresult needed return back to the user.
-            PortMapAsyncResult mappingResult = new PortMapAsyncResult(appendManHeader, request, callback, asyncState);
+            PortMapAsyncResult mappingResult = new PortMapAsyncResult(request, callback, asyncState);
             request.BeginGetResponse(EndCreatePortMapInternal, mappingResult);
 
             return mappingResult;
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="port"></param>
-        /// <param name="protocol"></param>
-        /// <param name="appendManHeader"></param>
-        private IAsyncResult BeginDeletePortMapInternal(Mapping mapping, bool appendManHeader, AsyncCallback callback, object asyncState)
+        private IAsyncResult BeginDeletePortMapInternal(Mapping mapping, AsyncCallback callback, object asyncState)
         {
             DeletePortMappingMessage message = new DeletePortMappingMessage(mapping, this);
-            HttpWebRequest request = message.Encode(appendManHeader);
-            PortMapAsyncResult mappingResult = new PortMapAsyncResult(appendManHeader, request, callback, asyncState);
+            HttpWebRequest request = message.Encode();
+            PortMapAsyncResult mappingResult = new PortMapAsyncResult(request, callback, asyncState);
             request.BeginGetResponse(EndDeletePortMapInternal, mappingResult);
             return mappingResult;
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="callback"></param>
-        /// <param name="asyncState"></param>
-        /// <returns></returns>
         private IAsyncResult BeginGetExternalIPInternal(AsyncCallback callback, object asyncState)
         {
-            bool appendManHeader = false;
             // Create the port map message
             GetExternalIPAddressMessage message = new GetExternalIPAddressMessage(this);
 
             // Encode it into a HttpWebRequest
-            HttpWebRequest request = message.Encode(appendManHeader);
+            HttpWebRequest request = message.Encode();
 
             // Create the asyncresult needed return back to the user.
-            PortMapAsyncResult mappingResult = new PortMapAsyncResult(appendManHeader, request, callback, asyncState);
+            PortMapAsyncResult mappingResult = new PortMapAsyncResult(request, callback, asyncState);
             request.BeginGetResponse(EndGetExternalIPInternal, mappingResult);
 
             return mappingResult;
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        private IMessage DecodeMessageFromResponse(Stream s, long length)
+        private static IMessage DecodeMessageFromResponse(Stream s, long length)
         {
-            string data = null;
+            StringBuilder data = new StringBuilder();
             int bytesRead = 0;
             int totalBytesRead = 0;
             byte[] buffer = new byte[10240];
@@ -364,26 +394,21 @@ namespace Nat
                 while (totalBytesRead != length)
                 {
                     bytesRead += s.Read(buffer, 0, buffer.Length);
-                    data += System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
                     totalBytesRead += bytesRead;
                 }
             }
             else
             {
                 while ((bytesRead = s.Read(buffer, 0, buffer.Length)) != 0)
-                    data += System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
             }
 
             // Once we have our content, we need to see what kind of message it is. It'll either a an error
             // or a response based on the action we performed.
-            return Message.Decode(data);
+            return Message.Decode(data.ToString());
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="result"></param>
         private void EndCreatePortMapInternal(IAsyncResult result)
         {
             HttpWebResponse response = null;
@@ -420,11 +445,6 @@ namespace Nat
             }
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="result"></param>
         private void EndDeletePortMapInternal(IAsyncResult result)
         {
             IMessage message;
@@ -464,11 +484,6 @@ namespace Nat
             }
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="result"></param>
         private void EndGetExternalIPInternal(IAsyncResult result)
         {
             HttpWebResponse response = null;
@@ -504,26 +519,16 @@ namespace Nat
             }
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="callback"></param>
         internal void GetServicesList(NatDeviceFoundCallback callback)
         {
             // Save the callback so i can use it again later when i've finished parsing the services available
             this.callback = callback;
 
             // Create a HTTPWebRequest to download the list of services the device offers
-            HttpWebRequest request = new GetServicesMessage(this.serviceDescriptionUrl, this.hostEndPoint).Encode(false);
+            HttpWebRequest request = new GetServicesMessage(this.serviceDescriptionUrl, this.hostEndPoint).Encode();
             request.BeginGetResponse(this.ServicesReceived, request);
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="result"></param>
         private void ServicesReceived(IAsyncResult result)
         {
             HttpWebResponse response = null;
@@ -532,7 +537,7 @@ namespace Nat
                 int abortCount = 0;
                 int bytesRead = 0;
                 byte[] buffer = new byte[10240];
-                string servicesXml = null;
+                StringBuilder servicesXml = new StringBuilder();
                 XmlDocument xmldoc = new XmlDocument();
                 HttpWebRequest request = result.AsyncState as HttpWebRequest;
                 response = request.EndGetResponse(result) as HttpWebResponse;
@@ -545,14 +550,14 @@ namespace Nat
                 while (true)
                 {
                     bytesRead = s.Read(buffer, 0, buffer.Length);
-                    servicesXml += System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    servicesXml.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
                     try
                     {
-                        xmldoc.LoadXml(servicesXml);
+                        xmldoc.LoadXml(servicesXml.ToString());
                         response.Close();
                         break;
                     }
-                    catch
+                    catch (XmlException)
                     {
                         // If we can't receive the entire XML within 500ms, then drop the connection
                         // Unfortunately not all routers supply a valid ContentLength (mine doesn't)
@@ -589,7 +594,7 @@ namespace Nat
                 //If we get here, it means that we didn't get WANIPConnection service, which means no uPnP forwarding
                 //So we don't invoke the callback, so this device is never added to our lists
             }
-            catch (WebException ex)
+            catch (WebException)
             {
 #warning At the moment i just drop the connection. Should i retry once more?
             }
@@ -600,18 +605,5 @@ namespace Nat
             }
         }
         #endregion
-
-
-        public IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState)
-        {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
-
-        public Mapping[] EndGetAllMappings(IAsyncResult result)
-        {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
     }
 }

@@ -5,17 +5,17 @@ using Nat;
 using System.Net;
 using System.IO;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
     public class GetExternalIPAddressMessage
     {
         #region Member Variables
-        private UPnPNatDevice device;
+        private UpnpNatDevice device;
         #endregion
 
 
         #region Constructors
-        public GetExternalIPAddressMessage(UPnPNatDevice device)
+        public GetExternalIPAddressMessage(UpnpNatDevice device)
         {
             this.device = device;
         }
@@ -23,9 +23,12 @@ namespace Nat.UPnPMessages
 
 
         #region IMessage Members
-        public HttpWebRequest Encode(bool useManHeader)
+        public HttpWebRequest Encode()
         {
-            HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
+        	// TODO: Make use of the proper constructor.
+        	Uri location = new Uri("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
+        	
+            HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
             req.Method = "POST";
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#GetExternalIPAddress\"");

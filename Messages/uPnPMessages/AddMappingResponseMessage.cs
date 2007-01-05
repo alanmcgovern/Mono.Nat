@@ -28,7 +28,7 @@
 
 
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
     internal class AddMappingResponseMessage : IMessage
     {

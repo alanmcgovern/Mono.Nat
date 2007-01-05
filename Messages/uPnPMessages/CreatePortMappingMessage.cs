@@ -31,39 +31,39 @@
 using System.Net;
 using System.IO;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
     internal class CreatePortMappingMessage
     {
         #region Member Variables
-        public string PortMappingDescription
-        {
-            get { return this.portMappingDescription; }
-        }
+//        public string PortMappingDescription
+//        {
+//            get { return this.portMappingDescription; }
+//        }
         private string portMappingDescription;
 
 
-        public IPAddress LocalIpAddress
-        {
-            get { return this.localIpAddress; }
-        }
+//        public IPAddress LocalIpAddress
+//        {
+//            get { return this.localIpAddress; }
+//        }
         private IPAddress localIpAddress;
 
 
-        public Mapping Mapping
-        {
-            get { return this.mapping; }
-        }
+//        public Mapping Mapping
+//        {
+//            get { return this.mapping; }
+//        }
         private Mapping mapping;
 
 
-        private UPnPNatDevice device;
+        private UpnpNatDevice device;
         #endregion
 
 
         #region Constructors
         public CreatePortMappingMessage(Mapping mapping, IPAddress localIpAddress,
-                                    string portMappingDescription, UPnPNatDevice device)
+                                        string portMappingDescription, UpnpNatDevice device)
         {
             this.mapping = mapping;
             this.localIpAddress = localIpAddress;
@@ -74,13 +74,14 @@ namespace Nat.UPnPMessages
 
 
         #region IMessage Members
-        public HttpWebRequest Encode(bool useManHeader)
+        public HttpWebRequest Encode()
         {
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
             req.Method = "POST";
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping\"");
-            string tempVariable = false ? "192.168.0.111" : this.localIpAddress.ToString();
+//            string tempVariable = false ? "192.168.0.111" : this.localIpAddress.ToString();
+string tempVariable = this.localIpAddress.ToString();
 
             string body = "<s:Envelope "
                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
@@ -89,9 +90,9 @@ namespace Nat.UPnPMessages
                + "<u:AddPortMapping "
                + "xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:1\">"
                + "<NewRemoteHost></NewRemoteHost>"
-               + "<NewExternalPort>" + this.mapping.Port.ToString() + "</NewExternalPort>"
-               + "<NewProtocol>" + this.mapping.Protocol.ToString() + "</NewProtocol>"
-               + "<NewInternalPort>" + this.mapping.Port.ToString() + "</NewInternalPort>"
+               + "<NewExternalPort>" + this.mapping.Port.ToString(System.Globalization.CultureInfo.InvariantCulture) + "</NewExternalPort>"
+            	+ "<NewProtocol>" + (this.mapping.Protocol==Protocol.Tcp?"TCP":"UDP") + "</NewProtocol>"
+               + "<NewInternalPort>" + this.mapping.Port.ToString(System.Globalization.CultureInfo.InvariantCulture) + "</NewInternalPort>"
                + "<NewInternalClient>" + tempVariable + "</NewInternalClient>"
                + "<NewEnabled>1</NewEnabled>"
                + "<NewPortMappingDescription>" + this.portMappingDescription + "</NewPortMappingDescription>"

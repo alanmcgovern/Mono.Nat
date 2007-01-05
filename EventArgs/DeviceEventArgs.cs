@@ -10,6 +10,7 @@ namespace Nat
         {
             get { return this.device; }
         }
+        
         private INatDevice device;
 
 

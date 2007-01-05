@@ -30,25 +30,17 @@
 
 using System.Text;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
-    internal class DiscoverDeviceMessage
+    internal static class DiscoverDeviceMessage
     {
-        #region Constructors
-        public DiscoverDeviceMessage()
-        {
-        }
-        #endregion
-
-
         #region IMessage Members
 
         /// <summary>
         /// The message sent to discover all uPnP devices on the network
         /// </summary>
-        /// <param name="useManHeader">This parameter will be ignored</param>
         /// <returns></returns>
-        public byte[] Encode(bool useManHeader)
+        public static byte[] Encode()
         {
             string s = "M-SEARCH * HTTP/1.1\r\n"
                         + "Host: 239.255.255.250:1900\r\n"
@@ -58,16 +50,11 @@ namespace Nat.UPnPMessages
             return UTF8Encoding.ASCII.GetBytes(s);
         }
 
-        public void Decode(byte[] response)
-        {
-            // I don't decode these
-        }
+//        public static void Decode(byte[] response)
+//        {
+//            // I don't decode these
+//        }
 
         #endregion
-
-        internal byte[] Encode()
-        {
-            return this.Encode(true);
-        }
     }
 }

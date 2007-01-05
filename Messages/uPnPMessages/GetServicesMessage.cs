@@ -28,10 +28,11 @@
 
 
 
-using System.Net;
 using System;
+using System.Diagnostics;
+using System.Net;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
    internal class GetServicesMessage
     {
@@ -41,10 +42,10 @@ namespace Nat.UPnPMessages
        public GetServicesMessage(string description, EndPoint hostAddress)
        {
            if (string.IsNullOrEmpty(description))
-               Console.WriteLine("Description is null");
+               Trace.WriteLine("Description is null");
 
            if (hostAddress == null)
-               Console.WriteLine("hostaddress is null");
+               Trace.WriteLine("hostaddress is null");
 
            this.servicesDescriptionUrl = description;
            this.hostAddress = hostAddress;
@@ -53,7 +54,7 @@ namespace Nat.UPnPMessages
 
         #region IMessage Members
 
-       public HttpWebRequest Encode(bool useManHeader)
+       public HttpWebRequest Encode()
        {
            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://" + this.hostAddress.ToString() + this.servicesDescriptionUrl);
            req.Headers.Add("ACCEPT-LANGUAGE", "en");
@@ -66,10 +67,11 @@ namespace Nat.UPnPMessages
            return req;
        }
 
-        public void Decode(byte[] response)
-        {
-            // I don't decode these
-        }
+//        public static void Decode(byte[] response)
+//        {
+//            // I don't decode these
+//            throw new NotSupportedException();
+//        }
 
         #endregion
     }

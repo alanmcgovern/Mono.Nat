@@ -51,5 +51,29 @@ namespace Nat
             this.port = port;
             this.protocol = protocol;
         }
+        
+		public override bool Equals(object obj)
+		{
+            if (!(obj is Mapping))
+                return false;
+
+			Mapping instance = (Mapping)obj;
+			return this.port == instance.port && this.protocol == instance.protocol;
+		}
+		
+		public override int GetHashCode()
+		{
+			return this.port.GetHashCode() ^ this.protocol.GetHashCode();
+		}
+
+		public static bool operator ==(Mapping instanceA, Mapping instanceB) 
+		{
+			return instanceA.Equals(instanceB);
+		}
+		
+		public static bool operator !=(Mapping instanceA, Mapping instanceB) 
+		{
+		  return !instanceA.Equals(instanceB);
+		}
     }
 }

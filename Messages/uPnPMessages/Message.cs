@@ -29,12 +29,13 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Xml;
 using Nat;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
-    internal class Message
+    internal static class Message
     {
         public static IMessage Decode(string message)
         {
@@ -50,7 +51,7 @@ namespace Nat.UPnPMessages
 
             // Check to see if we have a fault code message.
             if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
-                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText), node["errorDescription"].InnerText);
+                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture), node["errorDescription"].InnerText);
 
             if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
                 return new AddMappingResponseMessage();
@@ -62,11 +63,8 @@ namespace Nat.UPnPMessages
                 return new ExternalIPAddressMessage(node["NewExternalIPAddress"].InnerText);
 
 
-            Console.WriteLine();
-            Console.WriteLine("Unknown message returned. Please send me back the following XML:");
-            Console.WriteLine(message);
-            Console.WriteLine();
-            Console.WriteLine();
+            Trace.WriteLine("Unknown message returned. Please send me back the following XML:");
+            Trace.WriteLine(message);
             return null;
         }
     }

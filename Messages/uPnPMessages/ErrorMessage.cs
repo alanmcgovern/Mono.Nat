@@ -30,7 +30,7 @@
 
 using System;
 
-namespace Nat.UPnPMessages
+namespace Nat.UpnpMessages
 {
     internal class ErrorMessage : IMessage
     {
@@ -62,7 +62,7 @@ namespace Nat.UPnPMessages
 
         public void Decode(string data)
         {
-            throw new Exception("The method or operation is not implemented.");
+        	throw new NotImplementedException();
         }
 
         #endregion
