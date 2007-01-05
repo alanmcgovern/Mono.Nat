@@ -76,12 +76,12 @@ namespace Nat
         }
         private AsyncCallback completionCallback;
 
-
-        internal bool UsingManHeader
-        {
-            get { return this.usingManHeader; }
-        }
-        private bool usingManHeader;
+// TODO: Not used
+//        internal bool UsingManHeader
+//        {
+//            get { return this.usingManHeader; }
+//        }
+//        private bool usingManHeader;
 
 
         internal HttpWebRequest Request
@@ -99,11 +99,10 @@ namespace Nat
         private IMessage savedMessage;
 
 
-        public PortMapAsyncResult(bool usingManHeader, HttpWebRequest request, AsyncCallback callback, object asyncState)
+        public PortMapAsyncResult(HttpWebRequest request, AsyncCallback callback, object asyncState)
         {
             this.asyncState = asyncState;
             this.completionCallback = callback;
-            this.usingManHeader = usingManHeader;
             this.request = request;
             this.waitHandle = new ManualResetEvent(false);
         }
