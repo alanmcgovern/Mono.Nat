@@ -8,10 +8,15 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Nat</RootNamespace>
-    <AssemblyName>uPnP</AssemblyName>
+    <AssemblyName>Upnp</AssemblyName>
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <NoStdLib>False</NoStdLib>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RunCodeAnalysis>True</RunCodeAnalysis>
+    <SignAssembly>True</SignAssembly>
+    <DelaySign>False</DelaySign>
+    <AssemblyOriginatorKeyMode>File</AssemblyOriginatorKeyMode>
+    <AssemblyOriginatorKeyFile>Mono.Nat.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,17 +26,20 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\Upnp.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>PdbOnly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\Upnp.xml</DocumentationFile>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <RegisterForComInterop>False</RegisterForComInterop>
@@ -39,6 +47,9 @@
     <BaseAddress>4194304</BaseAddress>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -53,19 +64,19 @@
     <Compile Include="Messages\ExternalIPAddressMessage.cs" />
     <Compile Include="Messages\IMessage.cs" />
     <Compile Include="Mapping.cs" />
-    <Compile Include="Messages\uPnPMessages\AddMappingResponseMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\CreatePortMappingMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\DeletePortMappingMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\DeletePortMappingResponseMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\ErrorMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\DiscoverDeviceMessage.cs">
+    <Compile Include="Messages\UpnpMessages\AddMappingResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\CreatePortMappingMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\DeletePortMappingMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\DeletePortMappingResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\ErrorMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\DiscoverDeviceMessage.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Messages\uPnPMessages\GetExternalIPAddressMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\GetServicesMessage.cs" />
-    <Compile Include="Messages\uPnPMessages\Message.cs" />
+    <Compile Include="Messages\UpnpMessages\GetExternalIPAddressMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\GetServicesMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Message.cs" />
     <Compile Include="INatDevice.cs" />
-    <Compile Include="UPnPNatDevice.cs" />
+    <Compile Include="UpnpNatDevice.cs" />
     <Compile Include="Enums\ProtocolType.cs" />
     <Compile Include="NatController.cs" />
     <Compile Include="MappingException.cs" />
