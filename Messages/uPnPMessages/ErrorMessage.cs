@@ -32,7 +32,7 @@ using System;
 
 namespace Nat.UpnpMessages
 {
-    internal class ErrorMessage : IMessage
+    internal class ErrorMessage : MessageBase
     {
         #region Member Variables
         public string Description
@@ -51,6 +51,7 @@ namespace Nat.UpnpMessages
 
         #region Constructors
         public ErrorMessage(int errorCode, string description) 
+            :base(null)
         {
             this.description = description;
             this.errorCode = errorCode;
@@ -62,9 +63,14 @@ namespace Nat.UpnpMessages
 
         public void Decode(string data)
         {
-        	throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
         #endregion
+
+        public override System.Net.WebRequest Encode()
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
     }
 }

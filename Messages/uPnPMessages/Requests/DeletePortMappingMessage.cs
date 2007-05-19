@@ -1,5 +1,5 @@
 //
-// DeletePortMapResponseMessage.cs
+// DeletePortMappingMessage.cs
 //
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
@@ -28,20 +28,45 @@
 
 
 
+using System.Net;
+using System.IO;
+using System.Text;
+using System.Xml;
+
 namespace Nat.UpnpMessages
 {
-    internal class DeletePortMapResponseMessage : IMessage
+    internal class DeletePortMappingMessage : MessageBase
     {
-        public DeletePortMapResponseMessage()
-        {
-        }
-
-        #region IMessage Members
-
-        public void Decode(string data)
-        {
-        }
+        #region Member Variables
+        //        public Mapping Mapping
+        //        {
+        //            get { return this.mapping; }
+        //        }
+        private Mapping mapping;
 
         #endregion
+
+
+        #region Constructors
+        public DeletePortMappingMessage(Mapping mapping, UpnpNatDevice device)
+            : base(device)
+        {
+            this.mapping = mapping;
+        }
+        #endregion
+
+
+        public override WebRequest Encode()
+        {
+            StringBuilder builder = new StringBuilder(256);
+            XmlWriter writer = CreateWriter(builder);
+            
+            WriteFullElement(writer, "NewRemoteHost", string.Empty);
+            WriteFullElement(writer, "NewExternalPort", mapping.Port.ToString(MessageBase.Culture));
+            WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
+
+            writer.Flush();
+            return CreateRequest("DeletePortMapping", builder.ToString(), "POST");
+        }
     }
 }

@@ -32,12 +32,54 @@ using System;
 using System.Diagnostics;
 using System.Xml;
 using Nat;
+using System.Net;
+using Nat.UpnpMessages;
+using System.IO;
+using System.Text;
+using System.Globalization;
 
-namespace Nat.UpnpMessages
+namespace Nat
 {
-    internal static class Message
+    internal abstract class MessageBase
     {
-        public static IMessage Decode(string message)
+        internal static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
+        protected UpnpNatDevice device;
+
+        protected MessageBase(UpnpNatDevice device)
+        {
+            this.device = device;
+        }
+
+
+        protected WebRequest CreateRequest(string upnpMethod, string methodParameters, string webrequestMethod)
+        {
+            Uri location = new Uri("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
+
+            HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
+            req.Method = webrequestMethod;
+            req.ContentType = "text/xml; charset=\"utf-8\"";
+            req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#" + upnpMethod + "\"");
+            string tempVariable = NatController.localAddresses[0].ToString();
+
+            string body = "<s:Envelope "
+               + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+               + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
+               + "<s:Body>"
+               + "<u:" + upnpMethod + " "
+               + "xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:1\">"
+               + methodParameters
+               + "</u:" + upnpMethod + ">"
+               + "</s:Body>"
+               + "</s:Envelope>\r\n\r\n";
+
+            req.ContentLength = System.Text.Encoding.UTF8.GetByteCount(body);
+            Stream s = req.GetRequestStream();
+
+            s.Write(System.Text.Encoding.UTF8.GetBytes(body), 0, (int)req.ContentLength);
+            return req;
+        }
+
+        public static MessageBase Decode(string message)
         {
             XmlNode node = null;
             System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
@@ -62,10 +104,28 @@ namespace Nat.UpnpMessages
             if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
                 return new ExternalIPAddressMessage(node["NewExternalIPAddress"].InnerText);
 
+            if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
+                return new GetGenericPortMappingEntryResponseMessage(node);
 
             Trace.WriteLine("Unknown message returned. Please send me back the following XML:");
             Trace.WriteLine(message);
             return null;
+        }
+
+        public abstract WebRequest Encode();
+
+        internal static void WriteFullElement(XmlWriter writer, string element, string value)
+        {
+            writer.WriteStartElement(element);
+            writer.WriteString(value);
+            writer.WriteEndElement();
+        }
+
+        internal static XmlWriter CreateWriter(StringBuilder sb)
+        {
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.ConformanceLevel = ConformanceLevel.Fragment;
+            return XmlWriter.Create(sb, settings);
         }
     }
 }

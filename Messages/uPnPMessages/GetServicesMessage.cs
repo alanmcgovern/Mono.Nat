@@ -34,45 +34,32 @@ using System.Net;
 
 namespace Nat.UpnpMessages
 {
-   internal class GetServicesMessage
+    internal class GetServicesMessage : MessageBase
     {
-       private string servicesDescriptionUrl;
-       private EndPoint hostAddress;
+        private string servicesDescriptionUrl;
+        private EndPoint hostAddress;
 
-       public GetServicesMessage(string description, EndPoint hostAddress)
-       {
-           if (string.IsNullOrEmpty(description))
-               Trace.WriteLine("Description is null");
+        public GetServicesMessage(string description, EndPoint hostAddress)
+            :base(null)
+        {
+            if (string.IsNullOrEmpty(description))
+                Trace.WriteLine("Description is null");
 
-           if (hostAddress == null)
-               Trace.WriteLine("hostaddress is null");
+            if (hostAddress == null)
+                Trace.WriteLine("hostaddress is null");
 
-           this.servicesDescriptionUrl = description;
-           this.hostAddress = hostAddress;
-       }
+            this.servicesDescriptionUrl = description;
+            this.hostAddress = hostAddress;
+        }
 
 
-        #region IMessage Members
+        public override WebRequest Encode()
+        {
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://" + this.hostAddress.ToString() + this.servicesDescriptionUrl);
+            req.Headers.Add("ACCEPT-LANGUAGE", "en");
+            req.Method = "GET";
 
-       public HttpWebRequest Encode()
-       {
-           HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://" + this.hostAddress.ToString() + this.servicesDescriptionUrl);
-           req.Headers.Add("ACCEPT-LANGUAGE", "en");
-           req.Method = "GET";
-           
-           //string s = "GET " + this.servicesDescriptionUrl + " HTTP/1.1\r\n"
-           //             + "HOST: " + this.hostAddress + "\r\n"
-           //             + "ACCEPT-LANGUAGE: en\r\n\r\n";
-
-           return req;
-       }
-
-//        public static void Decode(byte[] response)
-//        {
-//            // I don't decode these
-//            throw new NotSupportedException();
-//        }
-
-        #endregion
+            return req;
+        }
     }
 }

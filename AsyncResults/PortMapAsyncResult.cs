@@ -84,27 +84,36 @@ namespace Nat
 //        private bool usingManHeader;
 
 
-        internal HttpWebRequest Request
+        internal WebRequest Request
         {
             get { return this.request; }
+            set { this.request = value; }
         }
-        private HttpWebRequest request;
+        private WebRequest request;
 
 
-        internal IMessage SavedMessage
+        internal MessageBase SavedMessage
         {
             get { return this.savedMessage; }
             set { this.savedMessage = value; }
         }
-        private IMessage savedMessage;
+        private MessageBase savedMessage;
 
 
-        public PortMapAsyncResult(HttpWebRequest request, AsyncCallback callback, object asyncState)
+        protected PortMapAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
         {
             this.asyncState = asyncState;
             this.completionCallback = callback;
             this.request = request;
             this.waitHandle = new ManualResetEvent(false);
+        }
+
+        internal static PortMapAsyncResult Create(MessageBase message, WebRequest request, AsyncCallback storedCallback, object asyncState)
+        {
+            if (message is GetGenericPortMappingEntry)
+                return new GetAllMappingsAsyncResult(request, storedCallback, asyncState);
+
+            return new PortMapAsyncResult(request, storedCallback, asyncState);
         }
     }
 }

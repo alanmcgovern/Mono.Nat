@@ -1,5 +1,5 @@
 //
-// IMessage.cs
+// DeletePortMapResponseMessage.cs
 //
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
@@ -28,10 +28,27 @@
 
 
 
-namespace Nat
+using System;
+namespace Nat.UpnpMessages
 {
-    interface IMessage
+    internal class DeletePortMapResponseMessage : MessageBase
     {
-        void Decode(string data);
+        public DeletePortMapResponseMessage()
+            :base(null)
+        {
+        }
+
+        #region IMessage Members
+
+        public void Decode(string data)
+        {
+        }
+
+        #endregion
+
+        public override System.Net.WebRequest Encode()
+        {
+            throw new NotSupportedException();
+        }
     }
 }

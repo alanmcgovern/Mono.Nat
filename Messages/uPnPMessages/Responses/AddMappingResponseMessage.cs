@@ -30,10 +30,11 @@
 
 namespace Nat.UpnpMessages
 {
-    internal class AddMappingResponseMessage : IMessage
+    internal class AddMappingResponseMessage : MessageBase
     {
         #region Constructors
         public AddMappingResponseMessage()
+            :base(null)
         {
         }
         #endregion
@@ -47,5 +48,10 @@ namespace Nat.UpnpMessages
         }
 
         #endregion
+
+        public override System.Net.WebRequest Encode()
+        {
+            throw new System.Exception("The method or operation is not implemented.");
+        }
     }
 }

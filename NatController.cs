@@ -45,62 +45,24 @@ namespace Nat
 
     public class NatController : IDisposable
     {
-		bool alreadyDisposed;
+        bool alreadyDisposed;
 
-		#region Events
+        #region Events
         public event EventHandler<DeviceEventArgs> DeviceFound;
         //TODO: Not used in code public event EventHandler<DeviceEventArgs> DeviceLost;
         #endregion
 
 
-        #region Member Variables
-        /// <summary>
-        /// The list of all Internet Gateway Devices that support uPnP port forwarding
-        /// </summary>
-        public ReadOnlyCollection<INatDevice> Devices
-        {
-        	get { return new ReadOnlyCollection<INatDevice>(this.devices); }
-        }
-        private List<INatDevice> devices;
+        #region Private Fields
 
+        private List<INatDevice> devices;                    // The list of all Internet Gateway Devices that support uPnP port forwarding
+        private Thread listenThread;                        // The thread used for listening for incoming requests
+        private IPEndPoint searchEndPoint;                    // The local endpoint that search requests are sent to
+        private const int SearchPeriod = 120 * 1000;        // The time in seconds between each search
+        private System.Timers.Timer searchTimer;            // The timer used to control the update period
+        private UdpClient udpClient;                        // The UDPClient to send search requests over
+        internal static IPAddress[] localAddresses = Dns.GetHostAddresses(Dns.GetHostName()); // The IPAddresses that this computer has at the moment
 
-//        / <summary>
-//        / 
-//        / </summary>
-//        / <param name="d"></param>
-        //internal delegate void NatDeviceFoundCallback(NatDevice d);
-
-
-        /// <summary>
-        /// The IPAddresses that this computer has at the moment
-        /// </summary>
-        internal static IPAddress[] localAddresses = Dns.GetHostAddresses(Dns.GetHostName());
-
-
-        /// <summary>
-        /// The time in seconds between each search
-        /// </summary>
-        private const int SearchPeriod = 120 * 1000; // search once every 2 minutes
-
-
-        /// <summary>
-        /// The timer used to control the update period
-        /// </summary>
-        private System.Timers.Timer searchTimer;
-
-
-        /// <summary>
-        /// The UDPClient to send search requests over
-        /// </summary>
-        private UdpClient udpClient;
-
-
-        /// <summary>
-        /// The local endpoint that search requests are sent to
-        /// </summary>
-        private IPEndPoint searchEndPoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
-
-        private Thread listenThread;
         #endregion
 
 
@@ -108,10 +70,11 @@ namespace Nat
         public NatController()
         {
             this.devices = new List<INatDevice>();
+            this.searchEndPoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
             this.udpClient = new UdpClient(new IPEndPoint(localAddresses[0], 0));
             this.listenThread = new Thread(new ThreadStart(ListenThread));
-            this.searchTimer.Elapsed += new ElapsedEventHandler(timerTick);
+            this.searchTimer.Elapsed += new ElapsedEventHandler(TimerTick);
         }
         #endregion
 
@@ -120,7 +83,7 @@ namespace Nat
         /// <summary>
         /// True if the controller is actively searching for new devices
         /// </summary>
-        public bool IsSearching
+        public bool IsRunning
         {
             get { return this.searchTimer.Enabled; }
         }
@@ -129,9 +92,9 @@ namespace Nat
         /// <summary>
         /// Makes the controller start actively searching for new devices
         /// </summary>
-        public void StartSearching()
+        public void Start()
         {
-            if (this.IsSearching)
+            if (this.IsRunning)
                 return;
 
             this.Search();
@@ -144,9 +107,9 @@ namespace Nat
         /// <summary>
         /// Makes the controller stop actively searching for new devices
         /// </summary>
-        public void StopSearching()
+        public void Stop()
         {
-            if (!this.IsSearching)
+            if (!this.IsRunning)
                 return;
 
             this.searchTimer.Stop();
@@ -166,14 +129,14 @@ namespace Nat
             for (int i = 0; i < 3; i++)
                 this.udpClient.Send(data, data.Length, this.searchEndPoint);
         }
-        
+
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void timerTick(object sender, ElapsedEventArgs e)
+        private void TimerTick(object sender, ElapsedEventArgs e)
         {
             this.Search();
         }
@@ -207,26 +170,26 @@ namespace Nat
             try
             {
                 dataString = System.Text.UTF8Encoding.UTF8.GetString(data);
-                // No matter what reply we receive, we only want it if the device has a WANIPConnection service
-                // We don't care about *anything* else.
-                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) != -1)
+
+                // If this device does not have a WANIPConnection service, then ignore it
+                if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) == -1)
+                    return;
+
+                // We have an internet gateway device now
+                UpnpNatDevice d = new UpnpNatDevice(dataString);
+
+                if (this.devices.Contains(d))
                 {
-                    // We have an internet gateway device now
-                    UpnpNatDevice d = new UpnpNatDevice(dataString);
+                    // We already have found this device, so we just refresh it to let people know it's
+                    // Still alive. If a device doesn't respond to a search, we dump it.
+                    this.devices[this.devices.IndexOf(d)].LastSeen = DateTime.Now;
+                }
 
-                    if (this.devices.Contains(d))
-                    {
-                        // We already have found this device, so we just refresh it to let people know it's
-                        // Still alive. If a device doesn't respond to a search, we dump it.
-                        this.devices[this.devices.IndexOf(d)].LastSeen = DateTime.Now;
-                    }
-
-                    else
-                    {
-                        // Once we've parsed the information we need, we tell the device to retrieve it's service list
-                        // Once we successfully receive the service list, the callback provided will be invoked.
-                        d.GetServicesList(new NatDeviceFoundCallback(DeviceSetupComplete));
-                    }
+                else
+                {
+                    // Once we've parsed the information we need, we tell the device to retrieve it's service list
+                    // Once we successfully receive the service list, the callback provided will be invoked.
+                    d.GetServicesList(new NatDeviceFoundCallback(DeviceSetupComplete));
                 }
             }
             catch (Exception ex)
@@ -259,27 +222,37 @@ namespace Nat
             }
         }
         #endregion
-    	
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
 
-		void Dispose(bool disposeManagedResources)
-		{
-			if(alreadyDisposed) return;
-			if(!disposeManagedResources) return;
 
-			this.searchTimer.Dispose();	// Always initialized by the constructor
-			((IDisposable)this.udpClient).Dispose();	// Always initialized by the constructor
-			alreadyDisposed = true;
-		}
-		
-		
-		~NatController()
-		{
-			Dispose(false);
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="disposeManagedResources"></param>
+        protected void Dispose(bool disposeManagedResources)
+        {
+            if (alreadyDisposed) return;
+            if (!disposeManagedResources) return;
+
+            this.searchTimer.Dispose();    // Always initialized by the constructor
+            ((IDisposable)this.udpClient).Dispose();    // Always initialized by the constructor
+            alreadyDisposed = true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        ~NatController()
+        {
+            Dispose(false);
+        }
     }
 }

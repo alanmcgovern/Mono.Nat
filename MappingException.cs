@@ -33,7 +33,7 @@ using System.Security.Permissions;
 
 namespace Nat
 {
-	[Serializable]
+    [Serializable]
     public class MappingException : Exception
     {
         private int errorCode;
@@ -84,13 +84,13 @@ namespace Nat
         #endregion
         
         [SecurityPermission(SecurityAction.Demand, SerializationFormatter=true)]
-		public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-		{
-        	if(info==null) throw new ArgumentNullException("info");
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+        {
+            if(info==null) throw new ArgumentNullException("info");
 
-        	this.errorCode = info.GetInt32("errorCode");
-			this.errorText = info.GetString("errorText");
-			base.GetObjectData(info, context);
-		}
+            this.errorCode = info.GetInt32("errorCode");
+            this.errorText = info.GetString("errorText");
+            base.GetObjectData(info, context);
+        }
     }
 }

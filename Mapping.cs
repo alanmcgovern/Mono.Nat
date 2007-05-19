@@ -32,11 +32,11 @@ namespace Nat
 {
     public struct Mapping
     {
-        public ushort Port
+        public int Port
         {
             get { return this.port; }
         }
-        private ushort port;
+        private int port;
 
 
         public Protocol Protocol
@@ -46,34 +46,37 @@ namespace Nat
         private Protocol protocol;
 
 
-        public Mapping(ushort port, Protocol protocol)
+        public Mapping(int port, Protocol protocol)
         {
+            if (!(port > 0 && port < 65536))
+                throw new System.ArgumentOutOfRangeException("port");
+
             this.port = port;
             this.protocol = protocol;
         }
         
-		public override bool Equals(object obj)
-		{
+        public override bool Equals(object obj)
+        {
             if (!(obj is Mapping))
                 return false;
 
-			Mapping instance = (Mapping)obj;
-			return this.port == instance.port && this.protocol == instance.protocol;
-		}
-		
-		public override int GetHashCode()
-		{
-			return this.port.GetHashCode() ^ this.protocol.GetHashCode();
-		}
+            Mapping instance = (Mapping)obj;
+            return this.port == instance.port && this.protocol == instance.protocol;
+        }
+        
+        public override int GetHashCode()
+        {
+            return this.port.GetHashCode() ^ this.protocol.GetHashCode();
+        }
 
-		public static bool operator ==(Mapping instanceA, Mapping instanceB) 
-		{
-			return instanceA.Equals(instanceB);
-		}
-		
-		public static bool operator !=(Mapping instanceA, Mapping instanceB) 
-		{
-		  return !instanceA.Equals(instanceB);
-		}
+        public static bool operator ==(Mapping instanceA, Mapping instanceB) 
+        {
+            return instanceA.Equals(instanceB);
+        }
+        
+        public static bool operator !=(Mapping instanceA, Mapping instanceB) 
+        {
+          return !instanceA.Equals(instanceB);
+        }
     }
 }

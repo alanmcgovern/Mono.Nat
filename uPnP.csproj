@@ -58,23 +58,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AsyncResults\GetAllMappingsAsyncResult.cs" />
     <Compile Include="AsyncResults\PortMapAsyncResult.cs" />
     <Compile Include="Enums\MapState.cs" />
     <Compile Include="EventArgs\DeviceEventArgs.cs" />
-    <Compile Include="Messages\ExternalIPAddressMessage.cs" />
-    <Compile Include="Messages\IMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\ExternalIPAddressMessage.cs" />
     <Compile Include="Mapping.cs" />
-    <Compile Include="Messages\UpnpMessages\AddMappingResponseMessage.cs" />
-    <Compile Include="Messages\UpnpMessages\CreatePortMappingMessage.cs" />
-    <Compile Include="Messages\UpnpMessages\DeletePortMappingMessage.cs" />
-    <Compile Include="Messages\UpnpMessages\DeletePortMappingResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Requests\GetGenericPortMappingEntry.cs" />
+    <Compile Include="Messages\UpnpMessages\Responses\AddMappingResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Requests\CreatePortMappingMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Requests\DeletePortMappingMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Responses\DeletePortMappingResponseMessage.cs" />
     <Compile Include="Messages\UpnpMessages\ErrorMessage.cs" />
     <Compile Include="Messages\UpnpMessages\DiscoverDeviceMessage.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Messages\UpnpMessages\GetExternalIPAddressMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Requests\GetExternalIPAddressMessage.cs" />
     <Compile Include="Messages\UpnpMessages\GetServicesMessage.cs" />
-    <Compile Include="Messages\UpnpMessages\Message.cs" />
+    <Compile Include="Messages\UpnpMessages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\UpnpMessage.cs" />
     <Compile Include="INatDevice.cs" />
     <Compile Include="UpnpNatDevice.cs" />
     <Compile Include="Enums\ProtocolType.cs" />

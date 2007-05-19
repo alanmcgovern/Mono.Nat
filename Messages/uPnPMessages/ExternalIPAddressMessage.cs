@@ -5,7 +5,7 @@ using System.Net;
 
 namespace Nat
 {
-    public class ExternalIPAddressMessage : Nat.IMessage
+    internal class ExternalIPAddressMessage : MessageBase
     {
         public IPAddress ExternalIPAddress
         {
@@ -14,12 +14,18 @@ namespace Nat
         private IPAddress externalIPAddress;
 
         public ExternalIPAddressMessage(string ip)
+            :base(null)
         {
             this.externalIPAddress = IPAddress.Parse(ip);
         }
 
         public void Decode(string data)
         {
+        }
+
+        public override WebRequest Encode()
+        {
+            throw new Exception("The method or operation is not implemented.");
         }
     }
 }
