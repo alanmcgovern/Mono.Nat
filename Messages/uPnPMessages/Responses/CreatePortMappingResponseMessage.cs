@@ -30,10 +30,10 @@
 
 namespace Nat.UpnpMessages
 {
-    internal class AddMappingResponseMessage : MessageBase
+    internal class CreatePortMappingResponseMessage : MessageBase
     {
         #region Constructors
-        public AddMappingResponseMessage()
+        public CreatePortMappingResponseMessage()
             :base(null)
         {
         }

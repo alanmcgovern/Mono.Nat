@@ -96,13 +96,13 @@ namespace Nat
                 return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture), node["errorDescription"].InnerText);
 
             if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
-                return new AddMappingResponseMessage();
+                return new CreatePortMappingResponseMessage();
 
             if ((node = doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm)) != null)
                 return new DeletePortMapResponseMessage();
 
             if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
-                return new ExternalIPAddressMessage(node["NewExternalIPAddress"].InnerText);
+                return new GetExternalIPAddressResponseMessage(node["NewExternalIPAddress"].InnerText);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
                 return new GetGenericPortMappingEntryResponseMessage(node);

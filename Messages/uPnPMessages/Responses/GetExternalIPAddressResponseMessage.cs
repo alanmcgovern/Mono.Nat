@@ -5,7 +5,7 @@ using System.Net;
 
 namespace Nat
 {
-    internal class ExternalIPAddressMessage : MessageBase
+    internal class GetExternalIPAddressResponseMessage : MessageBase
     {
         public IPAddress ExternalIPAddress
         {
@@ -13,7 +13,7 @@ namespace Nat
         }
         private IPAddress externalIPAddress;
 
-        public ExternalIPAddressMessage(string ip)
+        public GetExternalIPAddressResponseMessage(string ip)
             :base(null)
         {
             this.externalIPAddress = IPAddress.Parse(ip);

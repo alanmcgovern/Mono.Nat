@@ -48,9 +48,6 @@ namespace Nat
 
         public Mapping(int port, Protocol protocol)
         {
-            if (!(port > 0 && port < 65536))
-                throw new System.ArgumentOutOfRangeException("port");
-
             this.port = port;
             this.protocol = protocol;
         }

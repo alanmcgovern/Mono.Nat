@@ -110,7 +110,7 @@ namespace Nat
 
         internal static PortMapAsyncResult Create(MessageBase message, WebRequest request, AsyncCallback storedCallback, object asyncState)
         {
-            if (message is GetGenericPortMappingEntry)
+            if (message is GetGenericPortMappingEntry || message is GetSpecificPortMappingEntryMessage)
                 return new GetAllMappingsAsyncResult(request, storedCallback, asyncState);
 
             return new PortMapAsyncResult(request, storedCallback, asyncState);

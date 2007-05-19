@@ -62,10 +62,11 @@
     <Compile Include="AsyncResults\PortMapAsyncResult.cs" />
     <Compile Include="Enums\MapState.cs" />
     <Compile Include="EventArgs\DeviceEventArgs.cs" />
-    <Compile Include="Messages\UpnpMessages\ExternalIPAddressMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Requests\GetSpecificPortMappingEntryMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Mapping.cs" />
     <Compile Include="Messages\UpnpMessages\Requests\GetGenericPortMappingEntry.cs" />
-    <Compile Include="Messages\UpnpMessages\Responses\AddMappingResponseMessage.cs" />
+    <Compile Include="Messages\UpnpMessages\Responses\CreatePortMappingResponseMessage.cs" />
     <Compile Include="Messages\UpnpMessages\Requests\CreatePortMappingMessage.cs" />
     <Compile Include="Messages\UpnpMessages\Requests\DeletePortMappingMessage.cs" />
     <Compile Include="Messages\UpnpMessages\Responses\DeletePortMappingResponseMessage.cs" />

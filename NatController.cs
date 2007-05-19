@@ -70,7 +70,8 @@ namespace Nat
         public NatController()
         {
             this.devices = new List<INatDevice>();
-            this.searchEndPoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
+			//this.searchEndPoint = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5000);
+			this.searchEndPoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
             this.udpClient = new UdpClient(new IPEndPoint(localAddresses[0], 0));
             this.listenThread = new Thread(new ThreadStart(ListenThread));
@@ -97,10 +98,10 @@ namespace Nat
             if (this.IsRunning)
                 return;
 
-            this.Search();
             this.searchTimer.Start();
             this.listenThread.IsBackground = true;
             this.listenThread.Start();
+			this.Search();
         }
 
 
@@ -150,8 +151,14 @@ namespace Nat
 #warning Get a nicer way to signal the thread to die. Also stop the blocking on receive(). Can be done when mono has full support of UPnP client
             while (true)
             {
-                byte[] data = this.udpClient.Receive(ref this.searchEndPoint);
-                this.ReplyReceived(data);
+				try
+				{
+					byte[] data = this.udpClient.Receive(ref this.searchEndPoint);
+					this.ReplyReceived(data);
+				}
+				catch
+				{
+				}
             }
         }
 
