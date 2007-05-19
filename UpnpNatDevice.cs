@@ -311,7 +311,7 @@ namespace Nat
                 throw new MappingException(msg.ErrorCode, msg.Description);
             }
 
-            return ((ExternalIPAddressMessage)mappingResult.SavedMessage).ExternalIPAddress;
+            return ((GetExternalIPAddressResponseMessage)mappingResult.SavedMessage).ExternalIPAddress;
         }
 
 
@@ -324,8 +324,8 @@ namespace Nat
 
         public bool Equals(UpnpNatDevice other)
         {
-            return (other == null) ? false : (this.hostEndPoint.Equals( other.hostEndPoint)
-                                           //&& this.controlUrl == other.controlUrl
+            return (other == null) ? false : (this.hostEndPoint.Equals(other.hostEndPoint)
+                //&& this.controlUrl == other.controlUrl
                                            && this.serviceDescriptionUrl == other.serviceDescriptionUrl);
         }
 
@@ -669,5 +669,89 @@ namespace Nat
             }
         }
         #endregion
+
+
+        public Mapping GetSpecificMapping(int port, Protocol protocol)
+        {
+            IAsyncResult result = this.BeginGetSpecificMapping(port, protocol, null, null);
+            return this.EndGetSpecificMapping(result);
+        }
+
+        public IAsyncResult BeginGetSpecificMapping(int port, Protocol protocol, AsyncCallback callback, object asyncState)
+        {
+            GetSpecificPortMappingEntryMessage message = new GetSpecificPortMappingEntryMessage(port, protocol, this);
+            return this.BeginMessageInternal(message, callback, asyncState, new AsyncCallback(this.EndGetSpecificMappingInternal));
+        }
+
+        public Mapping EndGetSpecificMapping(IAsyncResult result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException("result");
+            }
+            GetAllMappingsAsyncResult result2 = result as GetAllMappingsAsyncResult;
+            if (result2 == null)
+            {
+                throw new ArgumentException("Invalid AsyncResult", "result");
+            }
+            if (!result2.IsCompleted)
+            {
+                result2.AsyncWaitHandle.WaitOne();
+            }
+            if (result2.SavedMessage is ErrorMessage)
+            {
+                ErrorMessage message = result2.SavedMessage as ErrorMessage;
+                if (message.ErrorCode != 0x2ca)
+                {
+                    throw new MappingException(message.ErrorCode, message.Description);
+                }
+            }
+            return ((result2.Mappings.Count == 0) ? new Mapping(-1, Protocol.Tcp) : result2.Mappings[0]);
+        }
+
+        private void EndGetSpecificMappingInternal(IAsyncResult result)
+        {
+            WebResponse response = null;
+            GetAllMappingsAsyncResult ar = result.AsyncState as GetAllMappingsAsyncResult;
+            try
+            {
+                try
+                {
+                    response = ar.Request.EndGetResponse(result);
+                }
+                catch (WebException exception)
+                {
+                    response = exception.Response as HttpWebResponse;
+                    if (response == null)
+                    {
+                        ar.SavedMessage = new ErrorMessage((int)exception.Status, exception.Message);
+                    }
+                }
+                if (response != null)
+                {
+                    MessageBase base2 = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+                    ar.SavedMessage = base2;
+                    GetGenericPortMappingEntryResponseMessage message = base2 as GetGenericPortMappingEntryResponseMessage;
+                    if (message != null)
+                    {
+                        ar.Mappings.Add(new Mapping(message.ExternalPort, message.Protocol));
+                    }
+                }
+                ar.IsCompleted = true;
+                ar.CompletedSynchronously = result.CompletedSynchronously;
+                ar.AsyncWaitHandle.Set();
+                if (ar.CompletionCallback != null)
+                {
+                    ar.CompletionCallback(ar);
+                }
+            }
+            finally
+            {
+                if (response != null)
+                {
+                    response.Close();
+                }
+            }
+        }
     }
 }
