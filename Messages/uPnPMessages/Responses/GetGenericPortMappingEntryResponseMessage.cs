@@ -57,12 +57,16 @@ namespace Nat
         }
 
 
-        public GetGenericPortMappingEntryResponseMessage(XmlNode data)
-            :base(null)
+        public GetGenericPortMappingEntryResponseMessage(XmlNode data, bool genericMapping)
+            : base(null)
         {
-            remoteHost = data["NewRemoteHost"].InnerText;
-            externalPort = Convert.ToInt32(data["NewExternalPort"].InnerText);
-            protocol = data["NewProtocol"].InnerText.Equals("TCP", StringComparison.InvariantCultureIgnoreCase) ? Protocol.Tcp : Protocol.Udp;
+            remoteHost = (genericMapping) ? data["NewRemoteHost"].InnerText : string.Empty;
+            externalPort = (genericMapping) ? Convert.ToInt32(data["NewExternalPort"].InnerText) : -1;
+            if (genericMapping)
+                protocol = data["NewProtocol"].InnerText.Equals("TCP", StringComparison.InvariantCultureIgnoreCase) ? Protocol.Tcp : Protocol.Udp;
+            else
+                protocol = Protocol.Udp;
+
             internalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
             internalClient = data["NewInternalClient"].InnerText;
             enabled = data["NewEnabled"].InnerText == "1" ? true : false;

@@ -105,10 +105,13 @@ namespace Nat
                 return new GetExternalIPAddressResponseMessage(node["NewExternalIPAddress"].InnerText);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
-                return new GetGenericPortMappingEntryResponseMessage(node);
+                return new GetGenericPortMappingEntryResponseMessage(node, true);
 
-            Trace.WriteLine("Unknown message returned. Please send me back the following XML:");
-            Trace.WriteLine(message);
+            if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
+                return new GetGenericPortMappingEntryResponseMessage(node, false);
+
+            Console.WriteLine("Unknown message returned. Please send me back the following XML:");
+            Console.WriteLine(message);
             return null;
         }
 
