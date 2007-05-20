@@ -43,10 +43,10 @@ namespace Nat.UpnpMessages
         public static byte[] Encode()
         {
             string s = "M-SEARCH * HTTP/1.1\r\n"
-                        + "Host: 239.255.255.250:1900\r\n"
-                        + "Man:\"ssdp:discover\"\r\n"
-                        + "ST:ssdp:all\r\n"
-                        + "MX:3\r\n\r\n";
+                        + "HOST: 239.255.255.250:1900\r\n"
+                        + "MAN: \"ssdp:discover\"\r\n"
+                        + "MX: 3\r\n"
+                        + "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n\r\n";
             return UTF8Encoding.ASCII.GetBytes(s);
         }
 

@@ -70,7 +70,6 @@ namespace Nat
         public NatController()
         {
             this.devices = new List<INatDevice>();
-			//this.searchEndPoint = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5000);
 			this.searchEndPoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
             this.searchTimer = new System.Timers.Timer(NatController.SearchPeriod);
             this.udpClient = new UdpClient(new IPEndPoint(localAddresses[0], 0));
