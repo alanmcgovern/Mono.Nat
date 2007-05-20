@@ -42,6 +42,7 @@ namespace Nat
     public class UpnpNatDevice : IEquatable<UpnpNatDevice>, INatDevice
     {
         #region Member Variables
+
         /// <summary>
         /// The time that this device was last seen
         /// </summary>
@@ -87,10 +88,12 @@ namespace Nat
         /// The callback to invoke when we are finished setting up the device
         /// </summary>
         private NatDeviceFoundCallback callback;
+
         #endregion
 
 
         #region Constructors
+
         internal UpnpNatDevice(string deviceDetails)
         {
             this.lastSeen = DateTime.Now;
@@ -125,16 +128,20 @@ namespace Nat
                 Trace.WriteLine(deviceDetails);
             }
         }
+
         #endregion
 
 
         #region Public Methods
+
         /// <summary>
         /// Begins an async call to get the external ip address of the router
         /// </summary>
         public IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState)
         {
-            return this.BeginGetExternalIPInternal(callback, asyncState);
+            // Create the port map message
+            GetExternalIPAddressMessage message = new GetExternalIPAddressMessage(this);
+            return BeginMessageInternal(message, callback, asyncState, EndGetExternalIPInternal);
         }
 
 
@@ -143,8 +150,7 @@ namespace Nat
         /// </summary>
         public IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
         {
-            // Initially try without the M- header
-            return this.BeginCreatePortMapInternal(mapping, string.Empty, callback, asyncState);
+            return BeginCreatePortMap(mapping, string.Empty, callback, asyncState);
         }
 
 
@@ -154,8 +160,9 @@ namespace Nat
         /// <param name="portMapDescription">The description to use for the mapped port</param>
         public IAsyncResult BeginCreatePortMap(Mapping mapping, string portMapDescription, AsyncCallback callback, object asyncState)
         {
-            // Initially try without the M- header
-            return this.BeginCreatePortMapInternal(mapping, portMapDescription, callback, asyncState);
+            // Create the port map message
+            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatController.localAddresses[0], portMapDescription, this);
+            return BeginMessageInternal(message, callback, asyncState, EndCreatePortMapInternal);
         }
 
 
@@ -164,13 +171,22 @@ namespace Nat
         /// </summary>
         public IAsyncResult BeginDeletePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
         {
-            return this.BeginDeletePortMapInternal(mapping, callback, asyncState);
+            DeletePortMappingMessage message = new DeletePortMappingMessage(mapping, this);
+            return BeginMessageInternal(message, callback, asyncState, EndDeletePortMapInternal);
         }
 
 
         public IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState)
         {
-            return this.BeginGetAllMappingsInternal(callback, asyncState);
+            GetGenericPortMappingEntry message = new GetGenericPortMappingEntry(0, this);
+            return BeginMessageInternal(message, callback, asyncState, EndGetAllMappingsInternal);
+        }
+
+
+        public IAsyncResult BeginGetSpecificMapping(int port, Protocol protocol, AsyncCallback callback, object asyncState)
+        {
+            GetSpecificPortMappingEntryMessage message = new GetSpecificPortMappingEntryMessage(port, protocol, this);
+            return this.BeginMessageInternal(message, callback, asyncState, new AsyncCallback(this.EndGetSpecificMappingInternal));
         }
 
 
@@ -315,6 +331,30 @@ namespace Nat
         }
 
 
+        public Mapping EndGetSpecificMapping(IAsyncResult result)
+        {
+            if (result == null)
+                throw new ArgumentNullException("result");
+
+            GetAllMappingsAsyncResult mappingResult = result as GetAllMappingsAsyncResult;
+            if (mappingResult == null)
+                throw new ArgumentException("Invalid AsyncResult", "result");
+
+            if (!mappingResult.IsCompleted)
+                mappingResult.AsyncWaitHandle.WaitOne();
+
+            if (mappingResult.SavedMessage is ErrorMessage)
+            {
+                ErrorMessage message = mappingResult.SavedMessage as ErrorMessage;
+                if (message.ErrorCode != 0x2ca)
+                {
+                    throw new MappingException(message.ErrorCode, message.Description);
+                }
+            }
+            return (mappingResult.Mappings.Count == 0) ? new Mapping(-1, Protocol.Tcp) : mappingResult.Mappings[0];
+        }
+
+
         public override bool Equals(object obj)
         {
             UpnpNatDevice device = obj as UpnpNatDevice;
@@ -341,6 +381,13 @@ namespace Nat
         }
 
 
+        public Mapping GetSpecificMapping(int port, Protocol protocol)
+        {
+            IAsyncResult result = this.BeginGetSpecificMapping(port, protocol, null, null);
+            return this.EndGetSpecificMapping(result);
+        }
+
+
         public override int GetHashCode()
         {
             return (this.hostEndPoint.GetHashCode() ^ this.controlUrl.GetHashCode() ^ this.serviceDescriptionUrl.GetHashCode());
@@ -356,6 +403,7 @@ namespace Nat
             IAsyncResult result = BeginGetExternalIP(null, null);
             return EndGetExternalIP(result);
         }
+
         #endregion
 
 
@@ -369,30 +417,16 @@ namespace Nat
             return mappingResult;
         }
 
-        private IAsyncResult BeginCreatePortMapInternal(Mapping mapping, string portMapDescription, AsyncCallback callback, object asyncState)
+        private void CompleteMessage(IAsyncResult result)
         {
-            // Create the port map message
-            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatController.localAddresses[0], portMapDescription, this);
-            return BeginMessageInternal(message, callback, asyncState, EndCreatePortMapInternal);
-        }
+            PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
+            mappingResult.CompletedSynchronously = result.CompletedSynchronously;
+            mappingResult.IsCompleted = true;
+            mappingResult.AsyncWaitHandle.Set();
 
-        private IAsyncResult BeginDeletePortMapInternal(Mapping mapping, AsyncCallback callback, object asyncState)
-        {
-            DeletePortMappingMessage message = new DeletePortMappingMessage(mapping, this);
-            return BeginMessageInternal(message, callback, asyncState, EndDeletePortMapInternal);
-        }
-
-        private IAsyncResult BeginGetAllMappingsInternal(AsyncCallback callback, object asyncState)
-        {
-            GetGenericPortMappingEntry message = new GetGenericPortMappingEntry(0, this);
-            return BeginMessageInternal(message, callback, asyncState, EndGetAllMappingsInternal);
-        }
-
-        private IAsyncResult BeginGetExternalIPInternal(AsyncCallback callback, object asyncState)
-        {
-            // Create the port map message
-            GetExternalIPAddressMessage message = new GetExternalIPAddressMessage(this);
-            return BeginMessageInternal(message, callback, asyncState, EndGetExternalIPInternal);
+            // Invoke the callback if one was supplied
+            if (mappingResult.CompletionCallback != null)
+                mappingResult.CompletionCallback(mappingResult);
         }
 
         private static MessageBase DecodeMessageFromResponse(Stream s, long length)
@@ -425,6 +459,12 @@ namespace Nat
 
         private void EndCreatePortMapInternal(IAsyncResult result)
         {
+            EndMessageInternal(result);
+            CompleteMessage(result);
+        }
+
+        private void EndMessageInternal(IAsyncResult result)
+        {
             HttpWebResponse response = null;
             PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
 
@@ -438,18 +478,11 @@ namespace Nat
                 {
                     // Even if the request "failed" i want to continue on to read out the response from the router
                     response = ex.Response as HttpWebResponse;
+                    if (response == null)
+                        mappingResult.SavedMessage = new ErrorMessage((int)ex.Status, ex.Message);
                 }
-
-                MessageBase message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-                mappingResult.SavedMessage = message;
-
-                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-                mappingResult.IsCompleted = true;
-                mappingResult.AsyncWaitHandle.Set();
-
-                // Invoke the callback if one was supplied
-                if (mappingResult.CompletionCallback != null)
-                    mappingResult.CompletionCallback(mappingResult);
+                if (response != null)
+                    mappingResult.SavedMessage = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
             }
 
             finally
@@ -461,126 +494,46 @@ namespace Nat
 
         private void EndDeletePortMapInternal(IAsyncResult result)
         {
-            MessageBase message;
-            HttpWebResponse response = null;
-            PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
-            try
-            {
-                try
-                {
-                    response = mappingResult.Request.EndGetResponse(result) as HttpWebResponse;
-                }
-                catch (WebException ex)
-                {
-                    response = ex.Response as HttpWebResponse;
-                    if (response == null)
-                        message = new ErrorMessage((int)ex.Status, ex.Message);
-                }
-
-                if (response != null)
-                {
-                    message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-                    mappingResult.SavedMessage = message;
-                }
-
-                mappingResult.IsCompleted = true;
-                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-                mappingResult.AsyncWaitHandle.Set();
-
-                // Invoke the callback if one was supplied
-                if (mappingResult.CompletionCallback != null)
-                    mappingResult.CompletionCallback(mappingResult);
-            }
-            finally
-            {
-                if (response != null)
-                    response.Close();
-            }
+            EndMessageInternal(result);
+            CompleteMessage(result);
         }
 
         private void EndGetAllMappingsInternal(IAsyncResult result)
         {
-            MessageBase message;
-            WebResponse response = null;
+            EndMessageInternal(result);
+
             GetAllMappingsAsyncResult mappingResult = result.AsyncState as GetAllMappingsAsyncResult;
-            try
+            GetGenericPortMappingEntryResponseMessage message = mappingResult.SavedMessage as GetGenericPortMappingEntryResponseMessage;
+            if (message != null)
             {
-                try
-                {
-                    response = mappingResult.Request.EndGetResponse(result);
-                }
-                catch (WebException ex)
-                {
-                    response = ex.Response as HttpWebResponse;
-                    if (response == null)
-                        message = new ErrorMessage((int)ex.Status, ex.Message);
-                }
+                mappingResult.Mappings.Add(new Mapping(message.ExternalPort, message.Protocol));
+                GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
 
-                if (response != null)
-                {
-                    message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-                    mappingResult.SavedMessage = message;
-                    GetGenericPortMappingEntryResponseMessage responseMessage = message as GetGenericPortMappingEntryResponseMessage;
-                    if (responseMessage != null)
-                    {
-                        mappingResult.Mappings.Add(new Mapping(responseMessage.ExternalPort, responseMessage.Protocol));
-                        GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
-
-                        WebRequest request = next.Encode();
-                        mappingResult.Request = request;
-                        request.BeginGetResponse(EndGetAllMappingsInternal, mappingResult);
-                        return;
-                    }
-                }
-
-                mappingResult.IsCompleted = true;
-                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-                mappingResult.AsyncWaitHandle.Set();
-
-                // Invoke the callback if one was supplied
-                if (mappingResult.CompletionCallback != null)
-                    mappingResult.CompletionCallback(mappingResult);
+                WebRequest request = next.Encode();
+                mappingResult.Request = request;
+                request.BeginGetResponse(EndGetAllMappingsInternal, mappingResult);
+                return;
             }
-            finally
-            {
-                if (response != null)
-                    response.Close();
-            }
+
+            CompleteMessage(result);
         }
 
         private void EndGetExternalIPInternal(IAsyncResult result)
         {
-            HttpWebResponse response = null;
-            PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
+            EndMessageInternal(result);
+            CompleteMessage(result);
+        }
 
-            try
-            {
-                try
-                {
-                    response = (HttpWebResponse)mappingResult.Request.EndGetResponse(result);
-                }
-                catch (WebException ex)
-                {
-                    // Even if the request "failed" i want to continue on to read out the response from the router
-                    response = ex.Response as HttpWebResponse;
-                }
+        private void EndGetSpecificMappingInternal(IAsyncResult result)
+        {
+            EndMessageInternal(result);
 
-                MessageBase message = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-                mappingResult.SavedMessage = message;
+            GetAllMappingsAsyncResult mappingResult = result.AsyncState as GetAllMappingsAsyncResult;
+            GetGenericPortMappingEntryResponseMessage message = mappingResult.SavedMessage as GetGenericPortMappingEntryResponseMessage;
+            if (message != null)
+                mappingResult.Mappings.Add(new Mapping(message.ExternalPort, message.Protocol));
 
-                mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-                mappingResult.IsCompleted = true;
-                mappingResult.AsyncWaitHandle.Set();
-
-                // Invoke the callback if one was supplied
-                if (mappingResult.CompletionCallback != null)
-                    mappingResult.CompletionCallback(mappingResult);
-            }
-            finally
-            {
-                if (response != null)
-                    response.Close();
-            }
+            CompleteMessage(result);
         }
 
         internal void GetServicesList(NatDeviceFoundCallback callback)
@@ -668,90 +621,7 @@ namespace Nat
                     response.Close();
             }
         }
+
         #endregion
-
-
-        public Mapping GetSpecificMapping(int port, Protocol protocol)
-        {
-            IAsyncResult result = this.BeginGetSpecificMapping(port, protocol, null, null);
-            return this.EndGetSpecificMapping(result);
-        }
-
-        public IAsyncResult BeginGetSpecificMapping(int port, Protocol protocol, AsyncCallback callback, object asyncState)
-        {
-            GetSpecificPortMappingEntryMessage message = new GetSpecificPortMappingEntryMessage(port, protocol, this);
-            return this.BeginMessageInternal(message, callback, asyncState, new AsyncCallback(this.EndGetSpecificMappingInternal));
-        }
-
-        public Mapping EndGetSpecificMapping(IAsyncResult result)
-        {
-            if (result == null)
-            {
-                throw new ArgumentNullException("result");
-            }
-            GetAllMappingsAsyncResult result2 = result as GetAllMappingsAsyncResult;
-            if (result2 == null)
-            {
-                throw new ArgumentException("Invalid AsyncResult", "result");
-            }
-            if (!result2.IsCompleted)
-            {
-                result2.AsyncWaitHandle.WaitOne();
-            }
-            if (result2.SavedMessage is ErrorMessage)
-            {
-                ErrorMessage message = result2.SavedMessage as ErrorMessage;
-                if (message.ErrorCode != 0x2ca)
-                {
-                    throw new MappingException(message.ErrorCode, message.Description);
-                }
-            }
-            return ((result2.Mappings.Count == 0) ? new Mapping(-1, Protocol.Tcp) : result2.Mappings[0]);
-        }
-
-        private void EndGetSpecificMappingInternal(IAsyncResult result)
-        {
-            WebResponse response = null;
-            GetAllMappingsAsyncResult ar = result.AsyncState as GetAllMappingsAsyncResult;
-            try
-            {
-                try
-                {
-                    response = ar.Request.EndGetResponse(result);
-                }
-                catch (WebException exception)
-                {
-                    response = exception.Response as HttpWebResponse;
-                    if (response == null)
-                    {
-                        ar.SavedMessage = new ErrorMessage((int)exception.Status, exception.Message);
-                    }
-                }
-                if (response != null)
-                {
-                    MessageBase base2 = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-                    ar.SavedMessage = base2;
-                    GetGenericPortMappingEntryResponseMessage message = base2 as GetGenericPortMappingEntryResponseMessage;
-                    if (message != null)
-                    {
-                        ar.Mappings.Add(new Mapping(message.ExternalPort, message.Protocol));
-                    }
-                }
-                ar.IsCompleted = true;
-                ar.CompletedSynchronously = result.CompletedSynchronously;
-                ar.AsyncWaitHandle.Set();
-                if (ar.CompletionCallback != null)
-                {
-                    ar.CompletionCallback(ar);
-                }
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
-        }
     }
 }
