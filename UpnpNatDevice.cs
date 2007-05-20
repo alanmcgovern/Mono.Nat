@@ -405,9 +405,9 @@ namespace Nat
             // Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
             if (length != -1)
             {
-                while (totalBytesRead != length)
+                while (totalBytesRead < length)
                 {
-                    bytesRead += s.Read(buffer, 0, buffer.Length);
+                    bytesRead = s.Read(buffer, 0, buffer.Length);
                     data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
                     totalBytesRead += bytesRead;
                 }
