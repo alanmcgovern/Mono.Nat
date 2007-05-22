@@ -72,7 +72,7 @@ namespace Nat.UpnpMessages
             WriteFullElement(writer, "NewInternalPort", this.mapping.Port.ToString(culture));
             WriteFullElement(writer, "NewInternalClient", this.localIpAddress.ToString());
             WriteFullElement(writer, "NewEnabled", "1");
-            WriteFullElement(writer, "NewPortMappingDescription", this.portMappingDescription);
+            WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(this.portMappingDescription) ? " " : this.portMappingDescription);
             WriteFullElement(writer, "NewLeaseDuration", "0");
 
             writer.Flush();
