@@ -14,6 +14,7 @@ namespace Nat
         {
             this.index = index;
         }
+
         public override System.Net.WebRequest Encode()
         {
             StringBuilder sb = new StringBuilder(128);

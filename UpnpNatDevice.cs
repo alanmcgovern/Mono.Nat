@@ -569,9 +569,8 @@ namespace Nat
                 Stream s = response.GetResponseStream();
 
                 if (response.StatusCode != HttpStatusCode.OK)
-                {
-#warning Handle this how exactly?
-                }
+                    return; // FIXME: This the best thing to do??
+
                 while (true)
                 {
                     bytesRead = s.Read(buffer, 0, buffer.Length);
@@ -621,7 +620,7 @@ namespace Nat
             }
             catch (WebException)
             {
-#warning At the moment i just drop the connection. Should i retry once more?
+                // Just drop the connection, FIXME: Should i retry?
             }
             finally
             {
