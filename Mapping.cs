@@ -30,35 +30,49 @@
 
 namespace Nat
 {
-    public struct Mapping
+    public class Mapping
     {
+        #region Private Fields
+
+        private int port;
+        private Protocol protocol;
+
+        #endregion Private Fields
+
+
+        #region Properties
+
         public int Port
         {
             get { return this.port; }
         }
-        private int port;
-
 
         public Protocol Protocol
         {
             get { return this.protocol; }
         }
-        private Protocol protocol;
 
+        #endregion Properties
+
+
+        #region Constructors
 
         public Mapping(int port, Protocol protocol)
         {
             this.port = port;
             this.protocol = protocol;
         }
-        
+
+        #endregion Constructors
+
+
+        #region Methods
+
         public override bool Equals(object obj)
         {
-            if (!(obj is Mapping))
-                return false;
-
-            Mapping instance = (Mapping)obj;
-            return this.port == instance.port && this.protocol == instance.protocol;
+            Mapping other = obj as Mapping;
+            return other == null ? false : this.port == other.port
+                                        && this.protocol == other.protocol;
         }
         
         public override int GetHashCode()
@@ -66,14 +80,6 @@ namespace Nat
             return this.port.GetHashCode() ^ this.protocol.GetHashCode();
         }
 
-        public static bool operator ==(Mapping instanceA, Mapping instanceB) 
-        {
-            return instanceA.Equals(instanceB);
-        }
-        
-        public static bool operator !=(Mapping instanceA, Mapping instanceB) 
-        {
-          return !instanceA.Equals(instanceB);
-        }
+        #endregion Methods
     }
 }
