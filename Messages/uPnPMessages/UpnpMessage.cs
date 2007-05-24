@@ -50,7 +50,6 @@ namespace Nat
             this.device = device;
         }
 
-
         protected WebRequest CreateRequest(string upnpMethod, string methodParameters, string webrequestMethod)
         {
             Uri location = new Uri("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
@@ -93,7 +92,8 @@ namespace Nat
 
             // Check to see if we have a fault code message.
             if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
-                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture), node["errorDescription"].InnerText);
+                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture),
+                                                        node["errorDescription"].InnerText);
 
             if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
                 return new CreatePortMappingResponseMessage();
