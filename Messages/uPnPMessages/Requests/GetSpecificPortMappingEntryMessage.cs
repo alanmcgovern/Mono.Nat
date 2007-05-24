@@ -8,8 +8,8 @@ namespace Nat
 {
 	internal class GetSpecificPortMappingEntryMessage : MessageBase
 	{
-		private int externalPort;
-		private Protocol protocol;
+		internal int externalPort;
+        internal Protocol protocol;
 
 		public GetSpecificPortMappingEntryMessage(int externalPort, Protocol protocol, UpnpNatDevice device)
 			: base(device)

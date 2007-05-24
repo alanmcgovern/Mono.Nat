@@ -351,7 +351,15 @@ namespace Nat
                     throw new MappingException(message.ErrorCode, message.Description);
                 }
             }
-            return (mappingResult.Mappings.Count == 0) ? new Mapping(-1, Protocol.Tcp) : mappingResult.Mappings[0];
+            if (mappingResult.Mappings.Count == 0)
+                return new Mapping(-1, Protocol.Tcp);
+
+            //FIXME: Nasty hack. We need to store the external port and protocol we searched
+            // for and restore the values to the mapping as they aren't returned by the router
+            Mapping m = mappingResult.Mappings[0];
+            m.Port = mappingResult.SpecificMapping.Port;
+            m.Protocol = mappingResult.SpecificMapping.Protocol;
+            return m;
         }
 
 

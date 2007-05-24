@@ -8,10 +8,16 @@ namespace Nat
     internal class GetAllMappingsAsyncResult : PortMapAsyncResult
     {
         private List<Mapping> mappings;
+        private Mapping specificMapping;
 
         public List<Mapping> Mappings
         {
             get { return this.mappings; }
+        }
+        public Mapping SpecificMapping
+        {
+            get { return this.specificMapping; }
+            set { this.specificMapping = value; }
         }
 
         public GetAllMappingsAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)

@@ -45,11 +45,13 @@ namespace Nat
         public int Port
         {
             get { return this.port; }
+            set { this.port = value; }
         }
 
         public Protocol Protocol
         {
             get { return this.protocol; }
+            set { this.protocol = value; }
         }
 
         #endregion Properties
