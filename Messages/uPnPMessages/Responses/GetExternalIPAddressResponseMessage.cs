@@ -21,7 +21,7 @@ namespace Nat
 
         public override WebRequest Encode()
         {
-            throw new Exception("The method or operation is not implemented.");
+            throw new NotImplementedException();
         }
     }
 }

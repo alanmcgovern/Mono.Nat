@@ -115,7 +115,7 @@ namespace Nat
 
             if (message is GetSpecificPortMappingEntryMessage)
             {
-                GetSpecificPortMappingEntryMessage mapMessage = message as GetSpecificPortMappingEntryMessage;
+                GetSpecificPortMappingEntryMessage mapMessage = (GetSpecificPortMappingEntryMessage)message;
                 GetAllMappingsAsyncResult result = new GetAllMappingsAsyncResult(request, storedCallback, asyncState);
                 result.SpecificMapping = new Mapping(mapMessage.externalPort, mapMessage.protocol);
                 return result;

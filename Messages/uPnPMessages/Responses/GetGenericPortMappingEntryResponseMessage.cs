@@ -76,7 +76,7 @@ namespace Nat
 
         public override System.Net.WebRequest Encode()
         {
-            throw new Exception("The method or operation is not implemented.");
+            throw new NotImplementedException();
         }
     }
 }

@@ -243,7 +243,7 @@ namespace Nat
         /// 
         /// </summary>
         /// <param name="disposeManagedResources"></param>
-        protected void Dispose(bool disposeManagedResources)
+        protected virtual void Dispose(bool disposeManagedResources)
         {
             if (alreadyDisposed) return;
             if (!disposeManagedResources) return;

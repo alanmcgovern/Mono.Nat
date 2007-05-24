@@ -28,6 +28,7 @@
 
 
 
+using System;
 namespace Nat.UpnpMessages
 {
     internal class CreatePortMappingResponseMessage : MessageBase
@@ -41,7 +42,7 @@ namespace Nat.UpnpMessages
 
         public override System.Net.WebRequest Encode()
         {
-            throw new System.Exception("The method or operation is not implemented.");
+            throw new NotImplementedException();
         }
     }
 }

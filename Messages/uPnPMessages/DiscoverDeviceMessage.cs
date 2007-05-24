@@ -34,8 +34,6 @@ namespace Nat.UpnpMessages
 {
     internal static class DiscoverDeviceMessage
     {
-        #region IMessage Members
-
         /// <summary>
         /// The message sent to discover all uPnP devices on the network
         /// </summary>
@@ -49,12 +47,5 @@ namespace Nat.UpnpMessages
                         + "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n\r\n";
             return UTF8Encoding.ASCII.GetBytes(s);
         }
-
-//        public static void Decode(byte[] response)
-//        {
-//            // I don't decode these
-//        }
-
-        #endregion
     }
 }

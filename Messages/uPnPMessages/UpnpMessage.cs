@@ -58,7 +58,6 @@ namespace Nat
             req.Method = webrequestMethod;
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#" + upnpMethod + "\"");
-            string tempVariable = NatController.localAddresses[0].ToString();
 
             string body = "<s:Envelope "
                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
