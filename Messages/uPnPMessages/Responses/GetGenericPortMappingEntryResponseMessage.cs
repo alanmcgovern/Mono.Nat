@@ -73,6 +73,7 @@ namespace Nat
             portMappingDescription = data["NewPortMappingDescription"].InnerText;
             leaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
         }
+
         public override System.Net.WebRequest Encode()
         {
             throw new Exception("The method or operation is not implemented.");

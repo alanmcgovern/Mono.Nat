@@ -38,14 +38,6 @@ namespace Nat.UpnpMessages
         {
         }
 
-        #region IMessage Members
-
-        public void Decode(string data)
-        {
-        }
-
-        #endregion
-
         public override System.Net.WebRequest Encode()
         {
             throw new NotSupportedException();

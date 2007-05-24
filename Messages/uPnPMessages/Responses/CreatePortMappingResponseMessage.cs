@@ -39,16 +39,6 @@ namespace Nat.UpnpMessages
         }
         #endregion
 
-
-        #region IMessage Members
-
-        public void Decode(string data)
-        {
-            
-        }
-
-        #endregion
-
         public override System.Net.WebRequest Encode()
         {
             throw new System.Exception("The method or operation is not implemented.");

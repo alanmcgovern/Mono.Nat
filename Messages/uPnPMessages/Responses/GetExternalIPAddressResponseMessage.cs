@@ -19,10 +19,6 @@ namespace Nat
             this.externalIPAddress = IPAddress.Parse(ip);
         }
 
-        public void Decode(string data)
-        {
-        }
-
         public override WebRequest Encode()
         {
             throw new Exception("The method or operation is not implemented.");
