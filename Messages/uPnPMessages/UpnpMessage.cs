@@ -55,6 +55,7 @@ namespace Nat
             Uri location = new Uri("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
 
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
+            req.KeepAlive = false;
             req.Method = webrequestMethod;
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#" + upnpMethod + "\"");
