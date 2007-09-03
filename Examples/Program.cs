@@ -27,7 +27,7 @@ namespace TestClient
             Console.WriteLine("If you haven't seen a port map/unmap by now, no router has been found.");
             Console.WriteLine();
             Console.WriteLine("Press a key to exit...");
-            Console.Read();
+            Console.ReadKey();
         }
 
         static void c_DeviceLost(object sender, EventArgs e)
