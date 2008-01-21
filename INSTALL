@@ -1,0 +1,6 @@
+as regular user:
+sh autogen.sh --prefix=/usr
+make
+
+as root:
+make install
