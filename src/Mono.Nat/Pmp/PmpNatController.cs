@@ -104,7 +104,6 @@ namespace Mono.Nat.Pmp
 		{
 			byte[] buffer = new byte[] { PmpConstants.Version, PmpConstants.OperationCode };
 			
-			UdpClient client = new UdpClient ();
 			haveSearchResults = false;
 
 			int addressIndex = 0;
@@ -122,6 +121,7 @@ namespace Mono.Nat.Pmp
 				IPEndPoint ep = new IPEndPoint (gateway, PmpConstants.Port);
 				
 				ThreadPool.QueueUserWorkItem (delegate (object state) {
+                    UdpClient client = new UdpClient();
                     try
                     {
                         int attempt = 0;
