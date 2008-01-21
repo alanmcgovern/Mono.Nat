@@ -1,0 +1,69 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F5D74163-145F-47BF-83DC-D0E07249C6CA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>Mono.Nat</AssemblyName>
+    <RootNamespace>Mono.Nat</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>.\bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>.\bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AbstractNatController.cs" />
+    <Compile Include="AbstractNatDevice.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AsyncResults\AbstractPortMapAsyncResult.cs" />
+    <Compile Include="Enums\MapState.cs" />
+    <Compile Include="Enums\ProtocolType.cs" />
+    <Compile Include="EventArgs\DeviceEventArgs.cs" />
+    <Compile Include="Exceptions\MappingException.cs" />
+    <Compile Include="INatController.cs" />
+    <Compile Include="INatDevice.cs" />
+    <Compile Include="Mapping.cs" />
+    <Compile Include="NatUtility.cs" />
+    <Compile Include="Pmp\AsyncResults\PortMapAsyncResult.cs" />
+    <Compile Include="Pmp\PmpConstants.cs" />
+    <Compile Include="Pmp\PmpNatController.cs" />
+    <Compile Include="Pmp\PmpNatDevice.cs" />
+    <Compile Include="TimerUtility.cs" />
+    <Compile Include="Upnp\AsyncResults\GetAllMappingsAsyncResult.cs" />
+    <Compile Include="Upnp\AsyncResults\PortMapAsyncResult.cs" />
+    <Compile Include="Upnp\Messages\DiscoverDeviceMessage.cs" />
+    <Compile Include="Upnp\Messages\ErrorMessage.cs" />
+    <Compile Include="Upnp\Messages\GetServicesMessage.cs" />
+    <Compile Include="Upnp\Messages\Requests\CreatePortMappingMessage.cs" />
+    <Compile Include="Upnp\Messages\Requests\DeletePortMappingMessage.cs" />
+    <Compile Include="Upnp\Messages\Requests\GetExternalIPAddressMessage.cs" />
+    <Compile Include="Upnp\Messages\Requests\GetGenericPortMappingEntry.cs" />
+    <Compile Include="Upnp\Messages\Requests\GetSpecificPortMappingEntryMessage.cs" />
+    <Compile Include="Upnp\Messages\Responses\CreatePortMappingResponseMessage.cs" />
+    <Compile Include="Upnp\Messages\Responses\DeletePortMappingResponseMessage.cs" />
+    <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
+    <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
+    <Compile Include="Upnp\Messages\UpnpMessage.cs" />
+    <Compile Include="Upnp\UpnpNatController.cs" />
+    <Compile Include="Upnp\UpnpNatDevice.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>

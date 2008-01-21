@@ -1,0 +1,20 @@
+<Combine name="Mono.Nat" fileversion="2.0">
+  <Configurations active="Debug">
+    <Configuration name="Debug" ctype="CombineConfiguration">
+      <Entry build="True" name="Mono.Nat" configuration="Debug" />
+      <Entry build="True" name="Mono.Nat.Test" configuration="Debug" />
+    </Configuration>
+    <Configuration name="Release" ctype="CombineConfiguration">
+      <Entry build="True" name="Mono.Nat" configuration="Release" />
+      <Entry build="True" name="Mono.Nat.Test" configuration="Release" />
+    </Configuration>
+  </Configurations>
+  <StartMode startupentry="Mono.Nat.Test" single="True">
+    <Execute type="None" entry="Mono.Nat" />
+    <Execute type="None" entry="Mono.Nat.Test" />
+  </StartMode>
+  <Entries>
+    <Entry filename="Mono.Nat/Mono.Nat.mdp" />
+    <Entry filename="Mono.Nat.Test/Mono.Nat.Test.mdp" />
+  </Entries>
+</Combine>

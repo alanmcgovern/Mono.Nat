@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=${prefix}
+pkglibdir=${exec_prefix}/lib/mono-nat
+Libraries=  ${pkglibdir}/Mono.Nat.dll ${pkglibdir}/Mono.Nat.Upnp.dll ${pkglibdir}/Mono.Nat.Pmp.dll
+
+Name: Mono.Nat
+Description: mono-nat - .NET library for automatic port mapping
+Version: 0.6.0
+
+Requires: 
+Libs:  -r:${pkglibdir}/Mono.Nat.dll -r:${pkglibdir}/Mono.Nat.Upnp.dll -r:${pkglibdir}/Mono.Nat.Pmp.dll

@@ -1,0 +1,261 @@
+//
+// Authors:
+//   Ben Motmans <ben.motmans@gmail.com>
+//
+// Copyright (C) 2007 Ben Motmans
+//
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Collections.Generic;
+
+namespace Mono.Nat.Pmp
+{
+	public sealed class PmpNatDevice : AbstractNatDevice, IEquatable<PmpNatDevice> 
+	{
+		private IPAddress localAddress;
+		private IPAddress publicAddress;
+		
+		internal PmpNatDevice (INatController controller, IPAddress localAddress, IPAddress publicAddress)
+			: base (controller)
+		{
+			this.localAddress = localAddress;
+			this.publicAddress = publicAddress;
+		}
+		
+		internal IPAddress LocalAddress
+		{
+			get { return localAddress; }
+		}
+
+		public override IPAddress GetExternalIP ()
+		{
+			return publicAddress;
+		}
+
+        public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
+		{
+			PortMapAsyncResult pmar = new PortMapAsyncResult (mapping.Protocol, mapping.PublicPort, PmpConstants.DefaultLeaseTime, callback, asyncState);
+			CreatePortMap (pmar.Mapping, true);
+			return pmar;
+		}
+
+		public override IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState)
+		{
+			PortMapAsyncResult pmar =  new PortMapAsyncResult (mapping, callback, asyncState);
+			CreatePortMap (pmar.Mapping, false);
+			return pmar;
+		}
+
+		public override void EndCreatePortMap (IAsyncResult result)
+		{
+			PortMapAsyncResult pmar = result as PortMapAsyncResult;
+			pmar.AsyncWaitHandle.WaitOne ();
+		}
+
+		public override void EndDeletePortMap (IAsyncResult result)
+		{
+			PortMapAsyncResult pmar = result as PortMapAsyncResult;
+			pmar.AsyncWaitHandle.WaitOne ();
+		}
+		
+		public override IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState)
+		{
+			//NAT-PMP does not specify a way to get all port mappings
+			throw new NotSupportedException ();
+		}
+
+		public override IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState)
+		{
+			//there is no need for async processing of the GetExternalIP method
+			return null;
+		}
+
+		public override IAsyncResult BeginGetSpecificMapping (Protocol protocol, int port, AsyncCallback callback, object asyncState)
+		{
+			//NAT-PMP does not specify a way to get a specific port map
+			throw new NotSupportedException ();
+		}
+		
+		public override Mapping[] EndGetAllMappings (IAsyncResult result)
+		{
+			//NAT-PMP does not specify a way to get all port mappings
+			throw new NotSupportedException ();
+		}
+
+		public override IPAddress EndGetExternalIP (IAsyncResult result)
+		{
+			//there is no need for async processing of the GetExternalIP method
+			return publicAddress;
+		}
+
+		public override Mapping EndGetSpecificMapping (IAsyncResult result)
+		{
+			//NAT-PMP does not specify a way to get a specific port map
+			throw new NotSupportedException ();
+		}
+		
+		public override bool Equals(object obj)
+		{
+			PmpNatDevice device = obj as PmpNatDevice;
+			return (device == null) ? false : this.Equals(device);
+		}
+		
+		public override int GetHashCode ()
+		{
+			return this.publicAddress.GetHashCode();
+		}
+
+		public bool Equals (PmpNatDevice other)
+		{
+			return (other == null) ? false : this.publicAddress.Equals(other.publicAddress);
+		}
+
+		private Mapping CreatePortMap (Mapping mapping, bool create)
+		{
+			List<byte> package = new List<byte> ();
+			
+			package.Add (PmpConstants.Version);
+			package.Add (PmpConstants.OperationCode);
+			package.Add ((byte)0); //reserved
+			package.Add ((byte)0); //reserved
+			package.AddRange (BitConverter.GetBytes ((short)mapping.PrivatePort));
+			package.AddRange (BitConverter.GetBytes (create ? (short)mapping.PublicPort : (short)0));
+			package.AddRange (BitConverter.GetBytes (mapping.Lifetime));
+
+			CreatePortMapAsyncState state = new CreatePortMapAsyncState ();
+			state.Buffer = package.ToArray ();
+			state.Mapping = mapping;
+
+			ThreadPool.QueueUserWorkItem (new WaitCallback (CreatePortMapAsync), state);
+			WaitHandle.WaitAll (new WaitHandle[] {state.ResetEvent});
+			
+			if (!state.Success) {
+				string type = create ? "create" : "delete";
+				throw new MappingException (String.Format ("Failed to {0} portmap (protocol={1}, private port={2}", type, mapping.Protocol, mapping.PrivatePort));
+			}
+			
+			return state.Mapping;
+		}
+		
+		private void CreatePortMapAsync (object obj)
+		{
+			CreatePortMapAsyncState state = obj as CreatePortMapAsyncState;
+			
+			UdpClient udpClient = new UdpClient ();
+			CreatePortMapListenState listenState = new CreatePortMapListenState (state);
+
+			int attempt = 0;
+			int delay = PmpConstants.RetryDelay;
+			
+			ThreadPool.QueueUserWorkItem (new WaitCallback (CreatePortMapListen), listenState);
+
+			while (attempt < PmpConstants.RetryAttempts && !listenState.Success) {
+				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (publicAddress, PmpConstants.Port));
+
+				attempt++;
+				delay *= 2;
+				Thread.Sleep (delay);
+			}
+			
+			state.Success = listenState.Success;
+			
+			udpClient.Close ();
+			state.ResetEvent.Set ();
+		}
+		
+		private void CreatePortMapListen (object obj)
+		{
+			CreatePortMapListenState state = obj as CreatePortMapListenState;
+
+			UdpClient udpClient = new UdpClient ();
+			IPEndPoint endPoint = new IPEndPoint (publicAddress, PmpConstants.Port);
+			
+			while (!state.Success) {
+				byte[] data = udpClient.Receive (ref endPoint);
+			
+				if (data.Length < 16)
+					continue;
+
+				if (data[0] != PmpConstants.Version)
+					continue;
+			
+				byte opCode = (byte)(data[1] & (byte)127);
+				
+				Protocol protocol = Protocol.Tcp;
+				if (opCode == PmpConstants.OperationCodeUdp)
+					protocol = Protocol.Udp;
+
+				short resultCode = BitConverter.ToInt16 (data, 2);
+				int epoch = BitConverter.ToInt32 (data, 4);
+
+				short privatePort = BitConverter.ToInt16 (data, 8);
+				short publicPort = BitConverter.ToInt16 (data, 10);
+
+				int lifetime = BitConverter.ToInt32 (data, 12);
+				
+				if (resultCode != PmpConstants.ResultCodeSuccess) {
+					state.Success = false;
+					return;
+				}
+				
+				if (lifetime == 0) {
+					//mapping was deleted
+					state.Success = true;
+					state.Mapping = null;
+					return;
+				} else {
+					//mapping was created
+					//TODO: verify that the private port+protocol are a match
+					Mapping mapping = state.Mapping;
+					mapping.PublicPort = publicPort;
+					mapping.Expiration = DateTime.Now.AddSeconds (lifetime);
+						
+					state.Success = true;
+				}
+			}
+		}
+		
+		private class CreatePortMapAsyncState
+		{
+			internal byte[] Buffer;
+			internal ManualResetEvent ResetEvent = new ManualResetEvent (false);
+			internal Mapping Mapping;
+			
+			internal bool Success;
+		}
+		
+		private class CreatePortMapListenState
+		{
+			internal bool Success;
+			internal Mapping Mapping;
+			
+			internal CreatePortMapListenState (CreatePortMapAsyncState state)
+			{
+				Mapping = state.Mapping;
+			}
+		}
+	}
+}
