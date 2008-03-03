@@ -61,16 +61,18 @@ namespace Mono.Nat.Test
 		}
 		
 		private void DeviceFound (object sender, DeviceEventArgs args)
-		{
-			INatDevice device = args.Device;
+        {
+            try
+            {
+			    INatDevice device = args.Device;
+    			
+			    Console.WriteLine ("Device found");
+			    Console.WriteLine ("Type: {0}", device.NatController.Name);
+    			
+			    Console.WriteLine ("IP: {0}", device.GetExternalIP ());
+			    Console.WriteLine ("---");
 			
-			Console.WriteLine ("Device found");
-			Console.WriteLine ("Type: {0}", device.NatController.Name);
 			
-			Console.WriteLine ("IP: {0}", device.GetExternalIP ());
-			Console.WriteLine ("---");
-			
-			try {
                 Mapping mapping = new Mapping(Protocol.Tcp, 6001, 6001);
                 device.CreatePortMap(mapping);
 				Console.WriteLine ("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort, mapping.PrivatePort);
@@ -91,8 +93,9 @@ namespace Mono.Nat.Test
                 }
 
                 Console.WriteLine("External IP: {0}", device.GetExternalIP());
+                Console.WriteLine("Done...");
 
-			} catch (MappingException ex) {
+			} catch (Exception ex) {
 				Console.WriteLine (ex.Message);
 				Console.WriteLine (ex.StackTrace);
 			}
