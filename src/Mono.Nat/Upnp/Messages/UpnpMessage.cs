@@ -72,7 +72,7 @@ namespace Mono.Nat.Upnp
             return req;
         }
 
-        public static MessageBase Decode(string message)
+        public static MessageBase Decode(UpnpNatDevice device, string message)
         {
             XmlNode node = null;
             System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
@@ -82,7 +82,7 @@ namespace Mono.Nat.Upnp
 
             // Error messages should be found under this namespace
             nsm.AddNamespace("errorNs", "urn:schemas-upnp-org:control-1-0");
-            nsm.AddNamespace("responseNs", "urn:schemas-upnp-org:service:WANIPConnection:1");
+            nsm.AddNamespace("responseNs", device.ServiceType);
 
             // Check to see if we have a fault code message.
             if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)

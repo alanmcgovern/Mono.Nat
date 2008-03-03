@@ -40,6 +40,7 @@ namespace Mono.Nat.Upnp
 		private EndPoint hostEndPoint;
 		private string serviceDescriptionUrl;
 		private string controlUrl;
+		private string serviceType;
 
 		/// <summary>
 		/// The callback to invoke when we are finished setting up the device
@@ -104,6 +105,14 @@ namespace Mono.Nat.Upnp
 		internal string ControlUrl
 		{
 			get { return this.controlUrl; }
+		}
+
+		/// <summary>
+		/// The service type we're using on the device
+		/// </summary>
+		internal string ServiceType
+		{
+			get { return this.serviceType; }
 		}
 
 		/// <summary>
@@ -319,7 +328,7 @@ namespace Mono.Nat.Upnp
 				mappingResult.CompletionCallback(mappingResult);
 		}
 
-		private static MessageBase DecodeMessageFromResponse(Stream s, long length)
+		private MessageBase DecodeMessageFromResponse(Stream s, long length)
 		{
 			StringBuilder data = new StringBuilder();
 			int bytesRead = 0;
@@ -344,7 +353,7 @@ namespace Mono.Nat.Upnp
 
 			// Once we have our content, we need to see what kind of message it is. It'll either a an error
 			// or a response based on the action we performed.
-			return MessageBase.Decode(data.ToString());
+			return MessageBase.Decode(this, data.ToString());
 		}
 
 		private void EndCreatePortMapInternal(IAsyncResult result)
@@ -491,8 +500,12 @@ namespace Mono.Nat.Upnp
 					foreach (XmlNode service in node.ChildNodes)
 					{
 						//If the service is a WANIPConnection, then we have what we want
-						if (service["serviceType"].InnerText == "urn:schemas-upnp-org:service:WANIPConnection:1")
+                        string type = service["serviceType"].InnerText;
+                        StringComparison comparison = StringComparison.InvariantCultureIgnoreCase;
+                        if (type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", comparison) ||
+                            type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", comparison))
 						{
+							this.serviceType = type;
 							this.controlUrl = service["controlURL"].InnerText;
 							this.callback(this);
 							return;

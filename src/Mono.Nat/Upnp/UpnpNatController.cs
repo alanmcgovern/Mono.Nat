@@ -74,7 +74,8 @@ namespace Mono.Nat.Upnp
 				dataString = System.Text.UTF8Encoding.UTF8.GetString(data);
 
 				// If this device does not have a WANIPConnection service, then ignore it
-				if (dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) == -1)
+				if ((dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) == -1) &&
+				    (dataString.IndexOf("schemas-upnp-org:device:InternetGatewayDevice:1", StringComparison.InvariantCultureIgnoreCase) == -1))
 					return;
 
 				// We have an internet gateway device now
