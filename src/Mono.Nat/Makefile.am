@@ -1,20 +1,45 @@
-KEY_FILE=../mono-nat.snk
+
+EXTRA_DIST =  
+
+# Warning: This is an automatically generated file, do not edit!
+
+if ENABLE_DEBUG_ANY_CPU
 ASSEMBLY_COMPILER_COMMAND = gmcs
-ASSEMBLY_COMPILER_FLAGS = -keyfile:$(KEY_FILE) -noconfig -codepage:utf8 -warn:4 -debug -d:DEBUG
-ASSEMBLY_NAME=Mono.Nat
-ASSEMBLY = $(MONO_NAT_BUILD_DIR)/$(ASSEMBLY_NAME).dll
+ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize- -debug "-define:DEBUG;TRACE"
+
+ASSEMBLY = bin/Debug/Mono.Nat.dll
+ASSEMBLY_MDB = $(ASSEMBLY).mdb
 COMPILE_TARGET = library
-PC_FILES_IN = mono-nat.pc.in
+PROJECT_REFERENCES = 
+BUILD_DIR = bin/Debug/
 
-REFERENCES =  \
-	-r:System \
-	-r:System.Xml
 
-RESOURCES = 
-EXTRAS = 
-DATA_FILES = 
+endif
 
-FILES =  \
+if ENABLE_RELEASE_ANY_CPU
+ASSEMBLY_COMPILER_COMMAND = gmcs
+ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize+ -debug -define:DEBUG "-define:TRACE"
+
+ASSEMBLY = bin/Release/Mono.Nat.dll
+ASSEMBLY_MDB = $(ASSEMBLY).mdb
+COMPILE_TARGET = library
+PROJECT_REFERENCES = 
+BUILD_DIR = bin/Release/
+
+
+endif
+
+AL=al2
+SATELLITE_ASSEMBLY_NAME=Mono.Nat.resources.dll
+
+LINUX_PKGCONFIG = \
+	$(MONO_NAT_PC)  
+
+
+	
+all: $(ASSEMBLY) $(LINUX_PKGCONFIG) 
+
+FILES = \
 	AbstractNatController.cs \
 	AbstractNatDevice.cs \
 	AssemblyInfo.cs \
@@ -48,20 +73,37 @@ FILES =  \
 	Upnp/Messages/Responses/GetGenericPortMappingEntryResponseMessage.cs \
 	Upnp/Messages/UpnpMessage.cs \
 	Upnp/UpnpNatController.cs \
-	Upnp/UpnpNatDevice.cs
+	Upnp/UpnpNatDevice.cs 
 
-all: $(ASSEMBLY)
+DATA_FILES = 
 
-$(ASSEMBLY) $(ASSEMBLY).mdb: $(build_sources) $(build_resources) $(build_datafiles) 
-	mkdir -p $(dir $(ASSEMBLY))		
-	$(ASSEMBLY_COMPILER_COMMAND) $(ASSEMBLY_COMPILER_FLAGS) -out:$@ -target:$(COMPILE_TARGET) $(build_sources) $(build_resources_embed) $(build_references_ref)
+RESOURCES = 
 
-install-data-local:
-	echo "$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS)";  \
-	$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
+EXTRAS = \
+	mono.nat.pc.in 
 
-uninstall-local:
-	echo "$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS)"; \
-	$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
+REFERENCES =  \
+	System \
+	System.Data \
+	System.Xml
+
+DLL_REFERENCES = 
+
+CLEANFILES = $(LINUX_PKGCONFIG) 
 
 include $(top_srcdir)/Makefile.include
+
+MONO_NAT_PC = $(BUILD_DIR)/mono.nat.pc
+
+$(eval $(call emit-deploy-wrapper,MONO_NAT_PC,mono.nat.pc))
+
+
+$(build_xamlg_list): %.xaml.g.cs: %.xaml
+	xamlg '$<'
+
+$(build_resx_resources) : %.resources: %.resx
+	resgen2 '$<' '$@'
+
+$(ASSEMBLY) $(ASSEMBLY_MDB): $(build_sources) $(build_resources) $(build_datafiles) $(DLL_REFERENCES) $(PROJECT_REFERENCES) $(build_xamlg_list) $(build_satellite_assembly_list)
+	mkdir -p $(dir $(ASSEMBLY))
+	$(ASSEMBLY_COMPILER_COMMAND) $(ASSEMBLY_COMPILER_FLAGS) -out:$(ASSEMBLY) -target:$(COMPILE_TARGET) $(build_sources_embed) $(build_resources_embed) $(build_references_ref)
