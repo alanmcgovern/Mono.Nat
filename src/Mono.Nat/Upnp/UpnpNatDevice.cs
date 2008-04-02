@@ -62,6 +62,7 @@ namespace Mono.Nat.Upnp
 			// Are we going to get addresses with the "http://" attached?
 			if (locationDetails.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
 			{
+				Console.WriteLine("Found device at: {0}", locationDetails);
 				// This bit strings out the "http://" from the string
 				locationDetails = locationDetails.Substring(7);
 
@@ -72,6 +73,8 @@ namespace Mono.Nat.Upnp
 				this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
 					Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
 
+				Console.WriteLine("Parsed device as: {0}", this.hostEndPoint.ToString());
+				
 				// The service description URL is the remainder of the "locationDetails" string. The bit that was originally after the ip
 				// and port information
 				this.serviceDescriptionUrl = locationDetails.Substring(locationDetails.IndexOf('/'));
@@ -507,6 +510,23 @@ namespace Mono.Nat.Upnp
 						{
 							this.serviceType = type;
 							this.controlUrl = service["controlURL"].InnerText;
+							Console.WriteLine("Found device at control url: {0}", controlUrl);
+							try
+							{
+								Uri u = new Uri(controlUrl);
+								if (u.IsAbsoluteUri)
+								{
+									Console.WriteLine("Absolute URI detected, rebasing hostaddresss");
+									this.hostEndPoint = new IPEndPoint(IPAddress.Parse(u.Host), u.Port);
+									Console.WriteLine("New host address: {0}", hostEndPoint);
+									this.controlUrl = controlUrl.Substring(u.GetLeftPart(UriPartial.Authority).Length);
+									Console.WriteLine("New control url: {0}", controlUrl);
+								}
+							}
+							catch
+							{
+								Console.WriteLine("Could not check if controlUrl was relative... assume relative");
+							}
 							this.callback(this);
 							return;
 						}

@@ -46,7 +46,9 @@ namespace Mono.Nat.Upnp
 
         protected WebRequest CreateRequest(string upnpMethod, string methodParameters, string webrequestMethod)
         {
-            Uri location = new Uri("http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl);
+            string ss = "http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl;
+            Console.WriteLine("Initiating request to: {0}", ss);
+            Uri location = new Uri(ss);
 
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
             req.KeepAlive = false;
