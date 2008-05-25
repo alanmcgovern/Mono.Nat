@@ -50,7 +50,7 @@ namespace Mono.Nat.Upnp
 		internal UpnpNatDevice (INatController controller, string deviceDetails)
 			: base (controller)
 		{
-			this.lastSeen = DateTime.Now;
+			this.LastSeen = DateTime.Now;
 
 			// Split the string at the "location" section so i can extract the ipaddress and service description url
 			string locationDetails = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 9).Split('\r')[0];
@@ -133,7 +133,7 @@ namespace Mono.Nat.Upnp
 		/// </summary>
         public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
-            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, controller.LocalAddresses[0], this);
+            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatController.LocalAddresses[0], this);
             return BeginMessageInternal(message, callback, mapping, EndCreatePortMapInternal);
 		}
 
