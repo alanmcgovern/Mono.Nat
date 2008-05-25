@@ -34,7 +34,7 @@ using System.Collections.Generic;
 namespace Mono.Nat.Pmp
 {
 	//TODO: listen on 224.0.0.1:5351 to receive address change messages
-	public sealed class PmpNatController : AbstractNatController
+	internal sealed class PmpNatController : AbstractNatController
 	{
 		private const int SearchPeriod = 60 * 5 * 1000; // The time in seconds between each search
 		

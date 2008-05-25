@@ -47,7 +47,7 @@ namespace Mono.Nat.Test
 			IPAddress[] addresses = NatUtility.GetLocalAddresses (false);
 			
 			NatUtility.AddController (new UpnpNatController (addresses));
-			NatUtility.AddController (new PmpNatController (addresses));
+			//NatUtility.AddController (new PmpNatController (addresses));
 			
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
