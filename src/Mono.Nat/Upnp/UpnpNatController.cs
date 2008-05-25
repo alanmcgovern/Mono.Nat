@@ -111,7 +111,7 @@ namespace Mono.Nat.Upnp
 			TimerUtility.RegisterDelayedDiscovery (this, SearchPeriod);
 			
 			ThreadPool.QueueUserWorkItem (delegate (object state) {
-				Thread.Sleep (20000); //if we don't have a reply after 20 seconds, the discovery failed
+				Thread.Sleep (3000); //if we don't have a reply after 3 seconds, the discovery failed
 				
 				DiscoveryComplete ();
 			});
