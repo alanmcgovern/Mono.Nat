@@ -115,8 +115,6 @@ namespace Mono.Nat
 
 		public virtual void StopDiscovery ()
 		{
-			discoveryRunning = false;
-
 			StopThread ();
 		}
 
@@ -139,40 +137,46 @@ namespace Mono.Nat
 		{
 			if (discoveryRunning)
 				return;
-			
-			listenThread = new Thread (new ThreadStart (ThreadFunc));
-			listenThread.IsBackground = true;
-			listenThread.Priority = ThreadPriority.Lowest;
-			listenThread.Start ();
+
+            discoveryRunning = true;
+            ThreadPool.QueueUserWorkItem((WaitCallback)ThreadFunc);
 		}
-		
+
+        private ManualResetEvent shouldStop = new ManualResetEvent(false);
+        private ManualResetEvent hasStopped = new ManualResetEvent(false);
 		protected virtual void StopThread ()
 		{
-			if (discoveryRunning && listenThread != null) {
-				try {
-					listenThread.Abort ();
-				} catch (ThreadAbortException) {
-				} finally {
-					listenThread = null;
-				}
+			if (discoveryRunning) {
+                shouldStop.Set();
+                hasStopped.WaitOne();
+                hasStopped.Reset();
 			}
-			
+            this.currentDevices.Clear();
+            this.devices.Clear();
 			discoveryRunning = false;
 		}
 		
-		protected virtual void ThreadFunc ()
-		{
+		protected virtual void ThreadFunc (object o)
+        {
 			IPEndPoint endPoint = null;
 			ThreadInitialize (out endPoint);
 
 			if (endPoint == null)
 				endPoint = new IPEndPoint (localAddresses[0], 0);
 			
-			#warning Get a nicer way to signal the thread to die. Also stop the blocking on receive().
-			while (true) {
-				byte[] data = udpClient.Receive (ref endPoint);
+			while (true)
+            {
+                while (udpClient.Available == 0)
+                    if (shouldStop.WaitOne(1, true))
+                        break;
+                if (shouldStop.WaitOne(1, true))
+                    break;
+
+                byte[] data = udpClient.Receive(ref endPoint);
 				ProcessData (endPoint, data);
 			}
+            shouldStop.Reset();
+            hasStopped.Set();
 		}
 					
 		protected abstract void ThreadInitialize (out IPEndPoint endPoint);
