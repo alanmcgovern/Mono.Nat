@@ -43,15 +43,18 @@ FILES = \
 	AbstractNatController.cs \
 	AbstractNatDevice.cs \
 	AssemblyInfo.cs \
-	AsyncResults/AbstractPortMapAsyncResult.cs \
+	AsyncResults/AsyncResult.cs \
 	Enums/MapState.cs \
 	Enums/ProtocolType.cs \
 	EventArgs/DeviceEventArgs.cs \
 	Exceptions/MappingException.cs \
 	INatController.cs \
 	INatDevice.cs \
+	ISearcher.cs \
 	Mapping.cs \
 	NatUtility.cs \
+	PmpSearcher.cs \
+	UpnpSearcher.cs \
 	Pmp/AsyncResults/PortMapAsyncResult.cs \
 	Pmp/PmpConstants.cs \
 	Pmp/PmpNatController.cs \
