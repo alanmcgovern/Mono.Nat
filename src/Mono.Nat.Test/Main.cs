@@ -46,9 +46,6 @@ namespace Mono.Nat.Test
 		{
 			IPAddress[] addresses = NatUtility.GetLocalAddresses (false);
 			
-			NatUtility.AddController (new UpnpNatController (addresses));
-			//NatUtility.AddController (new PmpNatController (addresses));
-			
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
 			
@@ -57,7 +54,11 @@ namespace Mono.Nat.Test
 			Console.WriteLine ("Discovery started");
 			
 			while (true)
-				Thread.Sleep (1000);
+            {
+				Thread.Sleep (500000);
+                NatUtility.StopDiscovery();
+                NatUtility.StartDiscovery();
+            }
 		}
 		
 		private void DeviceFound (object sender, DeviceEventArgs args)
@@ -66,16 +67,20 @@ namespace Mono.Nat.Test
             {
 			    INatDevice device = args.Device;
     			
+			    Console.ForegroundColor = ConsoleColor.Red;
 			    Console.WriteLine ("Device found");
-			    Console.WriteLine ("Type: {0}", device.NatController.Name);
+			    Console.ResetColor();
+			    Console.WriteLine ("Type: {0}", device.GetType().Name);
     			
 			    Console.WriteLine ("IP: {0}", device.GetExternalIP ());
+                device.CreatePortMap(new Mapping(Protocol.Tcp, 1500, 1500));
 			    Console.WriteLine ("---");
 			
+				return;
 			
                 Mapping mapping = new Mapping(Protocol.Tcp, 6001, 6001);
                 device.CreatePortMap(mapping);
-				Console.WriteLine ("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort, mapping.PrivatePort);
+				Console.WriteLine("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort, mapping.PrivatePort);
 
                 try
                 {
@@ -106,7 +111,7 @@ namespace Mono.Nat.Test
 			INatDevice device = args.Device;
 			
 			Console.WriteLine ("Device Lost");
-			Console.WriteLine ("Type: {0}", device.NatController.Name);
+			Console.WriteLine ("Type: {0}", device.GetType().Name);
 		}
 	}
 }

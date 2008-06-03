@@ -35,11 +35,12 @@ namespace Mono.Nat.Pmp
 {
 	public sealed class PmpNatDevice : AbstractNatDevice, IEquatable<PmpNatDevice> 
 	{
+        private AsyncResult externalIpResult;
+        private bool pendingOp;
 		private IPAddress localAddress;
 		private IPAddress publicAddress;
 		
-		internal PmpNatDevice (INatController controller, IPAddress localAddress, IPAddress publicAddress)
-			: base (controller)
+		internal PmpNatDevice (IPAddress localAddress, IPAddress publicAddress)
 		{
 			this.localAddress = localAddress;
 			this.publicAddress = publicAddress;
@@ -89,8 +90,10 @@ namespace Mono.Nat.Pmp
 
 		public override IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState)
 		{
-			//there is no need for async processing of the GetExternalIP method
-			return null;
+            StartOp(ref externalIpResult, callback, asyncState);
+            AsyncResult result = externalIpResult;
+            result.Complete();
+            return result;
 		}
 
 		public override IAsyncResult BeginGetSpecificMapping (Protocol protocol, int port, AsyncCallback callback, object asyncState)
@@ -107,9 +110,36 @@ namespace Mono.Nat.Pmp
 
 		public override IPAddress EndGetExternalIP (IAsyncResult result)
 		{
-			//there is no need for async processing of the GetExternalIP method
+            EndOp(result, ref externalIpResult);
 			return publicAddress;
 		}
+
+        private void StartOp(ref AsyncResult result, AsyncCallback callback, object asyncState)
+        {
+            if (pendingOp == true)
+                throw new InvalidOperationException("Can only have one simultaenous async operation");
+
+            pendingOp = true;
+            result = new AsyncResult(callback, asyncState);
+        }
+
+        private void EndOp(IAsyncResult supplied, ref AsyncResult actual)
+        {
+            if (supplied == null)
+                throw new ArgumentNullException("result");
+
+            if (supplied != actual)
+                throw new ArgumentException("Supplied IAsyncResult does not match the stored result");
+
+            if (!supplied.IsCompleted)
+                supplied.AsyncWaitHandle.WaitOne();
+
+            if (actual.StoredException != null)
+                throw actual.StoredException;
+
+            pendingOp = false;
+            actual = null;
+        }
 
 		public override Mapping EndGetSpecificMapping (IAsyncResult result)
 		{
@@ -138,12 +168,12 @@ namespace Mono.Nat.Pmp
 			List<byte> package = new List<byte> ();
 			
 			package.Add (PmpConstants.Version);
-			package.Add (PmpConstants.OperationCode);
+			package.Add (mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
 			package.Add ((byte)0); //reserved
 			package.Add ((byte)0); //reserved
-			package.AddRange (BitConverter.GetBytes ((short)mapping.PrivatePort));
-			package.AddRange (BitConverter.GetBytes (create ? (short)mapping.PublicPort : (short)0));
-			package.AddRange (BitConverter.GetBytes (mapping.Lifetime));
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder((short)mapping.PrivatePort)));
+			package.AddRange (BitConverter.GetBytes (create ? IPAddress.HostToNetworkOrder((short)mapping.PublicPort) : (short)0));
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder(mapping.Lifetime)));
 
 			CreatePortMapAsyncState state = new CreatePortMapAsyncState ();
 			state.Buffer = package.ToArray ();
@@ -173,7 +203,7 @@ namespace Mono.Nat.Pmp
 			ThreadPool.QueueUserWorkItem (new WaitCallback (CreatePortMapListen), listenState);
 
 			while (attempt < PmpConstants.RetryAttempts && !listenState.Success) {
-				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (publicAddress, PmpConstants.Port));
+				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (localAddress, PmpConstants.Port));
 
 				attempt++;
 				delay *= 2;
@@ -190,7 +220,7 @@ namespace Mono.Nat.Pmp
 		{
 			CreatePortMapListenState state = obj as CreatePortMapListenState;
 
-			UdpClient udpClient = new UdpClient ();
+			UdpClient udpClient = new UdpClient (5351);
 			IPEndPoint endPoint = new IPEndPoint (publicAddress, PmpConstants.Port);
 			
 			while (!state.Success) {

@@ -79,7 +79,7 @@ namespace Mono.Nat.Upnp
 					return;
 
 				// We have an internet gateway device now
-				UpnpNatDevice d = new UpnpNatDevice (this, dataString);
+				UpnpNatDevice d = new UpnpNatDevice (dataString);
 
 				if (this.devices.Contains(d))
 				{

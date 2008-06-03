@@ -82,7 +82,7 @@ namespace Mono.Nat.Pmp
 
 			IPAddress deviceAddress = new IPAddress (ba);
 			
-			PmpNatDevice device = new PmpNatDevice (this, endPoint.Address, deviceAddress);
+			PmpNatDevice device = new PmpNatDevice (endPoint.Address, deviceAddress);
 			haveSearchResults = true;
 			
 			int index = devices.IndexOf (device);

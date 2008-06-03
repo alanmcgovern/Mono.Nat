@@ -35,6 +35,7 @@ namespace Mono.Nat.Pmp
 		public const byte OperationCode = (byte)0;
 		public const byte OperationCodeUdp = (byte)1;
 		public const byte OperationCodeTcp = (byte)2;
+        public const byte ServerNoop = (byte)128;
 		
 		public const int Port = 5351;
 		
@@ -42,7 +43,7 @@ namespace Mono.Nat.Pmp
 		public const int RetryAttempts = 9;
 		
 		public const int RecommendedLeaseTime = 60 * 60;
-		public const int DefaultLeaseTime = RecommendedLeaseTime * 4;
+		public const int DefaultLeaseTime = RecommendedLeaseTime;
 		
 		public const short ResultCodeSuccess = 0;
 		public const short ResultCodeUnsupportedVersion = 1;

@@ -28,7 +28,7 @@ using System;
 
 namespace Mono.Nat.Pmp
 {
-	internal class PortMapAsyncResult : AbstractPortMapAsyncResult
+	internal class PortMapAsyncResult : AsyncResult
 	{
 		private Mapping mapping;
 		

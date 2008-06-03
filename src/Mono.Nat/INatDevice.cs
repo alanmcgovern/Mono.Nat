@@ -35,8 +35,6 @@ namespace Mono.Nat
 {
 	public interface INatDevice
 	{
-		INatController NatController { get; }
-		
 		void CreatePortMap (Mapping mapping);
 		void DeletePortMap (Mapping mapping);
 		

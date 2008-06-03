@@ -36,17 +36,10 @@ namespace Mono.Nat
 	public abstract class AbstractNatDevice : INatDevice
 	{
 		private DateTime lastSeen;
-	    private INatController controller;
 		
-		protected AbstractNatDevice (INatController controller)
+		protected AbstractNatDevice ()
 		{
-			this.controller = controller;
-		}
-		
-		public INatController NatController
-		{
-            protected set { controller = value; }
-			get { return controller; }
+
 		}
 		
 		public DateTime LastSeen

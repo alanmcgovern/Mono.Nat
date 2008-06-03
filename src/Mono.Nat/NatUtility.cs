@@ -34,48 +34,69 @@ namespace Mono.Nat
 {
 	public static class NatUtility
 	{
+        private static bool searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
-		
-		private static List<INatController> controllers;
+        private static UdpClient client = new UdpClient(0);
 
-		static NatUtility ()
-		{
-			controllers = new List<INatController> ();
-		}
-		
-		public static IEnumerable<INatController> Controllers
-		{
-			get { return controllers; }
-		}
+		private static List<ISearcher> controllers;
 
-		public static void AddController (INatController controller)
-		{
-			if (controller == null)
-				throw new ArgumentNullException ("controller");
+        static NatUtility()
+        {
+            controllers = new List<ISearcher>();
+            //controllers.Add(new UpnpSearcher());
+            controllers.Add(new PmpSearcher());
 
-			controller.DeviceFound += delegate (object sender, DeviceEventArgs args) {
-				if (DeviceFound != null)
-					DeviceFound (sender, args);
-			};
-			controller.DeviceLost += delegate (object sender, DeviceEventArgs args) {
-				if (DeviceLost != null)
-					DeviceLost (sender, args);
-			};
-				
-			controllers.Add (controller);
-		}
+            foreach (ISearcher searcher in controllers)
+            {
+                searcher.DeviceFound += delegate(object sender, DeviceEventArgs args)
+                {
+                    if (DeviceFound != null)
+                        DeviceFound(sender, args);
+                };
+                searcher.DeviceLost += delegate(object sender, DeviceEventArgs args)
+                {
+                    if (DeviceLost != null)
+                        DeviceLost(sender, args);
+                };
+            }
+            Thread t = new Thread((ThreadStart)delegate { SearchAndListen(); });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        private static void SearchAndListen()
+        {
+            IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"),5351);
+            while (true)
+            {
+                if (client.Available > 0)
+                {
+                    byte[] data = client.Receive(ref received);
+
+                    foreach (ISearcher s in controllers)
+                        s.Handle(data, received);
+                    continue;
+                }
+
+                foreach (ISearcher s in controllers)
+                    if (s.NextSearch < DateTime.Now && searching)
+                    {
+                        Console.WriteLine("Searching for: {0}", s.GetType().Name);
+                        s.Search(client);
+                    }
+                System.Threading.Thread.Sleep(10);
+            }
+        }
 		
 		public static void StartDiscovery ()
 		{
-			foreach (INatController controller in controllers)
-				controller.StartDiscovery ();
+            searching = true;
 		}
 
 		public static void StopDiscovery ()
 		{
-			foreach (INatController controller in controllers)
-				controller.StopDiscovery ();
+            searching = false;
 		}
 		
 		public static IPAddress[] GetLocalAddresses (bool includeIPv6)

@@ -32,7 +32,7 @@ using System.Threading;
 
 namespace Mono.Nat.Upnp
 {
-	internal class PortMapAsyncResult : AbstractPortMapAsyncResult
+	internal class PortMapAsyncResult : AsyncResult
 	{
 		private WebRequest request;
 		private MessageBase savedMessage;

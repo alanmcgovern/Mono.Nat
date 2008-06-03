@@ -47,8 +47,7 @@ namespace Mono.Nat.Upnp
 		/// </summary>
 		private NatDeviceCallback callback;
 		
-		internal UpnpNatDevice (INatController controller, string deviceDetails)
-			: base (controller)
+		internal UpnpNatDevice (string deviceDetails)
 		{
 			this.LastSeen = DateTime.Now;
 
@@ -133,7 +132,7 @@ namespace Mono.Nat.Upnp
 		/// </summary>
         public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
-            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatController.LocalAddresses[0], this);
+            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatUtility.GetLocalAddresses(false)[0], this);
             return BeginMessageInternal(message, callback, mapping, EndCreatePortMapInternal);
 		}
 
@@ -323,12 +322,7 @@ namespace Mono.Nat.Upnp
 		{
 			PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
 			mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-			mappingResult.IsCompleted = true;
-			mappingResult.AsyncWaitHandle.Set();
-
-			// Invoke the callback if one was supplied
-			if (mappingResult.CompletionCallback != null)
-				mappingResult.CompletionCallback(mappingResult);
+            mappingResult.Complete();
 		}
 
 		private MessageBase DecodeMessageFromResponse(Stream s, long length)
