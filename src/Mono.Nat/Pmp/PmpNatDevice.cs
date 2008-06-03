@@ -33,7 +33,7 @@ using System.Collections.Generic;
 
 namespace Mono.Nat.Pmp
 {
-	public sealed class PmpNatDevice : AbstractNatDevice, IEquatable<PmpNatDevice> 
+	internal sealed class PmpNatDevice : AbstractNatDevice, IEquatable<PmpNatDevice> 
 	{
         private AsyncResult externalIpResult;
         private bool pendingOp;
