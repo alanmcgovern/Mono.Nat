@@ -35,7 +35,7 @@ namespace Mono.Nat
 {
 	public delegate void NatDeviceCallback (INatDevice device);
 	
-	public interface INatController : IDisposable
+	internal interface INatController : IDisposable
 	{
 		event EventHandler<DeviceEventArgs> DeviceFound;
 		event EventHandler<DeviceEventArgs> DeviceLost;
