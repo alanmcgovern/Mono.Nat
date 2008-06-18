@@ -267,7 +267,19 @@ namespace Mono.Nat.Pmp
 				}
 			}
 		}
-		
+
+
+        /// <summary>
+        /// Overridden.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString( )
+        {
+            return String.Format( "PmpNatDevice - Local Address: {0}, Public IP: {1}, Last Seen: {2}",
+                this.localAddress, this.publicAddress, this.LastSeen );
+        }
+
+
 		private class CreatePortMapAsyncState
 		{
 			internal byte[] Buffer;

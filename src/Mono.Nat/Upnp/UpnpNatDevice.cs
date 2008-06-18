@@ -540,5 +540,17 @@ namespace Mono.Nat.Upnp
 					response.Close();
 			}
 		}
+
+        /// <summary>
+        /// Overridden.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString( )
+        {
+            //GetExternalIP is blocking and can throw exceptions, can't use it here.
+            return String.Format( 
+                "UpnpNatDevice - EndPoint: {0}, External IP: {1}, Control Url: {2}, Service Description Url: {3}, Service Type: {4}, Last Seen: {5}",
+                this.hostEndPoint, "Manually Check" /*this.GetExternalIP()*/, this.controlUrl, this.serviceDescriptionUrl, this.serviceType, this.LastSeen);
+        }
 	}
 }

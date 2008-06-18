@@ -113,5 +113,11 @@ namespace Mono.Nat
 		{
 			return this.protocol.GetHashCode() ^ this.privatePort.GetHashCode() ^ this.publicPort.GetHashCode();
 		}
+
+        public override string ToString( )
+        {
+            return String.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
+                this.protocol, this.publicPort, this.privatePort, this.description, this.expiration, this.lifetime );
+        }
 	}
 }
