@@ -44,8 +44,8 @@ namespace Mono.Nat
         static NatUtility()
         {
             controllers = new List<ISearcher>();
-            //controllers.Add(new UpnpSearcher());
-            controllers.Add(new PmpSearcher());
+            controllers.Add(new UpnpSearcher());
+            //controllers.Add(new PmpSearcher());
 
             foreach (ISearcher searcher in controllers)
             {

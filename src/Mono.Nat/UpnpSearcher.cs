@@ -9,7 +9,7 @@ namespace Mono.Nat
 {
     internal class UpnpSearcher : ISearcher
     {
-        private const int SearchPeriod = 120 * 1000; // The time in seconds between each search
+        private const int SearchPeriod = 5 * 60; // The time in seconds between each search
 
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
@@ -25,7 +25,7 @@ namespace Mono.Nat
         }
         public void Search(System.Net.Sockets.UdpClient client)
         {
-            nextSearch = DateTime.Now.AddMinutes(SearchPeriod);
+            nextSearch = DateTime.Now.AddSeconds(SearchPeriod);
             byte[] data = DiscoverDeviceMessage.Encode();
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
