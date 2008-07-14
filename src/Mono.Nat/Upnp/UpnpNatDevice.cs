@@ -69,8 +69,16 @@ namespace Mono.Nat.Upnp
 				string hostAddressAndPort = locationDetails.Remove(locationDetails.IndexOf('/'));
 
 				// From this we parse out the IP address and Port
-				this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
-					Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
+                if (hostAddressAndPort.IndexOf(':') > 0)
+                {
+                    this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
+                    Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    // there is no port specified, use default port (80)
+                    this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort), 80);
+                }
 
 				Console.WriteLine("Parsed device as: {0}", this.hostEndPoint.ToString());
 				
