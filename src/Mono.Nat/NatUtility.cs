@@ -37,6 +37,12 @@ namespace Mono.Nat
         private static bool searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
+        
+        /// <summary>
+        /// Handler for any unhandled exceptions in the searcher thread. If set, the searcher thread will not crash the
+        /// application on an unhandled exception, but will leave the decision up to the calling code.
+        /// </summary>
+        public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
         private static UdpClient client = new UdpClient(0);
 
 		private static List<ISearcher> controllers;
@@ -68,24 +74,34 @@ namespace Mono.Nat
         private static void SearchAndListen()
         {
             IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"),5351);
-            while (true)
+            try
             {
-                if (client.Available > 0)
+                while (true)
                 {
-                    byte[] data = client.Receive(ref received);
+                    if (client.Available > 0)
+                    {
+                        byte[] data = client.Receive(ref received);
+
+                        foreach (ISearcher s in controllers)
+                            s.Handle(data, received);
+                        continue;
+                    }
 
                     foreach (ISearcher s in controllers)
-                        s.Handle(data, received);
-                    continue;
+                        if (s.NextSearch < DateTime.Now && searching)
+                        {
+                            Console.WriteLine("Searching for: {0}", s.GetType().Name);
+                            s.Search(client);
+                        }
+                    System.Threading.Thread.Sleep(10);
                 }
-
-                foreach (ISearcher s in controllers)
-                    if (s.NextSearch < DateTime.Now && searching)
-                    {
-                        Console.WriteLine("Searching for: {0}", s.GetType().Name);
-                        s.Search(client);
-                    }
-                System.Threading.Thread.Sleep(10);
+            }
+            catch (Exception e)
+            {
+                if (UnhandledException != null)
+                    UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
+                else
+                    throw;
             }
         }
 		
