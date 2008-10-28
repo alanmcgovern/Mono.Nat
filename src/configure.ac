@@ -22,25 +22,25 @@ if test "x$GMCS" = "xno"; then
 fi
 
 
-AC_ARG_ENABLE(debug_any_cpu,
-	AC_HELP_STRING([--enable-debug_any_cpu],
-		[Use 'DEBUG_ANY_CPU' Configuration [default=NO]]),
-		enable_debug_any_cpu=yes, enable_debug_any_cpu=no)
-AM_CONDITIONAL(ENABLE_DEBUG_ANY_CPU, test x$enable_debug_any_cpu = xyes)
-if test "x$enable_debug_any_cpu" = "xyes" ; then
+AC_ARG_ENABLE(debug,
+	AC_HELP_STRING([--enable-debug],
+		[Use 'DEBUG' Configuration [default=NO]]),
+		enable_debug=yes, enable_debug=no)
+AM_CONDITIONAL(ENABLE_DEBUG, test x$enable_debug = xyes)
+if test "x$enable_debug" = "xyes" ; then
 	CONFIG_REQUESTED="yes"
 fi
-AC_ARG_ENABLE(release_any_cpu,
-	AC_HELP_STRING([--enable-release_any_cpu],
-		[Use 'RELEASE_ANY_CPU' Configuration [default=YES]]),
-		enable_release_any_cpu=yes, enable_release_any_cpu=no)
-AM_CONDITIONAL(ENABLE_RELEASE_ANY_CPU, test x$enable_release_any_cpu = xyes)
-if test "x$enable_release_any_cpu" = "xyes" ; then
+AC_ARG_ENABLE(release,
+	AC_HELP_STRING([--enable-release],
+		[Use 'RELEASE' Configuration [default=YES]]),
+		enable_release=yes, enable_release=no)
+AM_CONDITIONAL(ENABLE_RELEASE, test x$enable_release = xyes)
+if test "x$enable_release" = "xyes" ; then
 	CONFIG_REQUESTED="yes"
 fi
 if test -z "$CONFIG_REQUESTED" ; then
-	AM_CONDITIONAL(ENABLE_RELEASE_ANY_CPU, true)
-	enable_release_any_cpu=yes
+	AM_CONDITIONAL(ENABLE_RELEASE, true)
+	enable_release=yes
 fi
 
 
@@ -50,9 +50,7 @@ dnl package checks, per config
 
 
 AC_CONFIG_FILES([
-Mono.Nat.Test/mono.nat.test
 Makefile
-Mono.Nat.Test/Makefile
 Mono.Nat/Makefile
 Mono.Nat/mono.nat.pc
 
