@@ -74,9 +74,9 @@ namespace Mono.Nat
         private static void SearchAndListen()
         {
             IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"),5351);
-            try
+            while (true)
             {
-                while (true)
+                try
                 {
                     if (client.Available > 0)
                     {
@@ -95,13 +95,11 @@ namespace Mono.Nat
                         }
                     System.Threading.Thread.Sleep(10);
                 }
-            }
-            catch (Exception e)
-            {
-                if (UnhandledException != null)
-                    UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
-                else
-                    throw;
+                catch (Exception e)
+                {
+                    if (UnhandledException != null)
+                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
+                }
             }
         }
 		
