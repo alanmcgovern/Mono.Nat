@@ -1,6 +1,6 @@
 Name: Mono.Nat
 Description: Mono.Nat
-Version: 1.0
+Version: @VERSION@
 
 Requires: 
 Libs: -r:@expanded_libdir@/@PACKAGE@/Mono.Nat.dll
