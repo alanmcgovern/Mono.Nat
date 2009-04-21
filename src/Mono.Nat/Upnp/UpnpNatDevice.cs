@@ -467,8 +467,10 @@ namespace Mono.Nat.Upnp
 				response = request.EndGetResponse(result) as HttpWebResponse;
 				Stream s = response.GetResponseStream();
 
-				if (response.StatusCode != HttpStatusCode.OK)
+				if (response.StatusCode != HttpStatusCode.OK) {
+					NatUtility.Log("{0}: Couldn't get services list: {1}", HostEndPoint, response.StatusCode);
 					return; // FIXME: This the best thing to do??
+				}
 
 				while (true)
 				{
@@ -491,10 +493,12 @@ namespace Mono.Nat.Upnp
 						    response.Close();
 						    return;
 						}
+						NatUtility.Log("{0}: Couldn't parse services list", HostEndPoint);
 						System.Threading.Thread.Sleep(10);
 					}
 				}
 
+				NatUtility.Log("{0}: Parsed services list", HostEndPoint);
 				XmlNamespaceManager ns = new XmlNamespaceManager(xmldoc.NameTable);
 				ns.AddNamespace("ns", "urn:schemas-upnp-org:device-1-0");
 				XmlNodeList nodes = xmldoc.SelectNodes("//*/ns:serviceList", ns);
@@ -506,29 +510,31 @@ namespace Mono.Nat.Upnp
 					{
 						//If the service is a WANIPConnection, then we have what we want
                         string type = service["serviceType"].InnerText;
+						NatUtility.Log("{0}: Found service: {1}", HostEndPoint, type);
                         StringComparison comparison = StringComparison.InvariantCultureIgnoreCase;
                         if (type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", comparison) ||
                             type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", comparison))
 						{
 							this.serviceType = type;
 							this.controlUrl = service["controlURL"].InnerText;
-							Console.WriteLine("Found device at control url: {0}", controlUrl);
+							NatUtility.Log("{0}: Found upnp service at: {1}", HostEndPoint, controlUrl);
 							try
 							{
 								Uri u = new Uri(controlUrl);
 								if (u.IsAbsoluteUri)
 								{
-									Console.WriteLine("Absolute URI detected, rebasing hostaddresss");
+									EndPoint old = hostEndPoint;
 									this.hostEndPoint = new IPEndPoint(IPAddress.Parse(u.Host), u.Port);
-									Console.WriteLine("New host address: {0}", hostEndPoint);
+									NatUtility.Log("{0}: Absolute URI detected. Host address is now: {1}", old, HostEndPoint);
 									this.controlUrl = controlUrl.Substring(u.GetLeftPart(UriPartial.Authority).Length);
-									Console.WriteLine("New control url: {0}", controlUrl);
+									NatUtility.Log("{0}: New control url: {1}", HostEndPoint, controlUrl);
 								}
 							}
 							catch
 							{
-								Console.WriteLine("Could not check if controlUrl was relative... assume relative");
+								NatUtility.Log("{0}: Assuming control Uri is relative: {1}", HostEndPoint, controlUrl);
 							}
+							NatUtility.Log("{0}: Handshake Complete", HostEndPoint);
 							this.callback(this);
 							return;
 						}
@@ -538,9 +544,10 @@ namespace Mono.Nat.Upnp
 				//If we get here, it means that we didn't get WANIPConnection service, which means no uPnP forwarding
 				//So we don't invoke the callback, so this device is never added to our lists
 			}
-			catch (WebException)
+			catch (WebException ex)
 			{
 				// Just drop the connection, FIXME: Should i retry?
+				NatUtility.Log("{0}: Device denied the connection attempt: {1}", HostEndPoint, ex);
 			}
 			finally
 			{

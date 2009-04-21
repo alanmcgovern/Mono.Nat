@@ -49,11 +49,14 @@ namespace Mono.Nat
             {
                 dataString = System.Text.UTF8Encoding.UTF8.GetString(response);
 
+				if (NatUtility.Verbose)
+					NatUtility.Log("UPnP Response: {0}", dataString);
                 // If this device does not have a WANIPConnection service, then ignore it
                 if ((dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) == -1) &&
                     (dataString.IndexOf("schemas-upnp-org:device:InternetGatewayDevice:1", StringComparison.InvariantCultureIgnoreCase) == -1))
                     return;
 
+				NatUtility.Log("UPnP Response: Detected upnp capable router");
                 // We have an internet gateway device now
                 UpnpNatDevice d = new UpnpNatDevice(dataString);
 
@@ -67,6 +70,7 @@ namespace Mono.Nat
                 {
                     // Once we've parsed the information we need, we tell the device to retrieve it's service list
                     // Once we successfully receive the service list, the callback provided will be invoked.
+					NatUtility.Log("Fetching servce list: {0}", d.HostEndPoint);
                     d.GetServicesList(new NatDeviceCallback(DeviceSetupComplete));
                 }
             }

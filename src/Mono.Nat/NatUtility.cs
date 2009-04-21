@@ -29,6 +29,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Mono.Nat
 {
@@ -38,15 +39,25 @@ namespace Mono.Nat
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
-        /// <summary>
-        /// Handler for any unhandled exceptions in the searcher thread. If set, the searcher thread will not crash the
-        /// application on an unhandled exception, but will leave the decision up to the calling code.
-        /// </summary>
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
         private static UdpClient client = new UdpClient(0);
 
+		private static TextWriter logger;
 		private static List<ISearcher> controllers;
+		private static bool verbose;
 
+		public static TextWriter Logger
+		{
+			get { return logger; }
+			set { logger = value; }
+		}
+
+		public static bool Verbose
+		{
+			get { return verbose; }
+			set { verbose = value; }
+		}
+		
         static NatUtility()
         {
             controllers = new List<ISearcher>();
@@ -70,6 +81,13 @@ namespace Mono.Nat
             t.IsBackground = true;
             t.Start();
         }
+
+		internal static void Log(string format, params object[] args)
+		{
+			TextWriter logger = Logger;
+			if (logger != null)
+				logger.WriteLine(format, args);
+		}
 
         private static void SearchAndListen()
         {
