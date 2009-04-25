@@ -52,8 +52,10 @@ namespace Mono.Nat
 				if (NatUtility.Verbose)
 					NatUtility.Log("UPnP Response: {0}", dataString);
                 // If this device does not have a WANIPConnection service, then ignore it
-                if ((dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:1", StringComparison.InvariantCultureIgnoreCase) == -1) &&
-                    (dataString.IndexOf("schemas-upnp-org:device:InternetGatewayDevice:1", StringComparison.InvariantCultureIgnoreCase) == -1))
+                // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
+                // but there are some routers missing the '1'.
+                if ((dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:", StringComparison.InvariantCultureIgnoreCase) == -1) &&
+                    (dataString.IndexOf("schemas-upnp-org:device:InternetGatewayDevice:", StringComparison.InvariantCultureIgnoreCase) == -1))
                     return;
 
 				NatUtility.Log("UPnP Response: Detected upnp capable router");
