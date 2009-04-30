@@ -58,7 +58,7 @@ namespace Mono.Nat
                 return;
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
-                Console.WriteLine("Non zero error: {0}", errorcode);
+                NatUtility.Log("Non zero error: {0}", errorcode);
 
             IPAddress publicIp = new IPAddress(new byte[] { response[8], response[9], response[10], response[11] });
             nextSearch = DateTime.Now.AddMinutes(5);

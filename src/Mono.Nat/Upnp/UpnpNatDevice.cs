@@ -61,7 +61,7 @@ namespace Mono.Nat.Upnp
 			// Are we going to get addresses with the "http://" attached?
 			if (locationDetails.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
 			{
-				Console.WriteLine("Found device at: {0}", locationDetails);
+				NatUtility.Log("Found device at: {0}", locationDetails);
 				// This bit strings out the "http://" from the string
 				locationDetails = locationDetails.Substring(7);
 
@@ -80,7 +80,7 @@ namespace Mono.Nat.Upnp
                     this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort), 80);
                 }
 
-				Console.WriteLine("Parsed device as: {0}", this.hostEndPoint.ToString());
+				NatUtility.Log("Parsed device as: {0}", this.hostEndPoint.ToString());
 				
 				// The service description URL is the remainder of the "locationDetails" string. The bit that was originally after the ip
 				// and port information

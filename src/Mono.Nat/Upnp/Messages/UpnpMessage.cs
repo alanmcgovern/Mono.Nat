@@ -47,7 +47,7 @@ namespace Mono.Nat.Upnp
         protected WebRequest CreateRequest(string upnpMethod, string methodParameters, string webrequestMethod)
         {
             string ss = "http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl;
-            Console.WriteLine("Initiating request to: {0}", ss);
+            NatUtility.Log("Initiating request to: {0}", ss);
             Uri location = new Uri(ss);
 
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
@@ -106,8 +106,8 @@ namespace Mono.Nat.Upnp
             if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
                 return new GetGenericPortMappingEntryResponseMessage(node, false);
 
-            Console.WriteLine("Unknown message returned. Please send me back the following XML:");
-            Console.WriteLine(message);
+            NatUtility.Log("Unknown message returned. Please send me back the following XML:");
+            NatUtility.Log(message);
             return null;
         }
 

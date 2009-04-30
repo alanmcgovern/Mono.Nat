@@ -108,7 +108,7 @@ namespace Mono.Nat
                     foreach (ISearcher s in controllers)
                         if (s.NextSearch < DateTime.Now && searching)
                         {
-                            Console.WriteLine("Searching for: {0}", s.GetType().Name);
+                            Log("Searching for: {0}", s.GetType().Name);
                             s.Search(client);
                         }
                     System.Threading.Thread.Sleep(10);
