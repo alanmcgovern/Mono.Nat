@@ -9,6 +9,8 @@ namespace Mono.Nat
 {
     internal class UpnpSearcher : ISearcher
     {
+        internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANIPConnection:1";
+
         private const int SearchPeriod = 5 * 60; // The time in seconds between each search
 
         public event EventHandler<DeviceEventArgs> DeviceFound;
@@ -54,19 +56,20 @@ namespace Mono.Nat
                 // If this device does not have a WANIPConnection service, then ignore it
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
                 // but there are some routers missing the '1'.
+                string log = "UPnP Response: Router advertised a '{0}' service";
                 string serviceType = null;
                 StringComparison c = StringComparison.OrdinalIgnoreCase;
-                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != 1)
-                    serviceType = "urn:schemas-upnp-org:service:WANIPConnection:1";
-                else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != 1)
-                    serviceType = "urn:schemas-upnp-org:device:InternetGatewayDevice:1";
-
-                if (serviceType == null)
+                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1)
+                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:");
+                else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != -1)
+                    NatUtility.Log(log, "urn:schemas-upnp-org:device:InternetGatewayDevice:");
+                else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) == -1)
+                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
+                else
                     return;
 
-                NatUtility.Log("UPnP Response: Router advertised a '{0}' service", serviceType);
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(dataString, serviceType);
+                UpnpNatDevice d = new UpnpNatDevice(dataString, WanIPUrn);
 
                 if (this.devices.Contains(d))
                 {
