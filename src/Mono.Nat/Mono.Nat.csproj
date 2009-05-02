@@ -37,7 +37,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractNatController.cs" />
     <Compile Include="AbstractNatDevice.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncResults\AsyncResult.cs" />
@@ -45,7 +44,6 @@
     <Compile Include="Enums\ProtocolType.cs" />
     <Compile Include="EventArgs\DeviceEventArgs.cs" />
     <Compile Include="Exceptions\MappingException.cs" />
-    <Compile Include="INatController.cs" />
     <Compile Include="INatDevice.cs" />
     <Compile Include="ISearcher.cs" />
     <Compile Include="Mapping.cs" />
@@ -53,9 +51,7 @@
     <Compile Include="PmpSearcher.cs" />
     <Compile Include="Pmp\AsyncResults\PortMapAsyncResult.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
-    <Compile Include="Pmp\PmpNatController.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
-    <Compile Include="TimerUtility.cs" />
     <Compile Include="UpnpSearcher.cs" />
     <Compile Include="Upnp\AsyncResults\GetAllMappingsAsyncResult.cs" />
     <Compile Include="Upnp\AsyncResults\PortMapAsyncResult.cs" />
@@ -72,7 +68,6 @@
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\UpnpMessage.cs" />
-    <Compile Include="Upnp\UpnpNatController.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
