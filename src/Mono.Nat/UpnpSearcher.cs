@@ -47,20 +47,26 @@ namespace Mono.Nat
             // we should still be in a position to handle the next reply correctly.
             try
             {
-                dataString = System.Text.UTF8Encoding.UTF8.GetString(response);
+                dataString = Encoding.UTF8.GetString(response);
 
 				if (NatUtility.Verbose)
 					NatUtility.Log("UPnP Response: {0}", dataString);
                 // If this device does not have a WANIPConnection service, then ignore it
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
                 // but there are some routers missing the '1'.
-                if ((dataString.IndexOf("schemas-upnp-org:service:WANIPConnection:", StringComparison.InvariantCultureIgnoreCase) == -1) &&
-                    (dataString.IndexOf("schemas-upnp-org:device:InternetGatewayDevice:", StringComparison.InvariantCultureIgnoreCase) == -1))
+                string serviceType = null;
+                StringComparison c = StringComparison.OrdinalIgnoreCase;
+                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != 1)
+                    serviceType = "urn:schemas-upnp-org:service:WANIPConnection:1";
+                else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != 1)
+                    serviceType = "urn:schemas-upnp-org:device:InternetGatewayDevice:1";
+
+                if (serviceType == null)
                     return;
 
-				NatUtility.Log("UPnP Response: Detected upnp capable router");
+                NatUtility.Log("UPnP Response: Router advertised a '{0}' service", serviceType);
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(dataString);
+                UpnpNatDevice d = new UpnpNatDevice(dataString, serviceType);
 
                 if (this.devices.Contains(d))
                 {

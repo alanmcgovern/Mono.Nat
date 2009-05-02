@@ -54,14 +54,14 @@ namespace Mono.Nat.Upnp
             req.KeepAlive = false;
             req.Method = webrequestMethod;
             req.ContentType = "text/xml; charset=\"utf-8\"";
-            req.Headers.Add("SOAPACTION", "\"urn:schemas-upnp-org:service:WANIPConnection:1#" + upnpMethod + "\"");
+            req.Headers.Add("SOAPACTION", "\"" + device.ServiceType + "#" + upnpMethod + "\"");
 
             string body = "<s:Envelope "
                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
                + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                + "<s:Body>"
                + "<u:" + upnpMethod + " "
-               + "xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:1\">"
+               + "xmlns:u=\"" + device.ServiceType + "\">"
                + methodParameters
                + "</u:" + upnpMethod + ">"
                + "</s:Body>"

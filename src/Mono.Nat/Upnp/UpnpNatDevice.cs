@@ -47,12 +47,13 @@ namespace Mono.Nat.Upnp
 		/// </summary>
 		private NatDeviceCallback callback;
 		
-		internal UpnpNatDevice (string deviceDetails)
+		internal UpnpNatDevice (string deviceDetails, string serviceType)
 		{
 			this.LastSeen = DateTime.Now;
 
 			// Split the string at the "location" section so i can extract the ipaddress and service description url
 			string locationDetails = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 9).Split('\r')[0];
+            this.serviceType = serviceType;
 
 			// Make sure we have no excess whitespace
 			locationDetails = locationDetails.Trim();
@@ -511,11 +512,9 @@ namespace Mono.Nat.Upnp
 						//If the service is a WANIPConnection, then we have what we want
                         string type = service["serviceType"].InnerText;
 						NatUtility.Log("{0}: Found service: {1}", HostEndPoint, type);
-                        StringComparison comparison = StringComparison.InvariantCultureIgnoreCase;
-                        if (type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", comparison) ||
-                            type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", comparison))
+                        StringComparison c = StringComparison.OrdinalIgnoreCase;
+                        if (type.Equals (this.serviceType, c))
 						{
-							this.serviceType = type;
 							this.controlUrl = service["controlURL"].InnerText;
 							NatUtility.Log("{0}: Found upnp service at: {1}", HostEndPoint, controlUrl);
 							try
