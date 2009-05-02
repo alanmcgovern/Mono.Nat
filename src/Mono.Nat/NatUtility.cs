@@ -128,6 +128,7 @@ namespace Mono.Nat
 
 		public static void StopDiscovery ()
 		{
+            controllers.Clear();
             searching = false;
 		}
 		
