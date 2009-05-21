@@ -40,7 +40,7 @@ namespace Mono.Nat
             get { return searchEndpoint; }
         }
 
-        public void Handle(byte[] response, IPEndPoint endpoint)
+        public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             // Convert it to a string for easy parsing
             string dataString = null;
@@ -57,7 +57,6 @@ namespace Mono.Nat
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
                 // but there are some routers missing the '1'.
                 string log = "UPnP Response: Router advertised a '{0}' service";
-                string serviceType = null;
                 StringComparison c = StringComparison.OrdinalIgnoreCase;
                 if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1)
                     NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:");
@@ -69,7 +68,7 @@ namespace Mono.Nat
                     return;
 
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(dataString, WanIPUrn);
+                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString, WanIPUrn);
 
                 if (this.devices.Contains(d))
                 {

@@ -15,7 +15,7 @@ namespace Mono.Nat
 
         void Search(UdpClient client);
         IPEndPoint SearchEndpoint { get; }
-        void Handle(byte[] response, IPEndPoint endpoint);
+        void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
         DateTime NextSearch { get; }
     }
 }

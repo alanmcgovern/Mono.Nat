@@ -46,7 +46,7 @@ namespace Mono.Nat
             get { return searchEndpoint; }
         }
 
-        public void Handle(byte[] response, IPEndPoint endpoint)
+        public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             if (!endpoint.Address.Equals(searchEndpoint.Address))
                 return;

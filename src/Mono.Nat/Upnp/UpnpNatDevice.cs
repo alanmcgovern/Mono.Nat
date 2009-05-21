@@ -38,6 +38,7 @@ namespace Mono.Nat.Upnp
 	public sealed class UpnpNatDevice : AbstractNatDevice, IEquatable<UpnpNatDevice> 
 	{
 		private EndPoint hostEndPoint;
+		private IPAddress localAddress;
 		private string serviceDescriptionUrl;
 		private string controlUrl;
 		private string serviceType;
@@ -47,9 +48,10 @@ namespace Mono.Nat.Upnp
 		/// </summary>
 		private NatDeviceCallback callback;
 		
-		internal UpnpNatDevice (string deviceDetails, string serviceType)
+		internal UpnpNatDevice (IPAddress localAddress, string deviceDetails, string serviceType)
 		{
 			this.LastSeen = DateTime.Now;
+			this.localAddress = localAddress;
 
 			// Split the string at the "location" section so i can extract the ipaddress and service description url
 			string locationDetails = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 9).Split('\r')[0];
@@ -141,7 +143,7 @@ namespace Mono.Nat.Upnp
 		/// </summary>
         public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
-            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, NatUtility.GetLocalAddresses(false)[0], this);
+            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, localAddress, this);
             return BeginMessageInternal(message, callback, mapping, EndCreatePortMapInternal);
 		}
 

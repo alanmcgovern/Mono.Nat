@@ -118,12 +118,13 @@ namespace Mono.Nat
                 {
 					foreach (UdpClient client in clients)
 					{
+						IPAddress localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
 						if (client.Available > 0)
 						{
 							byte[] data = client.Receive(ref received);
 
 							foreach (ISearcher s in controllers)
-								s.Handle(data, received);
+								s.Handle(localAddress, data, received);
 							continue;
 						}
 					}
@@ -155,7 +156,8 @@ namespace Mono.Nat
             controllers.Clear();
             searching = false;
 		}
-		
+
+		[Obsolete ("This method serves no purpose and shouldn't be used")]
 		public static IPAddress[] GetLocalAddresses (bool includeIPv6)
 		{
 			List<IPAddress> addresses = new List<IPAddress> ();
