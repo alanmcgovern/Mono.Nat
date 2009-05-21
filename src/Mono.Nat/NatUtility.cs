@@ -30,6 +30,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.NetworkInformation;
 
 namespace Mono.Nat
 {
@@ -40,7 +41,7 @@ namespace Mono.Nat
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
-        private static UdpClient client = new UdpClient(0);
+		private static List<UdpClient> clients = new List<UdpClient>();
 
 		private static TextWriter logger;
 		private static List<ISearcher> controllers;
@@ -60,6 +61,7 @@ namespace Mono.Nat
 		
         static NatUtility()
         {
+			CreateSockets();
             controllers = new List<ISearcher>();
             controllers.Add(new UpnpSearcher());
             //controllers.Add(new PmpSearcher());
@@ -82,6 +84,24 @@ namespace Mono.Nat
             t.Start();
         }
 
+		static void CreateSockets()
+		{
+			try
+			{
+				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ())
+				{
+					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
+					{
+						clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				clients.Add(new UdpClient(0));
+			}
+		}
+
 		internal static void Log(string format, params object[] args)
 		{
 			TextWriter logger = Logger;
@@ -96,20 +116,24 @@ namespace Mono.Nat
             {
                 try
                 {
-                    if (client.Available > 0)
-                    {
-                        byte[] data = client.Receive(ref received);
+					foreach (UdpClient client in clients)
+					{
+						if (client.Available > 0)
+						{
+							byte[] data = client.Receive(ref received);
 
-                        foreach (ISearcher s in controllers)
-                            s.Handle(data, received);
-                        continue;
-                    }
+							foreach (ISearcher s in controllers)
+								s.Handle(data, received);
+							continue;
+						}
+					}
 
                     foreach (ISearcher s in controllers)
                         if (s.NextSearch < DateTime.Now && searching)
                         {
                             Log("Searching for: {0}", s.GetType().Name);
-                            s.Search(client);
+							foreach (UdpClient client in clients)
+								s.Search(client);
                         }
                     System.Threading.Thread.Sleep(10);
                 }
