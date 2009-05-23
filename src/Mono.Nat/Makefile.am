@@ -44,7 +44,6 @@ RESGEN=resgen2
 all: $(ASSEMBLY) $(PROGRAMFILES) $(LINUX_PKGCONFIG) 
 
 FILES = \
-	AbstractNatController.cs \
 	AbstractNatDevice.cs \
 	AssemblyInfo.cs \
 	AsyncResults/AsyncResult.cs \
@@ -52,7 +51,6 @@ FILES = \
 	Enums/ProtocolType.cs \
 	EventArgs/DeviceEventArgs.cs \
 	Exceptions/MappingException.cs \
-	INatController.cs \
 	INatDevice.cs \
 	ISearcher.cs \
 	Mapping.cs \
@@ -60,9 +58,7 @@ FILES = \
 	PmpSearcher.cs \
 	Pmp/AsyncResults/PortMapAsyncResult.cs \
 	Pmp/PmpConstants.cs \
-	Pmp/PmpNatController.cs \
 	Pmp/PmpNatDevice.cs \
-	TimerUtility.cs \
 	UpnpSearcher.cs \
 	Upnp/AsyncResults/GetAllMappingsAsyncResult.cs \
 	Upnp/AsyncResults/PortMapAsyncResult.cs \
@@ -79,7 +75,6 @@ FILES = \
 	Upnp/Messages/Responses/GetExternalIPAddressResponseMessage.cs \
 	Upnp/Messages/Responses/GetGenericPortMappingEntryResponseMessage.cs \
 	Upnp/Messages/UpnpMessage.cs \
-	Upnp/UpnpNatController.cs \
 	Upnp/UpnpNatDevice.cs 
 
 DATA_FILES = 
