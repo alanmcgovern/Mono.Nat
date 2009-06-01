@@ -92,7 +92,8 @@ namespace Mono.Nat
 				{
 					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
 					{
-						clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
+						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+							clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
 					}
 				}
 			}
