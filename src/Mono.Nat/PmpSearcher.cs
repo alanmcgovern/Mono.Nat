@@ -3,24 +3,60 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using Mono.Nat.Pmp;
+using System.Net.Sockets;
 
 namespace Mono.Nat
 {
     internal class PmpSearcher : ISearcher
     {
+		static PmpSearcher instance = new PmpSearcher();
+		public static List<UdpClient> sockets = CreateSockets();
+
+		
+
+		public static PmpSearcher Instance
+		{
+			get { return instance; }
+		}
+
         private int timeout;
         private DateTime nextSearch;
         private IPEndPoint searchEndpoint;
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
 
-        public PmpSearcher()
+        PmpSearcher()
         {
             timeout = 250;
-            searchEndpoint = new IPEndPoint(IPAddress.Parse("192.168.0.1"), PmpConstants.Port);
+			// FIXME: Should not hardcode the address - should read gateway address from
+			// the NetworkInformation class - as in UpnpSearcher
+            searchEndpoint = new IPEndPoint(IPAddress.Parse("192.168.0.1"), PmpConstants.ServerPort);
         }
 
-        public void Search(System.Net.Sockets.UdpClient client)
+		private static List<UdpClient> CreateSockets()
+		{
+			// FIXME: Should do the same detection that UPnPSearch does.
+			List<UdpClient> sockets = new List<UdpClient>();
+			sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, 0)));
+			return sockets;
+		}
+
+        public void Search()
+		{
+			foreach (UdpClient s in sockets)
+			{
+				try
+				{
+					Search(s);
+				}
+				catch
+				{
+					// Ignore any search errors
+				}
+			}
+		}
+
+		void Search (UdpClient client)
         {
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds

@@ -41,7 +41,6 @@ namespace Mono.Nat
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
-		private static List<UdpClient> clients = new List<UdpClient>();
 
 		private static TextWriter logger;
 		private static List<ISearcher> controllers;
@@ -61,10 +60,9 @@ namespace Mono.Nat
 		
         static NatUtility()
         {
-			CreateSockets();
             controllers = new List<ISearcher>();
-            controllers.Add(new UpnpSearcher());
-            //controllers.Add(new PmpSearcher());
+            controllers.Add(UpnpSearcher.Instance);
+            //controllers.Add(PmpSearcher.Instance);
 
             foreach (ISearcher searcher in controllers)
             {
@@ -84,25 +82,6 @@ namespace Mono.Nat
             t.Start();
         }
 
-		static void CreateSockets()
-		{
-			try
-			{
-				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ())
-				{
-					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
-					{
-						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
-							clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				clients.Add(new UdpClient(0));
-			}
-		}
-
 		internal static void Log(string format, params object[] args)
 		{
 			TextWriter logger = Logger;
@@ -112,38 +91,40 @@ namespace Mono.Nat
 
         private static void SearchAndListen()
         {
-            IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"),5351);
             while (true)
             {
                 try
                 {
-					foreach (UdpClient client in clients)
-					{
-						IPAddress localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
-						if (client.Available > 0)
-						{
-							byte[] data = client.Receive(ref received);
-
-							foreach (ISearcher s in controllers)
-								s.Handle(localAddress, data, received);
-							continue;
-						}
-					}
+					Receive(UpnpSearcher.Instance, UpnpSearcher.sockets);
+					Receive(PmpSearcher.Instance, PmpSearcher.sockets);
 
                     foreach (ISearcher s in controllers)
                         if (s.NextSearch < DateTime.Now && searching)
                         {
                             Log("Searching for: {0}", s.GetType().Name);
-							foreach (UdpClient client in clients)
-								s.Search(client);
+							s.Search();
                         }
-                    System.Threading.Thread.Sleep(10);
                 }
                 catch (Exception e)
                 {
                     if (UnhandledException != null)
                         UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
                 }
+				System.Threading.Thread.Sleep(10);
+            }
+		}
+
+		static void Receive (ISearcher searcher, List<UdpClient> clients)
+		{
+			IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
+			foreach (UdpClient client in clients)
+			{
+				if (client.Available > 0)
+				{
+				    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+					byte[] data = client.Receive(ref received);
+					searcher.Handle(localAddress, data, received);
+				}
             }
         }
 		

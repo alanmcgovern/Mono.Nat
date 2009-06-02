@@ -4,6 +4,8 @@ using System.Text;
 using System.Net;
 using Mono.Nat.Upnp;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Net.NetworkInformation;
 
 namespace Mono.Nat
 {
@@ -12,6 +14,13 @@ namespace Mono.Nat
         internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANIPConnection:1";
 
         private const int SearchPeriod = 5 * 60; // The time in seconds between each search
+		static UpnpSearcher instance = new UpnpSearcher();
+		public static List<UdpClient> sockets = CreateSockets();
+
+		public static UpnpSearcher Instance
+		{
+			get { return instance; }
+		}
 
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
@@ -25,7 +34,44 @@ namespace Mono.Nat
             devices = new List<INatDevice>();
             searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
         }
-        public void Search(System.Net.Sockets.UdpClient client)
+
+		static List<UdpClient> CreateSockets()
+		{
+			List<UdpClient> clients = new List<UdpClient>();
+			try
+			{
+				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+				{
+					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
+					{
+						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+							clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
+					}
+				}
+			}
+			catch (Exception)
+			{
+				clients.Add(new UdpClient(0));
+			}
+			return clients;
+		}
+
+        public void Search()
+		{
+			foreach (UdpClient s in sockets)
+			{
+				try
+				{
+					Search(s);
+				}
+				catch
+				{
+					// Ignore any search errors
+				}
+			}
+		}
+
+        void Search(UdpClient client)
         {
             nextSearch = DateTime.Now.AddSeconds(SearchPeriod);
             byte[] data = DiscoverDeviceMessage.Encode();
@@ -99,12 +145,6 @@ namespace Mono.Nat
             get { return nextSearch; }
         }
 
-
-        /// <summary>
-        /// This method is invoked when an InternetGatewayDevice has finished setting itself up and is now ready to be used
-        /// to map ports.
-        /// </summary>
-        /// <param name="device">The device which has just finished setting up</param>
         private void DeviceSetupComplete(INatDevice device)
         {
             lock (this.devices)

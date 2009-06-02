@@ -13,7 +13,7 @@ namespace Mono.Nat
         event EventHandler<DeviceEventArgs> DeviceFound;
         event EventHandler<DeviceEventArgs> DeviceLost;
 
-        void Search(UdpClient client);
+        void Search();
         IPEndPoint SearchEndpoint { get; }
         void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
         DateTime NextSearch { get; }

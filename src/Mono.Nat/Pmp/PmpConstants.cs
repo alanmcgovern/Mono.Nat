@@ -37,7 +37,8 @@ namespace Mono.Nat.Pmp
 		public const byte OperationCodeTcp = (byte)2;
         public const byte ServerNoop = (byte)128;
 		
-		public const int Port = 5351;
+		public const int ClientPort = 5350;
+		public const int ServerPort = 5351;
 		
 		public const int RetryDelay = 250;
 		public const int RetryAttempts = 9;

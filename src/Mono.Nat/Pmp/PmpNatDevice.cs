@@ -203,7 +203,7 @@ namespace Mono.Nat.Pmp
 			ThreadPool.QueueUserWorkItem (new WaitCallback (CreatePortMapListen), listenState);
 
 			while (attempt < PmpConstants.RetryAttempts && !listenState.Success) {
-				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (localAddress, PmpConstants.Port));
+				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (localAddress, PmpConstants.ServerPort));
 
 				attempt++;
 				delay *= 2;
@@ -221,7 +221,7 @@ namespace Mono.Nat.Pmp
 			CreatePortMapListenState state = obj as CreatePortMapListenState;
 
 			UdpClient udpClient = new UdpClient (5351);
-			IPEndPoint endPoint = new IPEndPoint (publicAddress, PmpConstants.Port);
+			IPEndPoint endPoint = new IPEndPoint (publicAddress, PmpConstants.ServerPort);
 			
 			while (!state.Success) {
 				byte[] data = udpClient.Receive (ref endPoint);
