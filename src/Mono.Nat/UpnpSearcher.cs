@@ -26,12 +26,14 @@ namespace Mono.Nat
         public event EventHandler<DeviceEventArgs> DeviceLost;
 
         private List<INatDevice> devices;
+		private Dictionary<IPAddress, DateTime> lastFetched;
         private DateTime nextSearch;
         private IPEndPoint searchEndpoint;
 
-        public UpnpSearcher()
+        UpnpSearcher()
         {
             devices = new List<INatDevice>();
+			lastFetched = new Dictionary<IPAddress, DateTime>();
             searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
         }
 
@@ -124,9 +126,20 @@ namespace Mono.Nat
                 }
                 else
                 {
+
+					// If we send 3 requests at a time, ensure we only fetch the services list once
+					// even if three responses are received
+					if (lastFetched.ContainsKey(endpoint.Address))
+					{
+						DateTime last = lastFetched[endpoint.Address];
+						if ((DateTime.Now - last) < TimeSpan.FromSeconds(20))
+							return;
+					}
+					lastFetched[endpoint.Address] = DateTime.Now;
+					
                     // Once we've parsed the information we need, we tell the device to retrieve it's service list
                     // Once we successfully receive the service list, the callback provided will be invoked.
-					NatUtility.Log("Fetching servce list: {0}", d.HostEndPoint);
+					NatUtility.Log("Fetching service list: {0}", d.HostEndPoint);
                     d.GetServicesList(new NatDeviceCallback(DeviceSetupComplete));
                 }
             }
