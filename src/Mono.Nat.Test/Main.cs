@@ -44,8 +44,6 @@ namespace Mono.Nat.Test
 		
 		public NatTest ()
 		{
-			IPAddress[] addresses = NatUtility.GetLocalAddresses (false);
-			
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
 			
