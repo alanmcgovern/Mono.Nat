@@ -110,7 +110,7 @@ namespace Mono.Nat
                     NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:");
                 else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != -1)
                     NatUtility.Log(log, "urn:schemas-upnp-org:device:InternetGatewayDevice:");
-                else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) == -1)
+                else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1)
                     NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
                 else
                     return;
