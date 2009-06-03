@@ -325,13 +325,28 @@ namespace Mono.Nat.Upnp
 		{
 			byte[] body;
 			WebRequest request = message.Encode(out body);
+			PortMapAsyncResult mappingResult = PortMapAsyncResult.Create(message, request, storedCallback, asyncState);
+
 			if (body.Length > 0)
 			{
 				request.ContentLength = body.Length;
-				request.GetRequestStream().Write(body, 0, body.Length);
+				request.BeginGetRequestStream(delegate(IAsyncResult result) {
+					try
+					{
+						Stream s = request.EndGetRequestStream(result);
+						s.Write(body, 0, body.Length);
+						request.BeginGetResponse(callback, mappingResult);
+					}
+					catch (Exception ex)
+					{
+						mappingResult.Complete(ex);
+					}
+				}, null);
 			}
-			PortMapAsyncResult mappingResult = PortMapAsyncResult.Create(message, request, storedCallback, asyncState);
-			request.BeginGetResponse(callback, mappingResult);
+			else
+			{
+				request.BeginGetResponse(callback, mappingResult);
+			}
 			return mappingResult;
 		}
 
