@@ -423,6 +423,8 @@ namespace Mono.Nat.Upnp
 				mappingResult.Mappings.Add(mapping);
 				GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
 
+				// It's ok to do this synchronously because we should already be on anther thread
+				// and this won't block the user.
 				byte[] body;
 				WebRequest request = next.Encode(out body);
 				if (body.Length > 0)
@@ -467,10 +469,7 @@ namespace Mono.Nat.Upnp
 			byte[] body;
 			WebRequest request = new GetServicesMessage(this.serviceDescriptionUrl, this.hostEndPoint).Encode(out body);
 			if (body.Length > 0)
-			{
-				request.ContentLength = body.Length;
-				request.GetRequestStream().Write(body, 0, body.Length);
-			}
+				NatUtility.Log("Error: Services Message contained a body");
 			request.BeginGetResponse(this.ServicesReceived, request);
 		}
 
