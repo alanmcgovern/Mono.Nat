@@ -45,7 +45,7 @@ namespace Mono.Nat.Upnp
             this.externalIPAddress = IPAddress.Parse(ip);
         }
 
-        public override WebRequest Encode()
+        public override WebRequest Encode(out byte[] body)
         {
             throw new NotImplementedException();
         }

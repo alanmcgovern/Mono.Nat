@@ -44,7 +44,7 @@ namespace Mono.Nat.Upnp
 			this.externalPort = externalPort;
 		}
 
-		public override WebRequest Encode()
+		public override WebRequest Encode(out byte[] body)
 		{
 			StringBuilder sb = new StringBuilder(64);
 			XmlWriter writer = CreateWriter(sb);
@@ -54,7 +54,7 @@ namespace Mono.Nat.Upnp
 			WriteFullElement(writer, "NewProtocol", protocol == Protocol.Tcp ? "TCP" : "UDP");
 			writer.Flush();
 
-			return CreateRequest("GetSpecificPortMappingEntry", sb.ToString());
+			return CreateRequest("GetSpecificPortMappingEntry", sb.ToString(), out body);
 		}
 	}
 }

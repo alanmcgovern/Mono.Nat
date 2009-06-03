@@ -41,7 +41,7 @@ namespace Mono.Nat.Upnp
             this.index = index;
         }
 
-        public override System.Net.WebRequest Encode()
+        public override System.Net.WebRequest Encode(out byte[] body)
         {
             StringBuilder sb = new StringBuilder(128);
             XmlWriter writer = CreateWriter(sb);
@@ -49,7 +49,7 @@ namespace Mono.Nat.Upnp
             WriteFullElement(writer, "NewPortMappingIndex", index.ToString());
 
             writer.Flush();
-            return CreateRequest("GetGenericPortMappingEntry", sb.ToString());
+            return CreateRequest("GetGenericPortMappingEntry", sb.ToString(), out body);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Mono.Nat.Upnp
         {
         }
 
-        public override System.Net.WebRequest Encode()
+        public override System.Net.WebRequest Encode(out byte[] body)
         {
             throw new NotSupportedException();
         }

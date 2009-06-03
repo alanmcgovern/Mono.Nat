@@ -43,9 +43,9 @@ namespace Mono.Nat.Upnp
         #endregion
 
 
-        public override WebRequest Encode()
+        public override WebRequest Encode(out byte[] body)
         {
-            return CreateRequest("GetExternalIPAddress", string.Empty);
+            return CreateRequest("GetExternalIPAddress", string.Empty, out body);
         }
     }
 }

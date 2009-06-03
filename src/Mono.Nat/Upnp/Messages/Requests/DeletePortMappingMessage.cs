@@ -41,7 +41,7 @@ namespace Mono.Nat.Upnp
 			this.mapping = mapping;
 		}
 
-		public override WebRequest Encode()
+		public override WebRequest Encode(out byte[] body)
 		{
 			StringBuilder builder = new StringBuilder(256);
 			XmlWriter writer = CreateWriter(builder);
@@ -51,7 +51,7 @@ namespace Mono.Nat.Upnp
 			WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
 
 			writer.Flush();
-			return CreateRequest("DeletePortMapping", builder.ToString());
+			return CreateRequest("DeletePortMapping", builder.ToString(), out body);
 		}
 	}
 }

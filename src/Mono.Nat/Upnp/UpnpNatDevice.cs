@@ -323,7 +323,13 @@ namespace Mono.Nat.Upnp
 
 		private IAsyncResult BeginMessageInternal(MessageBase message, AsyncCallback storedCallback, object asyncState, AsyncCallback callback)
 		{
-			WebRequest request = message.Encode();
+			byte[] body;
+			WebRequest request = message.Encode(out body);
+			if (body.Length > 0)
+			{
+				request.ContentLength = body.Length;
+				request.GetRequestStream().Write(body, 0, body.Length);
+			}
 			PortMapAsyncResult mappingResult = PortMapAsyncResult.Create(message, request, storedCallback, asyncState);
 			request.BeginGetResponse(callback, mappingResult);
 			return mappingResult;
@@ -417,7 +423,13 @@ namespace Mono.Nat.Upnp
 				mappingResult.Mappings.Add(mapping);
 				GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
 
-				WebRequest request = next.Encode();
+				byte[] body;
+				WebRequest request = next.Encode(out body);
+				if (body.Length > 0)
+				{
+					request.ContentLength = body.Length;
+					request.GetRequestStream().Write(body, 0, body.Length);
+				}
 				mappingResult.Request = request;
 				request.BeginGetResponse(EndGetAllMappingsInternal, mappingResult);
 				return;
@@ -452,7 +464,13 @@ namespace Mono.Nat.Upnp
 			this.callback = callback;
 
 			// Create a HTTPWebRequest to download the list of services the device offers
-			WebRequest request = new GetServicesMessage(this.serviceDescriptionUrl, this.hostEndPoint).Encode();
+			byte[] body;
+			WebRequest request = new GetServicesMessage(this.serviceDescriptionUrl, this.hostEndPoint).Encode(out body);
+			if (body.Length > 0)
+			{
+				request.ContentLength = body.Length;
+				request.GetRequestStream().Write(body, 0, body.Length);
+			}
 			request.BeginGetResponse(this.ServicesReceived, request);
 		}
 

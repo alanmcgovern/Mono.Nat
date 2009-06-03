@@ -44,7 +44,7 @@ namespace Mono.Nat.Upnp
             this.device = device;
         }
 
-        protected WebRequest CreateRequest(string upnpMethod, string methodParameters)
+        protected WebRequest CreateRequest(string upnpMethod, string methodParameters, out byte[] body)
         {
             string ss = "http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl;
             NatUtility.Log("Initiating request to: {0}", ss);
@@ -56,7 +56,7 @@ namespace Mono.Nat.Upnp
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"" + device.ServiceType + "#" + upnpMethod + "\"");
 
-            string body = "<s:Envelope "
+            string bodyString = "<s:Envelope "
                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
                + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                + "<s:Body>"
@@ -67,10 +67,7 @@ namespace Mono.Nat.Upnp
                + "</s:Body>"
                + "</s:Envelope>\r\n\r\n";
 
-            req.ContentLength = System.Text.Encoding.UTF8.GetByteCount(body);
-            Stream s = req.GetRequestStream();
-
-            s.Write(System.Text.Encoding.UTF8.GetBytes(body), 0, (int)req.ContentLength);
+			body = System.Text.Encoding.UTF8.GetBytes(bodyString);
             return req;
         }
 
@@ -111,7 +108,7 @@ namespace Mono.Nat.Upnp
             return null;
         }
 
-        public abstract WebRequest Encode();
+        public abstract WebRequest Encode(out byte[] body);
 
         internal static void WriteFullElement(XmlWriter writer, string element, string value)
         {

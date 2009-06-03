@@ -100,7 +100,7 @@ namespace Mono.Nat.Upnp
             leaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
         }
 
-        public override System.Net.WebRequest Encode()
+        public override System.Net.WebRequest Encode(out byte[] body)
         {
             throw new NotImplementedException();
         }
