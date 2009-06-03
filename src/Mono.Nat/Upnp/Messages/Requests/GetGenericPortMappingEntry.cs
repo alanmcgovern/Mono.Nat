@@ -49,7 +49,7 @@ namespace Mono.Nat.Upnp
             WriteFullElement(writer, "NewPortMappingIndex", index.ToString());
 
             writer.Flush();
-            return CreateRequest("GetGenericPortMappingEntry", sb.ToString(), "POST");
+            return CreateRequest("GetGenericPortMappingEntry", sb.ToString());
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Mono.Nat.Upnp
             this.device = device;
         }
 
-        protected WebRequest CreateRequest(string upnpMethod, string methodParameters, string webrequestMethod)
+        protected WebRequest CreateRequest(string upnpMethod, string methodParameters)
         {
             string ss = "http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl;
             NatUtility.Log("Initiating request to: {0}", ss);
@@ -52,7 +52,7 @@ namespace Mono.Nat.Upnp
 
             HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
             req.KeepAlive = false;
-            req.Method = webrequestMethod;
+            req.Method = "POST";
             req.ContentType = "text/xml; charset=\"utf-8\"";
             req.Headers.Add("SOAPACTION", "\"" + device.ServiceType + "#" + upnpMethod + "\"");
 

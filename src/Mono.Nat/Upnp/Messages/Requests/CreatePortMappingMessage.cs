@@ -69,7 +69,7 @@ namespace Mono.Nat.Upnp
             WriteFullElement(writer, "NewLeaseDuration", mapping.Lifetime.ToString());
 
             writer.Flush();
-            return CreateRequest("AddPortMapping", builder.ToString(), "POST");
+            return CreateRequest("AddPortMapping", builder.ToString());
         }
     }
 }

@@ -45,7 +45,7 @@ namespace Mono.Nat.Upnp
 
         public override WebRequest Encode()
         {
-            return CreateRequest("GetExternalIPAddress", string.Empty, "POST");
+            return CreateRequest("GetExternalIPAddress", string.Empty);
         }
     }
 }

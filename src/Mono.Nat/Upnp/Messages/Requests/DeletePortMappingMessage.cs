@@ -51,7 +51,7 @@ namespace Mono.Nat.Upnp
 			WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
 
 			writer.Flush();
-			return CreateRequest("DeletePortMapping", builder.ToString(), "POST");
+			return CreateRequest("DeletePortMapping", builder.ToString());
 		}
 	}
 }

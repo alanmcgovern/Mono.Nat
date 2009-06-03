@@ -54,7 +54,7 @@ namespace Mono.Nat.Upnp
 			WriteFullElement(writer, "NewProtocol", protocol == Protocol.Tcp ? "TCP" : "UDP");
 			writer.Flush();
 
-			return CreateRequest("GetSpecificPortMappingEntry", sb.ToString(), "POST");
+			return CreateRequest("GetSpecificPortMappingEntry", sb.ToString());
 		}
 	}
 }
