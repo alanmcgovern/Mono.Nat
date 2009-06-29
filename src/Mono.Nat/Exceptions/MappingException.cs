@@ -57,6 +57,7 @@ namespace Mono.Nat
 		}
 
 		public MappingException(int errorCode, string errorText)
+			: base (string.Format ("Error {0}: {1}", errorCode, errorText))
 		{
 			this.errorCode = errorCode;
 			this.errorText = errorText;
