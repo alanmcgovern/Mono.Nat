@@ -8,6 +8,8 @@
     <NoStandardLibraries>false</NoStandardLibraries>
     <AssemblyName>Mono.Nat</AssemblyName>
     <RootNamespace>Mono.Nat</RootNamespace>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
