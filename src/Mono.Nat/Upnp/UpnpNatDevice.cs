@@ -435,6 +435,7 @@ namespace Mono.Nat.Upnp
 			if (message != null)
 			{
 				Mapping mapping = new Mapping (message.Protocol, message.InternalPort, message.ExternalPort, message.LeaseDuration);
+				mapping.Description = message.PortMappingDescription;
 				mappingResult.Mappings.Add(mapping);
 				GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
 
@@ -468,7 +469,8 @@ namespace Mono.Nat.Upnp
 			GetAllMappingsAsyncResult mappingResult = result.AsyncState as GetAllMappingsAsyncResult;
 			GetGenericPortMappingEntryResponseMessage message = mappingResult.SavedMessage as GetGenericPortMappingEntryResponseMessage;
 			if (message != null) {
-                Mapping mapping = new Mapping(mappingResult.SpecificMapping.Protocol, message.InternalPort, mappingResult.SpecificMapping.PublicPort, message.LeaseDuration);
+				Mapping mapping = new Mapping(mappingResult.SpecificMapping.Protocol, message.InternalPort, mappingResult.SpecificMapping.PublicPort, message.LeaseDuration);
+				mapping.Description = mappingResult.SpecificMapping.Description;
 				mappingResult.Mappings.Add(mapping);
 			}
 
