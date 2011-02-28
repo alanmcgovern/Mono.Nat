@@ -36,7 +36,7 @@ namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-        private static bool searching;
+        private static ManualResetEvent searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
@@ -60,6 +60,8 @@ namespace Mono.Nat
 		
         static NatUtility()
         {
+            searching = new ManualResetEvent(false);
+
             controllers = new List<ISearcher>();
             controllers.Add(UpnpSearcher.Instance);
             controllers.Add(PmpSearcher.Instance);
@@ -93,13 +95,15 @@ namespace Mono.Nat
         {
             while (true)
             {
+                searching.WaitOne();
+
                 try
                 {
 					Receive(UpnpSearcher.Instance, UpnpSearcher.sockets);
 					Receive(PmpSearcher.Instance, PmpSearcher.sockets);
 
                     foreach (ISearcher s in controllers)
-                        if (s.NextSearch < DateTime.Now && searching)
+                        if (s.NextSearch < DateTime.Now)
                         {
                             Log("Searching for: {0}", s.GetType().Name);
 							s.Search();
@@ -130,13 +134,12 @@ namespace Mono.Nat
 		
 		public static void StartDiscovery ()
 		{
-            searching = true;
+            searching.Set();
 		}
 
 		public static void StopDiscovery ()
 		{
-            controllers.Clear();
-            searching = false;
+            searching.Reset();
 		}
 
 		[Obsolete ("This method serves no purpose and shouldn't be used")]
