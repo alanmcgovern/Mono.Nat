@@ -14,7 +14,6 @@ namespace Mono.Nat
         event EventHandler<DeviceEventArgs> DeviceLost;
 
         void Search();
-        IPEndPoint SearchEndpoint { get; }
         void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
         DateTime NextSearch { get; }
     }

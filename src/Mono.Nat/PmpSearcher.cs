@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using Mono.Nat.Pmp;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Mono.Nat
@@ -10,8 +11,8 @@ namespace Mono.Nat
     internal class PmpSearcher : ISearcher
     {
 		static PmpSearcher instance = new PmpSearcher();
-		public static List<UdpClient> sockets = CreateSockets();
-
+        public static List<UdpClient> sockets;
+        static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
 		
 
 		public static PmpSearcher Instance
@@ -21,24 +22,66 @@ namespace Mono.Nat
 
         private int timeout;
         private DateTime nextSearch;
-        private IPEndPoint searchEndpoint;
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
+
+        static PmpSearcher()
+        {
+            CreateSocketsAndAddGateways();
+        }
 
         PmpSearcher()
         {
             timeout = 250;
-			// FIXME: Should not hardcode the address - should read gateway address from
-			// the NetworkInformation class - as in UpnpSearcher
-            searchEndpoint = new IPEndPoint(IPAddress.Parse("192.168.0.1"), PmpConstants.ServerPort);
         }
 
-		private static List<UdpClient> CreateSockets()
+		private static void CreateSocketsAndAddGateways()
 		{
-			// FIXME: Should do the same detection that UPnPSearch does.
-			List<UdpClient> sockets = new List<UdpClient>();
-			sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, 0)));
-			return sockets;
+            sockets = new List<UdpClient>();
+            gatewayLists = new Dictionary<UdpClient,List<IPEndPoint>>();
+
+            try
+            {
+                foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    IPInterfaceProperties properties = n.GetIPProperties();
+                    List<IPEndPoint> gatewayList = new List<IPEndPoint>();
+
+                    foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
+                    {
+                        if (gateway.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
+                        }
+                    }
+
+                    if (gatewayList.Count > 0)
+                    {
+                        foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
+                        {
+                            if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                UdpClient client;
+
+                                try
+                                {
+                                    client = new UdpClient(new IPEndPoint(address.Address, 0));
+                                }
+                                catch (SocketException)
+                                {
+                                    continue; // Move on to the next address.
+                                }
+
+                                gatewayLists.Add(client, gatewayList); sockets.Add(client);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // NAT-PMP does not use multicast, so there isn't really a good fallback.
+            }
 		}
 
         public void Search()
@@ -74,17 +117,22 @@ namespace Mono.Nat
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
             byte[] buffer = new byte[] { PmpConstants.Version, PmpConstants.OperationCode };
-            client.Send(buffer, buffer.Length, searchEndpoint);
+            foreach (IPEndPoint gatewayEndpoint in gatewayLists[client])
+                client.Send(buffer, buffer.Length, gatewayEndpoint);
         }
 
-        public IPEndPoint SearchEndpoint
+        bool IsSearchAddress(IPAddress address)
         {
-            get { return searchEndpoint; }
+            foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
+                foreach (IPEndPoint gatewayEndpoint in gatewayList)
+                    if (gatewayEndpoint.Address.Equals(address))
+                        return true;
+            return false;
         }
 
         public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
-            if (!endpoint.Address.Equals(searchEndpoint.Address))
+            if (!IsSearchAddress(endpoint.Address))
                 return;
             if (response.Length != 12)
                 return;

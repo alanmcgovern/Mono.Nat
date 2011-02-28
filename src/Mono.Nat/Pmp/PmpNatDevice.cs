@@ -59,14 +59,28 @@ namespace Mono.Nat.Pmp
         public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
 			PortMapAsyncResult pmar = new PortMapAsyncResult (mapping.Protocol, mapping.PublicPort, PmpConstants.DefaultLeaseTime, callback, asyncState);
-			CreatePortMap (pmar.Mapping, true);
+			ThreadPool.QueueUserWorkItem (delegate {
+				try {
+					CreatePortMap(pmar.Mapping, true);
+					pmar.Complete();
+				} catch (Exception e) {
+					pmar.Complete(e);
+				}
+			});
 			return pmar;
 		}
 
 		public override IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState)
 		{
 			PortMapAsyncResult pmar =  new PortMapAsyncResult (mapping, callback, asyncState);
-			CreatePortMap (pmar.Mapping, false);
+			ThreadPool.QueueUserWorkItem (delegate {
+				try {
+					CreatePortMap(pmar.Mapping, false);
+					pmar.Complete();
+				} catch (Exception e) {
+					pmar.Complete(e);
+				}
+			});
 			return pmar;
 		}
 
@@ -195,7 +209,7 @@ namespace Mono.Nat.Pmp
 			CreatePortMapAsyncState state = obj as CreatePortMapAsyncState;
 			
 			UdpClient udpClient = new UdpClient ();
-			CreatePortMapListenState listenState = new CreatePortMapListenState (state);
+			CreatePortMapListenState listenState = new CreatePortMapListenState (state, udpClient);
 
 			int attempt = 0;
 			int delay = PmpConstants.RetryDelay;
@@ -204,6 +218,7 @@ namespace Mono.Nat.Pmp
 
 			while (attempt < PmpConstants.RetryAttempts && !listenState.Success) {
 				udpClient.Send (state.Buffer, state.Buffer.Length, new IPEndPoint (localAddress, PmpConstants.ServerPort));
+                listenState.UdpClientReady.Set();
 
 				attempt++;
 				delay *= 2;
@@ -220,11 +235,21 @@ namespace Mono.Nat.Pmp
 		{
 			CreatePortMapListenState state = obj as CreatePortMapListenState;
 
-			UdpClient udpClient = new UdpClient (5351);
-			IPEndPoint endPoint = new IPEndPoint (publicAddress, PmpConstants.ServerPort);
+            UdpClient udpClient = state.UdpClient;
+            state.UdpClientReady.WaitOne(); // Evidently UdpClient has some lazy-init Send/Receive race?
+			IPEndPoint endPoint = new IPEndPoint (localAddress, PmpConstants.ServerPort);
 			
 			while (!state.Success) {
-				byte[] data = udpClient.Receive (ref endPoint);
+                byte[] data;
+                try
+                {
+                    data = udpClient.Receive(ref endPoint);
+                }
+                catch (SocketException)
+                {
+                    state.Success = false;
+                    return;
+                }
 			
 				if (data.Length < 16)
 					continue;
@@ -238,13 +263,13 @@ namespace Mono.Nat.Pmp
 				if (opCode == PmpConstants.OperationCodeUdp)
 					protocol = Protocol.Udp;
 
-				short resultCode = BitConverter.ToInt16 (data, 2);
-				int epoch = BitConverter.ToInt32 (data, 4);
+				short resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
+				uint epoch = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-				short privatePort = BitConverter.ToInt16 (data, 8);
-				short publicPort = BitConverter.ToInt16 (data, 10);
+				int privatePort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
+				int publicPort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
 
-				int lifetime = BitConverter.ToInt32 (data, 12);
+				uint lifetime = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 				
 				if (resultCode != PmpConstants.ResultCodeSuccess) {
 					state.Success = false;
@@ -261,8 +286,9 @@ namespace Mono.Nat.Pmp
 					//TODO: verify that the private port+protocol are a match
 					Mapping mapping = state.Mapping;
 					mapping.PublicPort = publicPort;
+                    mapping.Protocol = protocol;
 					mapping.Expiration = DateTime.Now.AddSeconds (lifetime);
-						
+
 					state.Success = true;
 				}
 			}
@@ -291,12 +317,15 @@ namespace Mono.Nat.Pmp
 		
 		private class CreatePortMapListenState
 		{
-			internal bool Success;
+			internal volatile bool Success;
 			internal Mapping Mapping;
+            internal UdpClient UdpClient;
+            internal ManualResetEvent UdpClientReady;
 			
-			internal CreatePortMapListenState (CreatePortMapAsyncState state)
+			internal CreatePortMapListenState (CreatePortMapAsyncState state, UdpClient client)
 			{
-				Mapping = state.Mapping;
+                Mapping = state.Mapping;
+                UdpClient = client; UdpClientReady = new ManualResetEvent(false);
 			}
 		}
 	}

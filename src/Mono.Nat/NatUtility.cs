@@ -62,7 +62,7 @@ namespace Mono.Nat
         {
             controllers = new List<ISearcher>();
             controllers.Add(UpnpSearcher.Instance);
-            //controllers.Add(PmpSearcher.Instance);
+            controllers.Add(PmpSearcher.Instance);
 
             foreach (ISearcher searcher in controllers)
             {
