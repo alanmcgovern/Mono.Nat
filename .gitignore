@@ -9,7 +9,10 @@ src/missing
 Makefile
 Makefile.in
 
-# Ignore monodevelop generated directories
+# Ignore monodevelop generated files and directories
+*.userprefs
+*.pidb
+
 src/Mono.Nat/bin
 src/Mono.Nat/obj
 src/Mono.Nat.Test/bin
@@ -21,3 +24,4 @@ src/Mono.Nat/mono.nat.pc
 # Ignore debug foo
 xdb.il
 xdb.s
+
