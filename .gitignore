@@ -1,0 +1,23 @@
+# Ignore makefile foo
+src/aclocal.m4
+src/autom4te.cache/
+src/config.log
+src/config.status
+src/configure
+src/install-sh
+src/missing
+Makefile
+Makefile.in
+
+# Ignore monodevelop generated directories
+src/Mono.Nat/bin
+src/Mono.Nat/obj
+src/Mono.Nat.Test/bin
+src/Mono.Nat.Test/obj
+
+# Ignore the pc file
+src/Mono.Nat/mono.nat.pc
+
+# Ignore debug foo
+xdb.il
+xdb.s
