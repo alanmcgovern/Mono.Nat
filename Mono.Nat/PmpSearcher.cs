@@ -5,6 +5,7 @@ using System.Net;
 using Mono.Nat.Pmp;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace Mono.Nat
 {
@@ -54,6 +55,17 @@ namespace Mono.Nat
                             gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
                         }
                     }
+					if (gatewayList.Count == 0)
+					{
+						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
+	                    foreach (var gateway in properties.DnsAddresses)
+	                    {
+	                        if (gateway.AddressFamily == AddressFamily.InterNetwork)
+	                        {
+	                            gatewayList.Add(new IPEndPoint(gateway, PmpConstants.ServerPort));
+	                        }
+	                    }
+					}
 
                     if (gatewayList.Count > 0)
                     {
