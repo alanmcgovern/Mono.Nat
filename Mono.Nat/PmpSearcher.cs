@@ -45,6 +45,8 @@ namespace Mono.Nat
             {
                 foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
                 {
+					if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
+						continue;
                     IPInterfaceProperties properties = n.GetIPProperties();
                     List<IPEndPoint> gatewayList = new List<IPEndPoint>();
 
@@ -58,13 +60,22 @@ namespace Mono.Nat
 					if (gatewayList.Count == 0)
 					{
 						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-	                    foreach (var gateway in properties.DnsAddresses)
+	                    foreach (var gw2 in properties.DnsAddresses)
 	                    {
-	                        if (gateway.AddressFamily == AddressFamily.InterNetwork)
+							if (gw2.AddressFamily == AddressFamily.InterNetwork)
 	                        {
-	                            gatewayList.Add(new IPEndPoint(gateway, PmpConstants.ServerPort));
+								gatewayList.Add(new IPEndPoint(gw2, PmpConstants.ServerPort));
 	                        }
 	                    }
+						foreach (var unicast in properties.UnicastAddresses) {
+							if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
+							    && unicast.AddressPreferredLifetime != UInt32.MaxValue
+							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
+								var bytes = unicast.Address.GetAddressBytes ();
+								bytes[3] = 1;
+								gatewayList.Add(new IPEndPoint(new IPAddress(bytes), PmpConstants.ServerPort));
+							}
+						}
 					}
 
                     if (gatewayList.Count > 0)
@@ -84,7 +95,8 @@ namespace Mono.Nat
                                     continue; // Move on to the next address.
                                 }
 
-                                gatewayLists.Add(client, gatewayList); sockets.Add(client);
+                                gatewayLists.Add(client, gatewayList);
+                                sockets.Add(client);
                             }
                         }
                     }

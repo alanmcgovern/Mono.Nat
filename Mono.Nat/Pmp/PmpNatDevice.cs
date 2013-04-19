@@ -266,12 +266,12 @@ namespace Mono.Nat.Pmp
 				short resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
 				uint epoch = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-				int privatePort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
-				int publicPort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
+				int privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
+				int publicPort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
 
 				uint lifetime = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
-				
-				if (resultCode != PmpConstants.ResultCodeSuccess) {
+
+				if (publicPort < 0 || privatePort < 0 || resultCode != PmpConstants.ResultCodeSuccess) {
 					state.Success = false;
 					return;
 				}
