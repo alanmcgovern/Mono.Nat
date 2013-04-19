@@ -46,7 +46,7 @@ namespace Mono.Nat.Pmp
 			this.publicAddress = publicAddress;
 		}
 		
-		internal IPAddress LocalAddress
+		public override IPAddress LocalAddress
 		{
 			get { return localAddress; }
 		}

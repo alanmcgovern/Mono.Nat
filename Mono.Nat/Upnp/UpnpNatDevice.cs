@@ -43,6 +43,11 @@ namespace Mono.Nat.Upnp
 		private string controlUrl;
 		private string serviceType;
 
+		public override IPAddress LocalAddress
+		{
+			get { return localAddress; }
+		}
+		
 		/// <summary>
 		/// The callback to invoke when we are finished setting up the device
 		/// </summary>
