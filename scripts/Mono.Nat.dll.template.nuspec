@@ -11,8 +11,9 @@
         <description>NAT stack for Mono and .NET applications</description>
         <releaseNotes>Initial codebase from mono repository
 Migrated to v4.0 profile
-Removed archaic makefile stuff</releaseNotes>
+Removed archaic makefile stuff
+Fixed nuget tags</releaseNotes>
         <copyright>Copyright 2006 - 2007 Alan McGovern and Ben Motmans. See LICENSE for more details.</copyright>
-        <tags>AwesomeSockets Awesome Sockets Sockets.net AweSock</tags>
+        <tags>nat nat-transversal upnp mono.nat mono</tags>
     </metadata>
 </package>
