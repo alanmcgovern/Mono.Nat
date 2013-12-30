@@ -9,10 +9,7 @@
         <projectUrl>https://github.com/nterry/Mono.Nat</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>NAT stack for Mono and .NET applications</description>
-        <releaseNotes>Initial codebase from mono repository
-Migrated to v4.0 profile
-Removed archaic makefile stuff
-Fixed nuget tags</releaseNotes>
+        <releaseNotes>Added useful improvements/fixes from Github user cwensley</releaseNotes>
         <copyright>Copyright 2006 - 2007 Alan McGovern and Ben Motmans. See LICENSE for more details.</copyright>
         <tags>nat nat-transversal upnp mono.nat mono</tags>
     </metadata>
