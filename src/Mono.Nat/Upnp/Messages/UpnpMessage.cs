@@ -84,20 +84,25 @@ namespace Mono.Nat.Upnp
             nsm.AddNamespace("responseNs", device.ServiceType);
 
             // Check to see if we have a fault code message.
-            if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
-                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture),
-                                                        node["errorDescription"].InnerText);
+			if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null) {
+				string errorDescription = node["errorDescription"] == null ? "" : node["errorDescription"].InnerText;
+				int errorCode = node["errorCode"] == null ? 0 : Convert.ToInt32(node["errorCode"].InnerText, CultureInfo.InvariantCulture);
 
-            if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
+				return new ErrorMessage(errorCode, errorDescription);
+			}
+
+	        if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
                 return new CreatePortMappingResponseMessage();
 
             if ((node = doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm)) != null)
                 return new DeletePortMapResponseMessage();
 
-            if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
-                return new GetExternalIPAddressResponseMessage(node["NewExternalIPAddress"].InnerText);
+			if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null) {
+				string newExternalIPAddress = node["NewExternalIPAddress"] == null ? "" : node["NewExternalIPAddress"].InnerText;
+				return new GetExternalIPAddressResponseMessage(newExternalIPAddress);
+			}
 
-            if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
+	        if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
                 return new GetGenericPortMappingEntryResponseMessage(node, true);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
