@@ -11,6 +11,7 @@
         <description>NAT stack for Mono and .NET applications</description>
         <releaseNotes>Added useful improvements/fixes from Github user cwensley
 Fixed dependencies
+Completely decoupled from Bitconverter thus making this library fully mono capable 
 		</releaseNotes>
         <copyright>Copyright 2006 - 2007 Alan McGovern and Ben Motmans. See LICENSE for more details.</copyright>
         <tags>nat nat-transversal upnp mono.nat mono</tags>
