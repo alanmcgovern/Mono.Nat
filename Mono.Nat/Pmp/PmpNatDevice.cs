@@ -30,7 +30,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
-using Type2Byte.BaseConverters;
 
 namespace Mono.Nat.Pmp
 {
@@ -186,9 +185,9 @@ namespace Mono.Nat.Pmp
 			package.Add (mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
 			package.Add ((byte)0); //reserved
 			package.Add ((byte)0); //reserved
-			package.AddRange (T2B.ToBytes (IPAddress.HostToNetworkOrder((short)mapping.PrivatePort)));
-            package.AddRange(T2B.ToBytes(create ? IPAddress.HostToNetworkOrder((short)mapping.PublicPort) : (short)0));
-            package.AddRange(T2B.ToBytes(IPAddress.HostToNetworkOrder(mapping.Lifetime)));
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder((short)mapping.PrivatePort)));
+			package.AddRange (BitConverter.GetBytes (create ? IPAddress.HostToNetworkOrder((short)mapping.PublicPort) : (short)0));
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder(mapping.Lifetime)));
 
 			CreatePortMapAsyncState state = new CreatePortMapAsyncState ();
 			state.Buffer = package.ToArray ();
@@ -264,13 +263,13 @@ namespace Mono.Nat.Pmp
 				if (opCode == PmpConstants.OperationCodeUdp)
 					protocol = Protocol.Udp;
 
-				short resultCode = IPAddress.NetworkToHostOrder (B2T.Get<short> (data, 2));
-				uint epoch = (uint)IPAddress.NetworkToHostOrder (B2T.Get<int> (data, 4));
+				short resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
+				uint epoch = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-                int privatePort = IPAddress.NetworkToHostOrder(B2T.Get<short>(data, 8));
-                int publicPort = IPAddress.NetworkToHostOrder(B2T.Get<short>(data, 10));
+				int privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
+				int publicPort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
 
-                uint lifetime = (uint)IPAddress.NetworkToHostOrder(B2T.Get<int>(data, 12));
+				uint lifetime = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 
 				if (publicPort < 0 || privatePort < 0 || resultCode != PmpConstants.ResultCodeSuccess) {
 					state.Success = false;

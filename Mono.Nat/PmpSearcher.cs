@@ -6,7 +6,6 @@ using Mono.Nat.Pmp;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Linq;
-using Type2Byte.BaseConverters;
 
 namespace Mono.Nat
 {
@@ -165,7 +164,7 @@ namespace Mono.Nat
                 return;
             if (response[1] != PmpConstants.ServerNoop)
                 return;
-            int errorcode = IPAddress.NetworkToHostOrder(B2T.Get<short>(response, 2));
+            int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
                 NatUtility.Log("Non zero error: {0}", errorcode);
 
