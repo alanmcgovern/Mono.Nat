@@ -73,8 +73,8 @@ namespace Mono.Nat.Upnp
 
         public static MessageBase Decode(UpnpNatDevice device, string message)
         {
-            XmlNode node = null;
-            System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
+            XmlNode node;
+            XmlDocument doc = new XmlDocument();
             doc.LoadXml(message);
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(doc.NameTable);
@@ -84,20 +84,25 @@ namespace Mono.Nat.Upnp
             nsm.AddNamespace("responseNs", device.ServiceType);
 
             // Check to see if we have a fault code message.
-            if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
-                return new ErrorMessage(Convert.ToInt32(node["errorCode"].InnerText, System.Globalization.CultureInfo.InvariantCulture),
-                                                        node["errorDescription"].InnerText);
+			if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null) {
+				string errorCode = node["errorCode"] != null ? node["errorCode"].InnerText : "";
+				string errorDescription = node["errorDescription"] != null ? node["errorDescription"].InnerText : "";
 
-            if ((node = doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
+				return new ErrorMessage(Convert.ToInt32(errorCode, CultureInfo.InvariantCulture), errorDescription);
+			}
+
+	        if ((doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
                 return new CreatePortMappingResponseMessage();
 
-            if ((node = doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm)) != null)
+            if ((doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm)) != null)
                 return new DeletePortMapResponseMessage();
 
-            if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
-                return new GetExternalIPAddressResponseMessage(node["NewExternalIPAddress"].InnerText);
+			if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null) {
+				string newExternalIPAddress = node["NewExternalIPAddress"] != null ? node["NewExternalIPAddress"].InnerText : "";
+				return new GetExternalIPAddressResponseMessage(newExternalIPAddress);
+			}
 
-            if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
+	        if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
                 return new GetGenericPortMappingEntryResponseMessage(node, true);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
