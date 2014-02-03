@@ -25,91 +25,92 @@
 //
 
 using System;
-using System.Net;
 using System.Threading;
-using System.Collections.Generic;
-
-using Mono.Nat;
-using Mono.Nat.Pmp;
 using Mono.Nat.Upnp;
 
-namespace Mono.Nat.Test
-{
-	class NatTest
-	{
-		public static void Main(string[] args)
-		{
-			new NatTest ();
-		}
-		
-		public NatTest ()
-		{
+namespace Mono.Nat.Test {
+	internal class NatTest {
+		public NatTest() {
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
-			
-			NatUtility.StartDiscovery ();
-			
-			Console.WriteLine ("Discovery started");
-			
-			while (true)
-            {
-				Thread.Sleep (500000);
-                NatUtility.StopDiscovery();
-                NatUtility.StartDiscovery();
-            }
-		}
-		
-		private void DeviceFound (object sender, DeviceEventArgs args)
-        {
-            try
-            {
-			    INatDevice device = args.Device;
-    			
-			    Console.ForegroundColor = ConsoleColor.Red;
-			    Console.WriteLine ("Device found");
-			    Console.ResetColor();
-			    Console.WriteLine ("Type: {0}", device.GetType().Name);
-    			
-			    Console.WriteLine ("IP: {0}", device.GetExternalIP ());
-                device.CreatePortMap(new Mapping(Protocol.Tcp, 1500, 1500));
-			    Console.WriteLine ("---");
-			
-				return;
-			
-                Mapping mapping = new Mapping(Protocol.Tcp, 6001, 6001);
-                device.CreatePortMap(mapping);
-				Console.WriteLine("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort, mapping.PrivatePort);
 
-                try
-                {
-                    Mapping m = device.GetSpecificMapping(Protocol.Tcp, 6001);
-                    Console.WriteLine("Specific Mapping: protocol={0}, public={1}, private={2}", m.Protocol, m.PublicPort, m.PrivatePort);
-                }
-                catch
-                {
-                    Console.WriteLine("Couldnt get specific mapping");
-                }
-                foreach (Mapping mp in device.GetAllMappings())
-                {
-                    Console.WriteLine("Existing Mapping: protocol={0}, public={1}, private={2}", mp.Protocol, mp.PublicPort, mp.PrivatePort);
-                    device.DeletePortMap(mp);
-                }
+			NatUtility.StartDiscovery();
 
-                Console.WriteLine("External IP: {0}", device.GetExternalIP());
-                Console.WriteLine("Done...");
+			Console.WriteLine("Discovery started");
 
-			} catch (Exception ex) {
-				Console.WriteLine (ex.Message);
-				Console.WriteLine (ex.StackTrace);
+			while (true) {
+				Thread.Sleep(500000);
+				NatUtility.StopDiscovery();
+				NatUtility.StartDiscovery();
 			}
 		}
-		
-		private void DeviceLost (object sender, DeviceEventArgs args)
-		{
+
+		public static void Main(string[] args) {
+			new NatTest();
+		}
+
+		private void DeviceFound(object sender, DeviceEventArgs args) {
+			try {
+				INatDevice device = args.Device;
+
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine("Device found");
+				Console.ResetColor();
+				Console.WriteLine("Type: {0}", device.GetType().Name);
+				Console.WriteLine("Service Type: {0}", (device as UpnpNatDevice).ServiceType);
+
+				Console.WriteLine("IP: {0}", device.GetExternalIP());
+				device.CreatePortMap(new Mapping(Protocol.Tcp, 15000, 15000));
+				Console.WriteLine("---");
+
+				return;
+				/******************************************/
+				/*         Advanced test suite.           */
+				/******************************************/
+
+				// Try to create a new port map:
+				var mapping = new Mapping(Protocol.Tcp, 6001, 6001);
+				device.CreatePortMap(mapping);
+				Console.WriteLine("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort,
+				                  mapping.PrivatePort);
+
+				// Try to retrieve confirmation on the port map we just created:
+				try {
+					Mapping m = device.GetSpecificMapping(Protocol.Tcp, 6001);
+					Console.WriteLine("Specific Mapping: protocol={0}, public={1}, private={2}", m.Protocol, m.PublicPort,
+					                  m.PrivatePort);
+				} catch {
+					Console.WriteLine("Couldn't get specific mapping");
+				}
+
+				// Try deleting the port we opened before:
+				try {
+					device.DeletePortMap(mapping);
+					Console.WriteLine("Deleting Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort,
+									  mapping.PrivatePort);
+				} catch {
+					Console.WriteLine("Couldn't delete specific mapping");
+				}
+
+				// Try retrieving all port maps:
+				foreach (Mapping mp in device.GetAllMappings()) {
+					Console.WriteLine("Existing Mapping: protocol={0}, public={1}, private={2}", mp.Protocol, mp.PublicPort,
+					                  mp.PrivatePort);
+				}
+
+				Console.WriteLine("External IP: {0}", device.GetExternalIP());
+				Console.WriteLine("Done...");
+			} catch (Exception ex) {
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.StackTrace);
+			}
+		}
+
+		private void DeviceLost(object sender, DeviceEventArgs args) {
 			INatDevice device = args.Device;
-			
-			Console.WriteLine ("Device Lost");
-			Console.WriteLine ("Type: {0}", device.GetType().Name);
+
+			Console.WriteLine("Device Lost");
+			Console.WriteLine("Type: {0}", device.GetType().Name);
 		}
 	}
 }

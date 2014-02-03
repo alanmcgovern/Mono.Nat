@@ -128,9 +128,9 @@ namespace Mono.Nat.Upnp
 		/// <summary>
 		/// The service type we're using on the device
 		/// </summary>
-		internal string ServiceType
+		public string ServiceType
 		{
-			get { return this.serviceType; }
+			get { return serviceType; }
 		}
 
 		/// <summary>
@@ -276,7 +276,10 @@ namespace Mono.Nat.Upnp
 				throw new MappingException(msg.ErrorCode, msg.Description);
 			}
 
-			return ((GetExternalIPAddressResponseMessage)mappingResult.SavedMessage).ExternalIPAddress;
+			if (mappingResult.SavedMessage == null)
+				return null;
+			else
+				return ((GetExternalIPAddressResponseMessage)mappingResult.SavedMessage).ExternalIPAddress;
 		}
 
 
@@ -554,7 +557,9 @@ namespace Mono.Nat.Upnp
                         string type = service["serviceType"].InnerText;
 						NatUtility.Log("{0}: Found service: {1}", HostEndPoint, type);
                         StringComparison c = StringComparison.OrdinalIgnoreCase;
-                        if (type.Equals (this.serviceType, c))
+						// TODO: Add support for version 2 of UPnP.
+						if (type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
+							type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", c))
 						{
 							this.controlUrl = service["controlURL"].InnerText;
 							NatUtility.Log("{0}: Found upnp service at: {1}", HostEndPoint, controlUrl);
