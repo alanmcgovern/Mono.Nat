@@ -3,14 +3,18 @@
     <metadata>
         <id>Mono.Nat</id>
         <version>1.0.0</version>
-        <authors>Alan McGovern &lt;alan.mcgovern@gmail.com&gt;Ben Motmans &lt;ben.motmans@gmail.com&gt;nicholas terry &lt;nick.i.terry@gmail.com&gt;</authors>
+        <authors>Alan McGovern &lt;alan.mcgovern@gmail.com&gt;
+Ben Motmans &lt;ben.motmans@gmail.com&gt;
+Nicholas Terry &lt;nick.i.terry@gmail.com&gt;
+		</authors>
         <owners>Mono Project</owners>
         <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
         <projectUrl>https://github.com/nterry/Mono.Nat</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>NAT stack for Mono and .NET applications</description>
         <releaseNotes>Added useful improvements/fixes from Github user cwensley
-Removed dependency on Type2Byte as It has been deprecated following confirmation that BitConvert actualy does work with Mono.
+Removed dependency on Type2Byte as It has been deprecated following confirmation that BitConvert actually does work with Mono.
+Added Android target for nuget.
 	</releaseNotes>
 
         <copyright>Copyright 2006 - 2007 Alan McGovern and Ben Motmans. See LICENSE for more details.</copyright>

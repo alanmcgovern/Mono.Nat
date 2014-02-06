@@ -6,4 +6,6 @@ Mono.Nat
 
 Description
 -----------
-    NAT stack for Mono and .NET applications
+NAT stack for Mono and .NET applications. Also available on Android and IOS is pending.
+
+
