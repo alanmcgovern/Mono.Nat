@@ -25,78 +25,91 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Xml;
+using Mono.Nat.Enums;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Responses
 {
     internal class GetGenericPortMappingEntryResponseMessage : MessageBase
     {
-        private string remoteHost;
-        private int externalPort;
-        private Protocol protocol;
-        private int internalPort;
-        private string internalClient;
-        private bool enabled;
-        private string portMappingDescription;
-        private int leaseDuration;
+        private readonly string remoteHost;
+        private readonly int externalPort;
+        private readonly Protocol protocol;
+        private readonly int internalPort;
+        private readonly string internalClient;
+        private readonly bool enabled;
+        private readonly string portMappingDescription;
+        private readonly int leaseDuration;
 
         public string RemoteHost
         {
-            get { return this.remoteHost; }
+            get { return remoteHost; }
         }
 
         public int ExternalPort
         {
-            get { return this.externalPort; }
+            get { return externalPort; }
         }
 
         public Protocol Protocol
         {
-            get { return this.protocol; }
+            get { return protocol; }
         }
 
         public int InternalPort
         {
-            get { return this.internalPort; }
+            get { return internalPort; }
         }
 
         public string InternalClient
         {
-            get { return this.internalClient; }
+            get { return internalClient; }
         }
 
         public bool Enabled
         {
-            get { return this.enabled; }
+            get { return enabled; }
         }
 
         public string PortMappingDescription
         {
-            get { return this.portMappingDescription; }
+            get { return portMappingDescription; }
         }
 
         public int LeaseDuration
         {
-            get { return this.leaseDuration; }
+            get { return leaseDuration; }
         }
 
 
         public GetGenericPortMappingEntryResponseMessage(XmlNode data, bool genericMapping)
             : base(null)
         {
-            remoteHost = (genericMapping) ? data["NewRemoteHost"].InnerText : string.Empty;
-            externalPort = (genericMapping) ? Convert.ToInt32(data["NewExternalPort"].InnerText) : -1;
+            var xmlNewRemoteHost = data["NewRemoteHost"];
+            if (xmlNewRemoteHost != null) remoteHost = (genericMapping) ? xmlNewRemoteHost.InnerText : string.Empty;
+            
+            var xmlNewExternalPort = data["NewExternalPort"];
+            if (xmlNewExternalPort != null) externalPort = (genericMapping) ? Convert.ToInt32(xmlNewExternalPort.InnerText) : -1;
+            
             if (genericMapping)
-                protocol = data["NewProtocol"].InnerText.Equals("TCP", StringComparison.InvariantCultureIgnoreCase) ? Protocol.Tcp : Protocol.Udp;
+            {
+                var xmlNewProtocol = data["NewProtocol"];
+                protocol = xmlNewProtocol != null && xmlNewProtocol.InnerText.Equals("TCP", StringComparison.InvariantCultureIgnoreCase) ? Protocol.Tcp : Protocol.Udp;
+            }
             else
                 protocol = Protocol.Udp;
 
-            internalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
-            internalClient = data["NewInternalClient"].InnerText;
-            enabled = data["NewEnabled"].InnerText == "1" ? true : false;
-            portMappingDescription = data["NewPortMappingDescription"].InnerText;
+            var xmlNewInternalPort = data["NewInternalPort"];
+            if (xmlNewInternalPort != null) internalPort = Convert.ToInt32(xmlNewInternalPort.InnerText);
+            
+            var xmlNewInternalCLient = data["NewInternalClient"];
+            if (xmlNewInternalCLient != null) internalClient = xmlNewInternalCLient.InnerText;
+            
+            var xmlNewEnabled = data["NewEnabled"];
+            if (xmlNewEnabled != null) enabled = xmlNewEnabled.InnerText == "1";
+            
+            var xmlNewPortMappingDescription = data["NewPortMappingDescription"];
+            if (xmlNewPortMappingDescription != null) portMappingDescription = xmlNewPortMappingDescription.InnerText;
             leaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
         }
 

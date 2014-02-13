@@ -24,34 +24,34 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Diagnostics;
 using System.Net;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages
 {
     internal class GetServicesMessage : MessageBase
     {
-        private string servicesDescriptionUrl;
-        private EndPoint hostAddress;
+        private readonly string servicesDescriptionUrl;
+        private readonly EndPoint hostAddress;
 
         public GetServicesMessage(string description, EndPoint hostAddress)
             :base(null)
         {
             if (string.IsNullOrEmpty(description))
-                Trace.WriteLine("Description is null");
+                //Trace.WriteLine("Description is null");
+                //Log.Debug("Mono.Nat", "Description is null");
 
             if (hostAddress == null)
-                Trace.WriteLine("hostaddress is null");
+                //Trace.WriteLine("hostaddress is null");
+                //Log.Debug("Mono.Nat", "hostaddress is null");
 
-            this.servicesDescriptionUrl = description;
+            servicesDescriptionUrl = description;
             this.hostAddress = hostAddress;
         }
 
 
         public override WebRequest Encode(out byte[] body)
         {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://" + this.hostAddress.ToString() + this.servicesDescriptionUrl);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(string.Format("http://{0}{1}", hostAddress, servicesDescriptionUrl));
             req.Headers.Add("ACCEPT-LANGUAGE", "en");
             req.Method = "GET";
 

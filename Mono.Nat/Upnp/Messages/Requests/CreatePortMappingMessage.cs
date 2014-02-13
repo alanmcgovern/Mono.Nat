@@ -24,20 +24,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Net;
-using System.IO;
 using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Xml;
+using Mono.Nat.Enums;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Requests
 {
     internal class CreatePortMappingMessage : MessageBase
     {
         #region Private Fields
 
-        private IPAddress localIpAddress;
-        private Mapping mapping;
+        private readonly IPAddress localIpAddress;
+        private readonly Mapping mapping;
 
         #endregion
 
@@ -60,10 +60,10 @@ namespace Mono.Nat.Upnp
             XmlWriter writer = CreateWriter(builder);
 
             WriteFullElement(writer, "NewRemoteHost", string.Empty);
-            WriteFullElement(writer, "NewExternalPort", this.mapping.PublicPort.ToString(culture));
-            WriteFullElement(writer, "NewProtocol", this.mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-            WriteFullElement(writer, "NewInternalPort", this.mapping.PrivatePort.ToString(culture));
-            WriteFullElement(writer, "NewInternalClient", this.localIpAddress.ToString());
+            WriteFullElement(writer, "NewExternalPort", mapping.PublicPort.ToString(culture));
+            WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
+            WriteFullElement(writer, "NewInternalPort", mapping.PrivatePort.ToString(culture));
+            WriteFullElement(writer, "NewInternalClient", localIpAddress.ToString());
             WriteFullElement(writer, "NewEnabled", "1");
             WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(mapping.Description) ? "Mono.Nat" : mapping.Description);
             WriteFullElement(writer, "NewLeaseDuration", mapping.Lifetime.ToString());

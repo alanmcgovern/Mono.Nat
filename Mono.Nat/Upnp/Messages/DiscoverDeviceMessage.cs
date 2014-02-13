@@ -26,7 +26,7 @@
 
 using System.Text;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages
 {
     internal static class DiscoverDeviceMessage
     {
@@ -36,12 +36,12 @@ namespace Mono.Nat.Upnp
         /// <returns></returns>
         public static byte[] Encode()
         {
-            string s = "M-SEARCH * HTTP/1.1\r\n"
-                        + "HOST: 239.255.255.250:1900\r\n"
-                        + "MAN: \"ssdp:discover\"\r\n"
-                        + "MX: 3\r\n"
-                        + "ST: ssdp:all\r\n\r\n";
-            return UTF8Encoding.ASCII.GetBytes(s);
+            const string s = "M-SEARCH * HTTP/1.1\r\n"
+                             + "HOST: 239.255.255.250:1900\r\n"
+                             + "MAN: \"ssdp:discover\"\r\n"
+                             + "MX: 3\r\n"
+                             + "ST: ssdp:all\r\n\r\n";
+            return Encoding.ASCII.GetBytes(s);
         }
     }
 }

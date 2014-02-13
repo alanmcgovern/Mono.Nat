@@ -24,19 +24,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
-using System.IO;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Requests
 {
-    internal class GetExternalIPAddressMessage : MessageBase
+    internal class GetExternalIpAddressMessage : MessageBase
     {
 
         #region Constructors
-        public GetExternalIPAddressMessage(UpnpNatDevice device)
+        public GetExternalIpAddressMessage(UpnpNatDevice device)
             :base(device)
         {
         }

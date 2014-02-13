@@ -24,13 +24,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-
-namespace Mono.Nat
+namespace Mono.Nat.EventArgs
 {
-	public class DeviceEventArgs : EventArgs
+	public class DeviceEventArgs : System.EventArgs
 	{
-		private INatDevice device;
+		private readonly INatDevice device;
 		
 		public DeviceEventArgs(INatDevice device)
 		{
@@ -39,7 +37,7 @@ namespace Mono.Nat
 		
 		public INatDevice Device
 		{
-			get { return this.device; }
+			get { return device; }
 		}
 	}
 }

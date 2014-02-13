@@ -24,16 +24,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Requests
 {
     internal class GetGenericPortMappingEntry : MessageBase
     {
-        private int index;
+        private readonly int index;
 
         public GetGenericPortMappingEntry(int index, UpnpNatDevice device)
             :base(device)

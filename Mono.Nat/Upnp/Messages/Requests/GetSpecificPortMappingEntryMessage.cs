@@ -24,13 +24,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using System.Xml;
-using System.Net;
+using Mono.Nat.Enums;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Requests
 {
 	internal class GetSpecificPortMappingEntryMessage : MessageBase
 	{

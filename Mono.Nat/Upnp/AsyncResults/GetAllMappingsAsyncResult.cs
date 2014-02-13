@@ -26,17 +26,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.AsyncResults
 {
 	internal class GetAllMappingsAsyncResult : PortMapAsyncResult
 	{
-		private List<Mapping> mappings;
-		private Mapping specificMapping;
-		
-		public GetAllMappingsAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
+		private readonly List<Mapping> mappings;
+
+	    public GetAllMappingsAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
 			: base(request, callback, asyncState)
 		{
 			mappings = new List<Mapping>();
@@ -44,13 +42,9 @@ namespace Mono.Nat.Upnp
 
 		public List<Mapping> Mappings
 		{
-			get { return this.mappings; }
+			get { return mappings; }
 		}
 
-		public Mapping SpecificMapping
-		{
-			get { return this.specificMapping; }
-			set { this.specificMapping = value; }
-		}
+	    public Mapping SpecificMapping { get; set; }
 	}
 }

@@ -27,9 +27,8 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
+using Mono.Nat.Enums;
 
 namespace Mono.Nat
 {
@@ -43,12 +42,12 @@ namespace Mono.Nat
 		IPAddress GetExternalIP ();
 		Mapping GetSpecificMapping (Protocol protocol, int port);
 
-		IAsyncResult BeginCreatePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
-		IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
+		IAsyncResult BeginCreatePortMap (Mapping mapping, AsyncCallback localCallback, object asyncState);
+		IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback localCallback, object asyncState);
 
-		IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetSpecificMapping (Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
+		IAsyncResult BeginGetAllMappings (AsyncCallback localCallback, object asyncState);
+		IAsyncResult BeginGetExternalIP (AsyncCallback localCallback, object asyncState);
+		IAsyncResult BeginGetSpecificMapping (Protocol protocol, int externalPort, AsyncCallback localCallback, object asyncState);
 
 		void EndCreatePortMap (IAsyncResult result);
 		void EndDeletePortMap (IAsyncResult result);

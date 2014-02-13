@@ -26,22 +26,19 @@
 
 using System;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages
 {
     internal class ErrorMessage : MessageBase
     {
         #region Member Variables
         public string Description
         {
-            get { return this.description; } 
+            get { return description; } 
         }
-        private string description;
+        private readonly string description;
 
-        public int ErrorCode
-        {
-            get { return this.errorCode; }
-        }
-        private int errorCode;
+        public int ErrorCode { get; private set; }
+
         #endregion
 
 
@@ -50,7 +47,7 @@ namespace Mono.Nat.Upnp
             :base(null)
         {
             this.description = description;
-            this.errorCode = errorCode;
+            ErrorCode = errorCode;
         }
         #endregion
 

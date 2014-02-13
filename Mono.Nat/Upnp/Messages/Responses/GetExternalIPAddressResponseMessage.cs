@@ -25,24 +25,22 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Upnp.Messages.Responses
 {
-    internal class GetExternalIPAddressResponseMessage : MessageBase
+    internal class GetExternalIpAddressResponseMessage : MessageBase
     {
-        public IPAddress ExternalIPAddress
+        public IPAddress ExternalIpAddress
         {
-            get { return this.externalIPAddress; }
+            get { return externalIPAddress; }
         }
-        private IPAddress externalIPAddress;
+        private readonly IPAddress externalIPAddress;
 
-        public GetExternalIPAddressResponseMessage(string ip)
+        public GetExternalIpAddressResponseMessage(string ip)
             :base(null)
         {
-            this.externalIPAddress = IPAddress.Parse(ip);
+            externalIPAddress = IPAddress.Parse(ip);
         }
 
         public override WebRequest Encode(out byte[] body)

@@ -27,22 +27,16 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
+using Mono.Nat.Enums;
 
 namespace Mono.Nat
 {
 	public abstract class AbstractNatDevice : INatDevice
 	{
 		private DateTime lastSeen;
-		
-		protected AbstractNatDevice ()
-		{
 
-		}
-
-		public abstract IPAddress LocalAddress { get; }
+	    public abstract IPAddress LocalAddress { get; }
 		
 		public DateTime LastSeen
 		{
@@ -76,16 +70,16 @@ namespace Mono.Nat
 
 		public virtual Mapping GetSpecificMapping (Protocol protocol, int port)
 		{
-			IAsyncResult result = this.BeginGetSpecificMapping (protocol, port, null, null);
-			return this.EndGetSpecificMapping(result);
+			IAsyncResult result = BeginGetSpecificMapping (protocol, port, null, null);
+			return EndGetSpecificMapping(result);
 		}
 
-        public abstract IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState);
-		public abstract IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
+        public abstract IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback localCallback, object asyncState);
+		public abstract IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback localCallback, object asyncState);
 		
-		public abstract IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState);
-		public abstract IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState);
-        public abstract IAsyncResult BeginGetSpecificMapping(Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
+		public abstract IAsyncResult BeginGetAllMappings (AsyncCallback localCallback, object asyncState);
+		public abstract IAsyncResult BeginGetExternalIP (AsyncCallback localCallback, object asyncState);
+        public abstract IAsyncResult BeginGetSpecificMapping(Protocol protocol, int externalPort, AsyncCallback localCallback, object asyncState);
 
 		public abstract void EndCreatePortMap (IAsyncResult result);
 		public abstract void EndDeletePortMap (IAsyncResult result);
