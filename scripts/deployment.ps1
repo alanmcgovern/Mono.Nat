@@ -37,7 +37,7 @@ echo $nuspecTemplate > "$nugetStage\Mono.Nat.dll.nuspec"
 
 Copy-Item "$artifactToUse\Mono.Nat.dll" "$nugetStage\lib\Net20"
 Copy-Item "$artifactToUse\Mono.Nat.dll" "$nugetStage\lib\Net40"
-Copy-Item "$artifactToUse\Mono.Nat.dll" "$nugetStage\lib\MonoAndroid2.2"
+Copy-Item "$artifactToUse\Mono.Nat.dll" "$nugetStage\lib\MonoAndroid"
 
 $apiKey=$variables.Get_Item("SecureNugetKey")
 iex "$nugetFolder\NuGet.exe setapikey $apiKey"
