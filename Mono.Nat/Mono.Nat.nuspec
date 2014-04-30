@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>Mono.Nat</id>
-        <version>1.0.0</version>
+        <version>$version$</version>
         <authors>Alan McGovern &lt;alan.mcgovern@gmail.com&gt;
 Ben Motmans &lt;ben.motmans@gmail.com&gt;
 Nicholas Terry &lt;nick.i.terry@gmail.com&gt;
@@ -15,6 +15,7 @@ Nicholas Terry &lt;nick.i.terry@gmail.com&gt;
         <releaseNotes>Added useful improvements/fixes from Github user cwensley
 Removed dependency on Type2Byte as It has been deprecated following confirmation that BitConvert actually does work with Mono.
 Added Android target for nuget.
+Fixed some breaking changes from a massive a cleanup
 	</releaseNotes>
 
         <copyright>Copyright 2006 - 2007 Alan McGovern and Ben Motmans. See LICENSE for more details.</copyright>
