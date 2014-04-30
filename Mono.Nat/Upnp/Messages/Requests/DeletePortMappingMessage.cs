@@ -25,15 +25,15 @@
 //
 
 using System.Net;
+using System.IO;
 using System.Text;
 using System.Xml;
-using Mono.Nat.Enums;
 
-namespace Mono.Nat.Upnp.Messages.Requests
+namespace Mono.Nat.Upnp
 {
 	internal class DeletePortMappingMessage : MessageBase
 	{
-		private readonly Mapping mapping;
+		private Mapping mapping;
 
 		public DeletePortMappingMessage(Mapping mapping, UpnpNatDevice device)
 			: base(device)
@@ -47,7 +47,7 @@ namespace Mono.Nat.Upnp.Messages.Requests
 			XmlWriter writer = CreateWriter(builder);
 
 			WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			WriteFullElement(writer, "NewExternalPort", mapping.PublicPort.ToString(Culture));
+			WriteFullElement(writer, "NewExternalPort", mapping.PublicPort.ToString(MessageBase.Culture));
 			WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
 
 			writer.Flush();

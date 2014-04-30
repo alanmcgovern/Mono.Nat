@@ -25,14 +25,12 @@
 //
 
 using System;
-using Mono.Nat.AsyncResults;
-using Mono.Nat.Enums;
 
-namespace Mono.Nat.Pmp.AsyncResults
+namespace Mono.Nat.Pmp
 {
 	internal class PortMapAsyncResult : AsyncResult
 	{
-		private readonly Mapping mapping;
+		private Mapping mapping;
 		
 		internal PortMapAsyncResult (Mapping mapping, AsyncCallback callback, object asyncState)
 			: base (callback, asyncState)
@@ -43,7 +41,7 @@ namespace Mono.Nat.Pmp.AsyncResults
 		internal PortMapAsyncResult (Protocol protocol, int port, int lifetime, AsyncCallback callback, object asyncState)
 			: base (callback, asyncState)
 		{
-			mapping = new Mapping (protocol, port, port, lifetime);
+			this.mapping = new Mapping (protocol, port, port, lifetime);
 		}
 		
 		internal Mapping Mapping

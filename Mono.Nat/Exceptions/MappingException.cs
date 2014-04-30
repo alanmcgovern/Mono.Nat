@@ -25,18 +25,29 @@
 //
 
 using System;
+using System.Security.Permissions;
 
-namespace Mono.Nat.Exceptions
+namespace Mono.Nat
 {
 	[Serializable]
 	public class MappingException : Exception
 	{
-	    public int ErrorCode { get; private set; }
+		private int errorCode;
+		private string errorText;
 
-	    public string ErrorText { get; private set; }
+		public int ErrorCode
+		{
+			get { return this.errorCode; }
+		}
 
-	    #region Constructors
+		public string ErrorText
+		{
+			get { return this.errorText; }
+		}
+
+		#region Constructors
 		public MappingException()
+			: base()
 		{
 		}
 
@@ -48,8 +59,8 @@ namespace Mono.Nat.Exceptions
 		public MappingException(int errorCode, string errorText)
 			: base (string.Format ("Error {0}: {1}", errorCode, errorText))
 		{
-			ErrorCode = errorCode;
-			ErrorText = errorText;
+			this.errorCode = errorCode;
+			this.errorText = errorText;
 		}
 
 		public MappingException(string message, Exception innerException)
@@ -63,13 +74,13 @@ namespace Mono.Nat.Exceptions
 		}
 		#endregion
 
-		//[SecurityPermission(SecurityAction.Demand, SerializationFormatter=true)]
+		[SecurityPermission(SecurityAction.Demand, SerializationFormatter=true)]
 		public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
 		{
 			if(info==null) throw new ArgumentNullException("info");
 
-			ErrorCode = info.GetInt32("errorCode");
-			ErrorText = info.GetString("errorText");
+			this.errorCode = info.GetInt32("errorCode");
+			this.errorText = info.GetString("errorText");
 			base.GetObjectData(info, context);
 		}
 	}

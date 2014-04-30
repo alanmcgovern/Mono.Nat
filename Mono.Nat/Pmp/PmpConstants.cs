@@ -24,16 +24,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+
 namespace Mono.Nat.Pmp
 {
     internal static class PmpConstants
 	{
-		public const byte Version = 0;
+		public const byte Version = (byte)0;
 		
-		public const byte OperationCode = 0;
-		public const byte OperationCodeUdp = 1;
-		public const byte OperationCodeTcp = 2;
-        public const byte ServerNoop = 128;
+		public const byte OperationCode = (byte)0;
+		public const byte OperationCodeUdp = (byte)1;
+		public const byte OperationCodeTcp = (byte)2;
+        public const byte ServerNoop = (byte)128;
 		
 		public const int ClientPort = 5350;
 		public const int ServerPort = 5351;

@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 using System.Net;
-using Mono.Nat.EventArgs;
 using Mono.Nat.Pmp;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace Mono.Nat
 {
     internal class PmpSearcher : ISearcher
     {
-		static readonly PmpSearcher instance = new PmpSearcher();
-        public static List<UdpClient> Sockets;
+		static PmpSearcher instance = new PmpSearcher();
+        public static List<UdpClient> sockets;
         static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
 		
 
@@ -38,7 +38,7 @@ namespace Mono.Nat
 
 		private static void CreateSocketsAndAddGateways()
 		{
-            Sockets = new List<UdpClient>();
+            sockets = new List<UdpClient>();
             gatewayLists = new Dictionary<UdpClient,List<IPEndPoint>>();
 
             try
@@ -48,41 +48,57 @@ namespace Mono.Nat
 					if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
 						continue;
                     IPInterfaceProperties properties = n.GetIPProperties();
-                    List<IPEndPoint> gatewayList = (from gateway in properties.GatewayAddresses 
-                                                    where gateway.Address.AddressFamily == AddressFamily.InterNetwork 
-                                                    select new IPEndPoint(gateway.Address, PmpConstants.ServerPort)).ToList();
+                    List<IPEndPoint> gatewayList = new List<IPEndPoint>();
 
-                    if (gatewayList.Count == 0)
+                    foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
                     {
-                        /* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-                        gatewayList.AddRange(from gw2 in properties.DnsAddresses where gw2.AddressFamily == AddressFamily.InterNetwork 
-                                             select new IPEndPoint(gw2, PmpConstants.ServerPort));
-                        foreach (var bytes in from unicast in properties.UnicastAddresses 
-                                              where unicast.Address.AddressFamily == AddressFamily.InterNetwork 
-                                              select unicast.Address.GetAddressBytes ())
+                        if (gateway.Address.AddressFamily == AddressFamily.InterNetwork)
                         {
-                            bytes[3] = 1;
-                            gatewayList.Add(new IPEndPoint(new IPAddress(bytes), PmpConstants.ServerPort));
+                            gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
                         }
                     }
+					if (gatewayList.Count == 0)
+					{
+						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
+	                    foreach (var gw2 in properties.DnsAddresses)
+	                    {
+							if (gw2.AddressFamily == AddressFamily.InterNetwork)
+	                        {
+								gatewayList.Add(new IPEndPoint(gw2, PmpConstants.ServerPort));
+	                        }
+	                    }
+						foreach (var unicast in properties.UnicastAddresses) {
+							if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
+							    && unicast.AddressPreferredLifetime != UInt32.MaxValue
+							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
+								var bytes = unicast.Address.GetAddressBytes ();
+								bytes[3] = 1;
+								gatewayList.Add(new IPEndPoint(new IPAddress(bytes), PmpConstants.ServerPort));
+							}
+						}
+					}
 
-                    if (gatewayList.Count <= 0) continue;
-                    foreach (UnicastIPAddressInformation address in properties.UnicastAddresses.Where(address => 
-                        address.Address.AddressFamily == AddressFamily.InterNetwork))
+                    if (gatewayList.Count > 0)
                     {
-                        UdpClient client;
-
-                        try
+                        foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
                         {
-                            client = new UdpClient(new IPEndPoint(address.Address, 0));
-                        }
-                        catch (SocketException)
-                        {
-                            continue; // Move on to the next address.
-                        }
+                            if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                UdpClient client;
 
-                        gatewayLists.Add(client, gatewayList);
-                        Sockets.Add(client);
+                                try
+                                {
+                                    client = new UdpClient(new IPEndPoint(address.Address, 0));
+                                }
+                                catch (SocketException)
+                                {
+                                    continue; // Move on to the next address.
+                                }
+
+                                gatewayLists.Add(client, gatewayList);
+                                sockets.Add(client);
+                            }
+                        }
                     }
                 }
             }
@@ -94,7 +110,7 @@ namespace Mono.Nat
 
         public void Search()
 		{
-			foreach (UdpClient s in Sockets)
+			foreach (UdpClient s in sockets)
 			{
 				try
 				{
@@ -124,16 +140,18 @@ namespace Mono.Nat
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
-            byte[] buffer = { PmpConstants.Version, PmpConstants.OperationCode };
+            byte[] buffer = new byte[] { PmpConstants.Version, PmpConstants.OperationCode };
             foreach (IPEndPoint gatewayEndpoint in gatewayLists[client])
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
         }
 
-        static bool IsSearchAddress(IPAddress address)
+        bool IsSearchAddress(IPAddress address)
         {
-            return gatewayLists.Values.SelectMany(gatewayList => 
-                gatewayList).Any(gatewayEndpoint => 
-                    gatewayEndpoint.Address.Equals(address));
+            foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
+                foreach (IPEndPoint gatewayEndpoint in gatewayList)
+                    if (gatewayEndpoint.Address.Equals(address))
+                        return true;
+            return false;
         }
 
         public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
@@ -150,7 +168,7 @@ namespace Mono.Nat
             if (errorcode != 0)
                 NatUtility.Log("Non zero error: {0}", errorcode);
 
-            IPAddress publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
+            IPAddress publicIp = new IPAddress(new byte[] { response[8], response[9], response[10], response[11] });
             nextSearch = DateTime.Now.AddMinutes(5);
             timeout = 250;
             OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));

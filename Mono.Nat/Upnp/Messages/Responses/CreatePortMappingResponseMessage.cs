@@ -25,9 +25,9 @@
 //
 
 
-using System;
 
-namespace Mono.Nat.Upnp.Messages.Responses
+using System;
+namespace Mono.Nat.Upnp
 {
     internal class CreatePortMappingResponseMessage : MessageBase
     {

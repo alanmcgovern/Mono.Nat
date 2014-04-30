@@ -1,15 +1,18 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 
-namespace Mono.Nat.AsyncResults
+namespace Mono.Nat
 {
     internal class AsyncResult : IAsyncResult
     {
-        private readonly object asyncState;
-        private readonly AsyncCallback callback;
+        private object asyncState;
+        private AsyncCallback callback;
+        private bool completedSynchronously;
         private bool isCompleted;
         private Exception storedException;
-        private readonly ManualResetEvent waitHandle;
+        private ManualResetEvent waitHandle;
 
         public AsyncResult(AsyncCallback callback, object asyncState)
         {
@@ -33,7 +36,11 @@ namespace Mono.Nat.AsyncResults
             get { return waitHandle; }
         }
 
-        public bool CompletedSynchronously { get; protected internal set; }
+        public bool CompletedSynchronously
+        {
+            get { return completedSynchronously; }
+            protected internal set { completedSynchronously = value; }
+        }
 
         public bool IsCompleted
         {

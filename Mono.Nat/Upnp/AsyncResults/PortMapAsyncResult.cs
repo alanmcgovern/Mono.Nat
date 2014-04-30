@@ -25,40 +25,51 @@
 //
 
 
+
 using System;
 using System.Net;
-using Mono.Nat.AsyncResults;
-using Mono.Nat.Upnp.Messages;
-using Mono.Nat.Upnp.Messages.Requests;
+using System.Threading;
 
-namespace Mono.Nat.Upnp.AsyncResults
+namespace Mono.Nat.Upnp
 {
 	internal class PortMapAsyncResult : AsyncResult
 	{
-	    protected PortMapAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
+		private WebRequest request;
+		private MessageBase savedMessage;
+		
+		protected PortMapAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
 			: base (callback, asyncState)
 		{
-			Request = request;
+			this.request = request;
+		}
+		
+		internal WebRequest Request
+		{
+			get { return this.request; }
+			set { this.request = value; }
 		}
 
-	    internal WebRequest Request { get; set; }
+		internal MessageBase SavedMessage
+		{
+			get { return this.savedMessage; }
+			set { this.savedMessage = value; }
+		}
 
-	    internal MessageBase SavedMessage { get; set; }
-
-	    internal static PortMapAsyncResult Create (MessageBase message, WebRequest request, AsyncCallback storedCallback, object asyncState)
+		internal static PortMapAsyncResult Create (MessageBase message, WebRequest request, AsyncCallback storedCallback, object asyncState)
 		{
 			if (message is GetGenericPortMappingEntry)
 				return new GetAllMappingsAsyncResult(request, storedCallback, asyncState);
 
-	        if (!(message is GetSpecificPortMappingEntryMessage))
-	            return new PortMapAsyncResult(request, storedCallback, asyncState);
-	        GetSpecificPortMappingEntryMessage mapMessage = (GetSpecificPortMappingEntryMessage)message;
-	        GetAllMappingsAsyncResult result = new GetAllMappingsAsyncResult(request, storedCallback, asyncState)
-	        {
-	            SpecificMapping = new Mapping(mapMessage.protocol, 0, mapMessage.externalPort, 0)
-	        };
+			if (message is GetSpecificPortMappingEntryMessage)
+			{
+				GetSpecificPortMappingEntryMessage mapMessage = (GetSpecificPortMappingEntryMessage)message;
+				GetAllMappingsAsyncResult result = new GetAllMappingsAsyncResult(request, storedCallback, asyncState);
+				
+				result.SpecificMapping = new Mapping(mapMessage.protocol, 0, mapMessage.externalPort, 0);
+				return result;
+			}
 
-	        return result;
+			return new PortMapAsyncResult(request, storedCallback, asyncState);
 		}
 	}
 }

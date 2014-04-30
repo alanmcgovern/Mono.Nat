@@ -27,7 +27,6 @@
 //
 
 using System;
-using Mono.Nat.Enums;
 
 namespace Mono.Nat
 {
@@ -54,18 +53,12 @@ namespace Mono.Nat
 			this.publicPort = publicPort;
 			this.lifetime = lifetime;
 
-			switch (lifetime)
-			{
-			    case int.MaxValue:
-			        expiration = DateTime.MaxValue;
-			        break;
-			    case 0:
-			        expiration = DateTime.Now;
-			        break;
-			    default:
-			        expiration = DateTime.Now.AddSeconds (lifetime);
-			        break;
-			}
+			if (lifetime == int.MaxValue)
+				this.expiration = DateTime.MaxValue;
+			else if (lifetime == 0)
+				this.expiration = DateTime.Now;
+			else
+				this.expiration = DateTime.Now.AddSeconds (lifetime);
 		}
 
         public string Description
@@ -112,19 +105,19 @@ namespace Mono.Nat
 		public override bool Equals (object obj)
 		{
 			Mapping other = obj as Mapping;
-			return other != null && (protocol == other.protocol &&
-			                         privatePort == other.privatePort && publicPort == other.publicPort);
+			return other == null ? false : this.protocol == other.protocol &&
+				this.privatePort == other.privatePort && this.publicPort == other.publicPort;
 		}
 
 		public override int GetHashCode()
 		{
-			return protocol.GetHashCode() ^ privatePort.GetHashCode() ^ publicPort.GetHashCode();
+			return this.protocol.GetHashCode() ^ this.privatePort.GetHashCode() ^ this.publicPort.GetHashCode();
 		}
 
         public override string ToString( )
         {
-            return string.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
-                protocol, publicPort, privatePort, description, expiration, lifetime );
+            return String.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
+                this.protocol, this.publicPort, this.privatePort, this.description, this.expiration, this.lifetime );
         }
 	}
 }

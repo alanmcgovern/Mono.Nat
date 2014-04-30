@@ -24,7 +24,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Nat.Enums
+using System;
+
+namespace Mono.Nat
 {
 	public enum MapState
 	{

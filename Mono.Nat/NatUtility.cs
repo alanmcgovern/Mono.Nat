@@ -25,38 +25,48 @@
 //
 
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using System.IO;
-using Mono.Nat.EventArgs;
-
+using System.Net.NetworkInformation;
 
 namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-        private static readonly ManualResetEvent Searching;
+        private static ManualResetEvent searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
-	    private static readonly List<ISearcher> Controllers;
+		private static TextWriter logger;
+		private static List<ISearcher> controllers;
+		private static bool verbose;
 
-	    public static TextWriter Logger { get; set; }
+		public static TextWriter Logger
+		{
+			get { return logger; }
+			set { logger = value; }
+		}
 
-	    public static bool Verbose { get; set; }
-
-	    static NatUtility()
+		public static bool Verbose
+		{
+			get { return verbose; }
+			set { verbose = value; }
+		}
+		
+        static NatUtility()
         {
-            Searching = new ManualResetEvent(false);
+            searching = new ManualResetEvent(false);
 
-            Controllers = new List<ISearcher> { UpnpSearcher.Instance, PmpSearcher.Instance };
+            controllers = new List<ISearcher>();
+            controllers.Add(UpnpSearcher.Instance);
+            controllers.Add(PmpSearcher.Instance);
 
-	        foreach (ISearcher searcher in Controllers)
+            foreach (ISearcher searcher in controllers)
             {
                 searcher.DeviceFound += delegate(object sender, DeviceEventArgs args)
                 {
@@ -69,8 +79,9 @@ namespace Mono.Nat
                         DeviceLost(sender, args);
                 };
             }
-            Thread t = new Thread(SearchAndListen) { IsBackground = true };
-	        t.Start();
+            Thread t = new Thread((ThreadStart)delegate { SearchAndListen(); });
+            t.IsBackground = true;
+            t.Start();
         }
 
 		internal static void Log(string format, params object[] args)
@@ -84,37 +95,37 @@ namespace Mono.Nat
         {
             while (true)
             {
-                Searching.WaitOne();
+                searching.WaitOne();
 
                 try
                 {
-					Receive(UpnpSearcher.Instance, UpnpSearcher.Sockets);
-					Receive(PmpSearcher.Instance, PmpSearcher.Sockets);
+					Receive(UpnpSearcher.Instance, UpnpSearcher.sockets);
+					Receive(PmpSearcher.Instance, PmpSearcher.sockets);
 
-                    foreach (ISearcher s in Controllers.Where(s => s.NextSearch < DateTime.Now))
-                    {
-                        Log("Searching for: {0}", s.GetType().Name);
-                        s.Search();
-                    }
+                    foreach (ISearcher s in controllers)
+                        if (s.NextSearch < DateTime.Now)
+                        {
+                            Log("Searching for: {0}", s.GetType().Name);
+							s.Search();
+                        }
                 }
                 catch (Exception e)
                 {
                     if (UnhandledException != null)
                         UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
                 }
-				Thread.Sleep(10);
+				System.Threading.Thread.Sleep(10);
             }
 		}
 
-		static void Receive (ISearcher searcher, IEnumerable<UdpClient> clients)
+		static void Receive (ISearcher searcher, List<UdpClient> clients)
 		{
-			IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);  //Why is this hard-coded??? What about 10.0.0.0/8 addresses?
+			IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
 			foreach (UdpClient client in clients)
 			{
 				if (client.Available > 0)
 				{
 				    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-                    Log("Mono.Nat", localAddress.ToString());
 					byte[] data = client.Receive(ref received);
 					searcher.Handle(localAddress, data, received);
 				}
@@ -123,22 +134,28 @@ namespace Mono.Nat
 		
 		public static void StartDiscovery ()
 		{
-            Searching.Set();
+            searching.Set();
 		}
 
 		public static void StopDiscovery ()
 		{
-            Searching.Reset();
+            searching.Reset();
 		}
 
 		[Obsolete ("This method serves no purpose and shouldn't be used")]
 		public static IPAddress[] GetLocalAddresses (bool includeIPv6)
 		{
-		    IPHostEntry hostInfo = Dns.GetHostEntry (Dns.GetHostName ());
+			List<IPAddress> addresses = new List<IPAddress> ();
 
-		    return hostInfo.AddressList.Where(address => 
-                address.AddressFamily == AddressFamily.InterNetwork || 
-                (includeIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6)).ToArray();
+			IPHostEntry hostInfo = Dns.GetHostEntry (Dns.GetHostName ());
+			foreach (IPAddress address in hostInfo.AddressList) {
+				if (address.AddressFamily == AddressFamily.InterNetwork ||
+					(includeIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6)) {
+					addresses.Add (address);
+				}
+			}
+			
+			return addresses.ToArray ();
 		}
 		
 		//checks if an IP address is a private address space as defined by RFC 1918
@@ -150,9 +167,9 @@ namespace Mono.Nat
 			case 10:
 				return true; //10.x.x.x
 			case 172:
-				return (ba[1] & 16) != 0; //172.16-31.x.x
+				return ((int)ba[1] & 16) != 0; //172.16-31.x.x
 			case 192:
-				return ba[1] == 168; //192.168.x.x
+				return (int)ba[1] == 168; //192.168.x.x
 			default:
 				return false;
 			}

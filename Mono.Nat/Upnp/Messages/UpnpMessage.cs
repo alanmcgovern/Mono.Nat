@@ -25,13 +25,14 @@
 //
 
 using System;
-using System.Globalization;
-using System.Net;
-using System.Text;
+using System.Diagnostics;
 using System.Xml;
-using Mono.Nat.Upnp.Messages.Responses;
+using System.Net;
+using System.IO;
+using System.Text;
+using System.Globalization;
 
-namespace Mono.Nat.Upnp.Messages
+namespace Mono.Nat.Upnp
 {
     internal abstract class MessageBase
     {
@@ -45,11 +46,11 @@ namespace Mono.Nat.Upnp.Messages
 
         protected WebRequest CreateRequest(string upnpMethod, string methodParameters, out byte[] body)
         {
-            string ss = "http://" + device.HostEndPoint + device.ControlUrl;
+            string ss = "http://" + this.device.HostEndPoint.ToString() + this.device.ControlUrl;
             NatUtility.Log("Initiating request to: {0}", ss);
             Uri location = new Uri(ss);
 
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(location);
+            HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(location);
             req.KeepAlive = false;
             req.Method = "POST";
             req.ContentType = "text/xml; charset=\"utf-8\"";
@@ -66,7 +67,7 @@ namespace Mono.Nat.Upnp.Messages
                + "</s:Body>"
                + "</s:Envelope>\r\n\r\n";
 
-			body = Encoding.UTF8.GetBytes(bodyString);
+			body = System.Text.Encoding.UTF8.GetBytes(bodyString);
             return req;
         }
 
@@ -98,7 +99,7 @@ namespace Mono.Nat.Upnp.Messages
 
 			if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null) {
 				string newExternalIPAddress = node["NewExternalIPAddress"] != null ? node["NewExternalIPAddress"].InnerText : "";
-				return new GetExternalIpAddressResponseMessage(newExternalIPAddress);
+				return new GetExternalIPAddressResponseMessage(newExternalIPAddress);
 			}
 
 	        if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
@@ -123,7 +124,8 @@ namespace Mono.Nat.Upnp.Messages
 
         internal static XmlWriter CreateWriter(StringBuilder sb)
         {
-            XmlWriterSettings settings = new XmlWriterSettings { ConformanceLevel = ConformanceLevel.Fragment };
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.ConformanceLevel = ConformanceLevel.Fragment;
             return XmlWriter.Create(sb, settings);
         }
     }
