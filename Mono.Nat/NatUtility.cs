@@ -32,6 +32,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
+using Mono.Nat.Pmp.Mappers;
 
 namespace Mono.Nat
 {
@@ -132,6 +133,13 @@ namespace Mono.Nat
 				}
             }
         }
+
+        static void Receive(IMapper mapper)
+        {
+            IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
+            byte[] data = mapper.Client.Receive(ref received);
+            mapper.Handle(data);
+        }
 		
 		public static void StartDiscovery ()
 		{
@@ -142,6 +150,13 @@ namespace Mono.Nat
 		{
             searching.Reset();
 		}
+
+        //This is for when you know the Gateway IP and want to skip the costly search...
+        public static void DirectMap(IPAddress gatewayAddress)
+        {
+            searching.Reset();
+            IMapper mapper = new PmpMapper();
+        }
 
         //So then why is it here? -Nick
 		[Obsolete ("This method serves no purpose and shouldn't be used")]
