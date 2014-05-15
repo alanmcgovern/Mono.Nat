@@ -70,7 +70,8 @@ namespace Mono.Nat
 						foreach (var unicast in properties.UnicastAddresses) {
 							if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
 							    && unicast.AddressPreferredLifetime != UInt32.MaxValue
-							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
+							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) 
+                            {
 								var bytes = unicast.Address.GetAddressBytes ();
 								bytes[3] = 1;
 								gatewayList.Add(new IPEndPoint(new IPAddress(bytes), PmpConstants.ServerPort));

@@ -28,6 +28,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -66,20 +67,20 @@ namespace Mono.Nat
             controllers.Add(UpnpSearcher.Instance);
             controllers.Add(PmpSearcher.Instance);
 
-            foreach (ISearcher searcher in controllers)
-            {
-                searcher.DeviceFound += delegate(object sender, DeviceEventArgs args)
+            controllers.ForEach(searcher =>
                 {
-                    if (DeviceFound != null)
-                        DeviceFound(sender, args);
-                };
-                searcher.DeviceLost += delegate(object sender, DeviceEventArgs args)
-                {
-                    if (DeviceLost != null)
-                        DeviceLost(sender, args);
-                };
-            }
-            Thread t = new Thread((ThreadStart)delegate { SearchAndListen(); });
+                    searcher.DeviceFound += (sender, args) =>
+                    {
+                        if (DeviceFound != null)
+                            DeviceFound(sender, args);
+                    };
+                    searcher.DeviceLost += (sender, args) =>
+                    {
+                        if (DeviceLost != null)
+                            DeviceLost(sender, args);
+                    };
+                });
+            Thread t = new Thread(SearchAndListen);
             t.IsBackground = true;
             t.Start();
         }
@@ -114,7 +115,7 @@ namespace Mono.Nat
                     if (UnhandledException != null)
                         UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
                 }
-				System.Threading.Thread.Sleep(10);
+				Thread.Sleep(10);
             }
 		}
 
@@ -142,6 +143,7 @@ namespace Mono.Nat
             searching.Reset();
 		}
 
+        //So then why is it here? -Nick
 		[Obsolete ("This method serves no purpose and shouldn't be used")]
 		public static IPAddress[] GetLocalAddresses (bool includeIPv6)
 		{

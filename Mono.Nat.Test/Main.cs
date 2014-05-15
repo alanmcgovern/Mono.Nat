@@ -34,6 +34,8 @@ namespace Mono.Nat.Test {
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
 
+            NatUtility.Verbose = true;
+
 			NatUtility.StartDiscovery();
 
 			Console.WriteLine("Discovery started");
@@ -63,7 +65,7 @@ namespace Mono.Nat.Test {
 				device.CreatePortMap(new Mapping(Protocol.Tcp, 15000, 15000));
 				Console.WriteLine("---");
 
-				return;
+				//return;
 				/******************************************/
 				/*         Advanced test suite.           */
 				/******************************************/

@@ -59,11 +59,15 @@ namespace Mono.Nat.Pmp
         public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
 			PortMapAsyncResult pmar = new PortMapAsyncResult (mapping.Protocol, mapping.PublicPort, PmpConstants.DefaultLeaseTime, callback, asyncState);
-			ThreadPool.QueueUserWorkItem (delegate {
-				try {
+			ThreadPool.QueueUserWorkItem (delegate 
+            {
+				try 
+                {
 					CreatePortMap(pmar.Mapping, true);
 					pmar.Complete();
-				} catch (Exception e) {
+				} 
+                catch (Exception e) 
+                {
 					pmar.Complete(e);
 				}
 			});
