@@ -11,9 +11,8 @@ namespace Mono.Nat
     {
         event EventHandler<DeviceEventArgs> DeviceFound;
 
-        UdpClient Client { get; set; }
-
         void Map(IPAddress gatewayAddress);
-        void Handle(byte[] response);
+
+        void Handle(IPAddress localAddres, byte[] response);
     }
 }

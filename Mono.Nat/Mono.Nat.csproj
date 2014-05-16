@@ -74,6 +74,7 @@
     <Compile Include="Mapping.cs" />
     <Compile Include="NatUtility.cs" />
     <Compile Include="Pmp\Mappers\PmpMapper.cs" />
+    <Compile Include="Pmp\Pmp.cs" />
     <Compile Include="Pmp\Searchers\PmpSearcher.cs" />
     <Compile Include="Pmp\AsyncResults\PortMapAsyncResult.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />

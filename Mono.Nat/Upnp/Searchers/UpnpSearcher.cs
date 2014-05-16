@@ -32,6 +32,7 @@ namespace Mono.Nat
         {
             devices = new List<INatDevice>();
 			lastFetched = new Dictionary<IPAddress, DateTime>();
+            //searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
             searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
         }
 

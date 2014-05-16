@@ -134,11 +134,18 @@ namespace Mono.Nat
             }
         }
 
-        static void Receive(IMapper mapper)
+        static void Receive(IMapper mapper, List<UdpClient> clients)
         {
             IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
-            byte[] data = mapper.Client.Receive(ref received);
-            mapper.Handle(data);
+            foreach (UdpClient client in clients)
+            {
+                if (client.Available > 0)
+                {
+                    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+                    byte[] data = client.Receive(ref received);
+                    mapper.Handle(localAddress, data);
+                }
+            }
         }
 		
 		public static void StartDiscovery ()

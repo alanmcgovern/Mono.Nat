@@ -62,7 +62,7 @@ namespace Mono.Nat.Test {
 				Console.WriteLine("Service Type: {0}", (device as UpnpNatDevice).ServiceType);
 
 				Console.WriteLine("IP: {0}", device.GetExternalIP());
-				device.CreatePortMap(new Mapping(Protocol.Tcp, 15000, 15000));
+				device.CreatePortMap(new Mapping(Protocol.Tcp, 15001, 15001));
 				Console.WriteLine("---");
 
 				//return;
