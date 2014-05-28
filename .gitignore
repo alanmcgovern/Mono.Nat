@@ -22,3 +22,6 @@ Mono.Nat/mono.nat.pc
 # Ignore debug foo
 xdb.il
 xdb.s
+
+
+*.suo

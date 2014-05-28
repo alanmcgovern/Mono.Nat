@@ -7,6 +7,12 @@ using System.Text;
 
 namespace Mono.Nat
 {
+    internal enum MapperType
+    {
+        Pmp,
+        Upnp
+    }
+
     internal interface IMapper
     {
         event EventHandler<DeviceEventArgs> DeviceFound;

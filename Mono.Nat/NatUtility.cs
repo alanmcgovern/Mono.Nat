@@ -159,10 +159,23 @@ namespace Mono.Nat
 		}
 
         //This is for when you know the Gateway IP and want to skip the costly search...
-        public static void DirectMap(IPAddress gatewayAddress)
+        static void DirectMap(IPAddress gatewayAddress, MapperType type)
         {
+            IMapper mapper;
+            switch (type)
+            {
+                case MapperType.Pmp:
+                    mapper = new PmpMapper();
+                    break;
+                case MapperType.Upnp:
+                    mapper = null;
+                    break;
+                default:
+                    throw new InvalidOperationException("Unsuported type given");
+
+            }
             searching.Reset();
-            IMapper mapper = new PmpMapper();
+            
         }
 
         //So then why is it here? -Nick

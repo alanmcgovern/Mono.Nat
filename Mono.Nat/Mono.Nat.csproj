@@ -79,6 +79,7 @@
     <Compile Include="Pmp\AsyncResults\PortMapAsyncResult.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
+    <Compile Include="Upnp\Mappers\UpnpMapper.cs" />
     <Compile Include="Upnp\Searchers\UpnpSearcher.cs" />
     <Compile Include="Upnp\AsyncResults\GetAllMappingsAsyncResult.cs" />
     <Compile Include="Upnp\AsyncResults\PortMapAsyncResult.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\UpnpMessage.cs" />
+    <Compile Include="Upnp\Upnp.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
   </ItemGroup>
   <ItemGroup>
