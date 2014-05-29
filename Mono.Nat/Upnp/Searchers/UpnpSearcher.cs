@@ -11,8 +11,6 @@ namespace Mono.Nat
 {
     internal class UpnpSearcher : ISearcher
     {
-        internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANIPConnection:1";
-
         private const int SearchPeriod = 5 * 60; // The time in seconds between each search
 		static UpnpSearcher instance = new UpnpSearcher();
 		public static List<UdpClient> sockets = CreateSockets();
@@ -34,6 +32,7 @@ namespace Mono.Nat
         {
             devices = new List<INatDevice>();
 			lastFetched = new Dictionary<IPAddress, DateTime>();
+            //searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
             searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
         }
 
@@ -85,7 +84,7 @@ namespace Mono.Nat
         void Search(UdpClient client)
         {
             nextSearch = DateTime.Now.AddSeconds(SearchPeriod);
-            byte[] data = DiscoverDeviceMessage.Encode();
+            byte[] data = DiscoverDeviceMessage.EncodeSSDP();
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (int i = 0; i < 3; i++)
@@ -104,34 +103,43 @@ namespace Mono.Nat
 
             // No matter what, this method should never throw an exception. If something goes wrong
             // we should still be in a position to handle the next reply correctly.
-            try
-            {
+            try {
+	            string urn;
                 dataString = Encoding.UTF8.GetString(response);
 
 				if (NatUtility.Verbose)
 					NatUtility.Log("UPnP Response: {0}", dataString);
-                // If this device does not have a WANIPConnection service, then ignore it
-                // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
-                // but there are some routers missing the '1'.
+
+				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection. 
+				 Any other device type is no good to us for this purpose. See the IGP overview paper 
+				 page 5 for an overview of device types and their hierarchy.
+				 http://upnp.org/specs/gw/UPnP-gw-InternetGatewayDevice-v1-Device.pdf */
+
+				/* TODO: Currently we are assuming version 1 of the protocol. We should figure out which
+				 version it is and apply the correct URN. */
+
+				/* Some routers don't correctly implement the version ID on the URN, so we only search for the type
+				 prefix. */
+
                 string log = "UPnP Response: Router advertised a '{0}' service";
                 StringComparison c = StringComparison.OrdinalIgnoreCase;
-                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:");
-                else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:device:InternetGatewayDevice:");
-                else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
-                else
-                    return;
+                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1) {
+	                urn = "urn:schemas-upnp-org:service:WANIPConnection:1";
+	                NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:1");
+                } else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1) {
+					urn = "urn:schemas-upnp-org:service:WANPPPConnection:1";
+					NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
+				} else
+					return;
 
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString, WanIPUrn);
+                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString, urn);
 
-                if (this.devices.Contains(d))
+                if (devices.Contains(d))
                 {
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
-                    this.devices[this.devices.IndexOf(d)].LastSeen = DateTime.Now;
+                    devices[devices.IndexOf(d)].LastSeen = DateTime.Now;
                 }
                 else
                 {
@@ -149,7 +157,7 @@ namespace Mono.Nat
                     // Once we've parsed the information we need, we tell the device to retrieve it's service list
                     // Once we successfully receive the service list, the callback provided will be invoked.
 					NatUtility.Log("Fetching service list: {0}", d.HostEndPoint);
-                    d.GetServicesList(new NatDeviceCallback(DeviceSetupComplete));
+                    d.GetServicesList(DeviceSetupComplete);
                 }
             }
             catch (Exception ex)

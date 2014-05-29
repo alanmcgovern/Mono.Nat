@@ -38,6 +38,7 @@ namespace Mono.Nat
 		void CreatePortMap (Mapping mapping);
 		void DeletePortMap (Mapping mapping);
 		
+		IPAddress LocalAddress { get; }
 		Mapping[] GetAllMappings ();
 		IPAddress GetExternalIP ();
 		Mapping GetSpecificMapping (Protocol protocol, int port);
