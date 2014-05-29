@@ -84,7 +84,7 @@ namespace Mono.Nat
         void Search(UdpClient client)
         {
             nextSearch = DateTime.Now.AddSeconds(SearchPeriod);
-            byte[] data = DiscoverDeviceMessage.Encode();
+            byte[] data = DiscoverDeviceMessage.EncodeSSDP();
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (int i = 0; i < 3; i++)

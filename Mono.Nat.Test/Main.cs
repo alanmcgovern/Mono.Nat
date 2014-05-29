@@ -27,6 +27,7 @@
 using System;
 using System.Threading;
 using Mono.Nat.Upnp;
+using System.Net;
 
 namespace Mono.Nat.Test {
 	internal class NatTest {
@@ -37,6 +38,8 @@ namespace Mono.Nat.Test {
             NatUtility.Verbose = true;
 
 			NatUtility.StartDiscovery();
+
+            //NatUtility.DirectMap(IPAddress.Parse("192.168.1.1"), MapperType.Upnp);
 
 			Console.WriteLine("Discovery started");
 

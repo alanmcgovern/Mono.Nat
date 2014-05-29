@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
 using Mono.Nat.Pmp.Mappers;
+using Mono.Nat.Upnp.Mappers;
 
 namespace Mono.Nat
 {
@@ -159,7 +160,7 @@ namespace Mono.Nat
 		}
 
         //This is for when you know the Gateway IP and want to skip the costly search...
-        static void DirectMap(IPAddress gatewayAddress, MapperType type)
+        public static void DirectMap(IPAddress gatewayAddress, MapperType type)
         {
             IMapper mapper;
             switch (type)
@@ -168,7 +169,13 @@ namespace Mono.Nat
                     mapper = new PmpMapper();
                     break;
                 case MapperType.Upnp:
-                    mapper = null;
+                    mapper = new UpnpMapper();
+                    mapper.DeviceFound += (sender, args) =>
+                    {
+                        if (DeviceFound != null)
+                            DeviceFound(sender, args);
+                    };
+                    mapper.Map(gatewayAddress);                    
                     break;
                 default:
                     throw new InvalidOperationException("Unsuported type given");

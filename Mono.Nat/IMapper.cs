@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Mono.Nat
 {
-    internal enum MapperType
+    public enum MapperType
     {
         Pmp,
         Upnp

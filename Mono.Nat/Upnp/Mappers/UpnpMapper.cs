@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 namespace Mono.Nat.Upnp.Mappers
 {
@@ -24,9 +25,25 @@ namespace Mono.Nat.Upnp.Mappers
         public void Map(IPAddress gatewayAddress)
         {
             //Get the httpu request payload
-            byte[] data = DiscoverDeviceMessage.Encode();
+            byte[] data = DiscoverDeviceMessage.EncodeUnicast(gatewayAddress);
 
             Client.Send(data, data.Length, new IPEndPoint(gatewayAddress, 1900));
+
+            new Thread(Receive).Start(); 
+        }
+
+        public void Receive()
+        {
+            while (true)
+            {
+                IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
+                if (Client.Available > 0)
+                {
+                    IPAddress localAddress = ((IPEndPoint)Client.Client.LocalEndPoint).Address;
+                    byte[] data = Client.Receive(ref received);
+                    Handle(localAddress, data, received);
+                }
+            }
         }
 
         public void Handle(IPAddress localAddres, byte[] response)
