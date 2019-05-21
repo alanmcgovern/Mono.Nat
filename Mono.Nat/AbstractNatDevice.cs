@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
@@ -49,6 +50,35 @@ namespace Mono.Nat
 			get { return lastSeen; }
 			set { lastSeen = value; }
 		}
+
+		#region Async APIs
+
+		public async Task CreatePortMapAsync (Mapping mapping)
+		{
+			await Task.Factory.FromAsync (BeginCreatePortMap (mapping, null, null), EndCreatePortMap);
+		}
+
+		public async Task DeletePortMapAsync (Mapping mapping)
+		{
+			await Task.Factory.FromAsync (BeginDeletePortMap (mapping, null, null), EndDeletePortMap);
+		}
+
+		public async Task<Mapping[]> GetAllMappingsAsync ()
+		{
+			return await Task.Factory.FromAsync (BeginGetAllMappings (null, null), EndGetAllMappings);
+		}
+
+		public async Task<IPAddress> GetExternalIPAsync ()
+		{
+			return await Task.Factory.FromAsync (BeginGetExternalIP (null, null), EndGetExternalIP);
+		}
+
+		public async Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
+		{
+			return await Task.Factory.FromAsync (BeginGetSpecificMapping (protocol, port, null, null), EndGetSpecificMapping);
+		}
+
+		#endregion
 
 		public virtual void CreatePortMap (Mapping mapping)
 		{
