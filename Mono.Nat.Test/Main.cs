@@ -54,7 +54,7 @@ namespace Mono.Nat.Test {
 			new NatTest();
 		}
 
-		private void DeviceFound(object sender, DeviceEventArgs args) {
+		private async void DeviceFound(object sender, DeviceEventArgs args) {
 			try {
 				INatDevice device = args.Device;
 
@@ -64,33 +64,40 @@ namespace Mono.Nat.Test {
 				Console.WriteLine("Type: {0}", device.GetType().Name);
 				Console.WriteLine("Service Type: {0}", (device as UpnpNatDevice).ServiceType);
 
-				Console.WriteLine("IP: {0}", device.GetExternalIP());
-				device.CreatePortMap(new Mapping(Protocol.Tcp, 15001, 15001));
+				Console.WriteLine("IP: {0}", await device.GetExternalIPAsync());
+
 				Console.WriteLine("---");
 
 				//return;
+
 				/******************************************/
 				/*         Advanced test suite.           */
 				/******************************************/
 
 				// Try to create a new port map:
 				var mapping = new Mapping(Protocol.Tcp, 6001, 6001);
-				device.CreatePortMap(mapping);
+				await device.CreatePortMapAsync(mapping);
 				Console.WriteLine("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort,
 				                  mapping.PrivatePort);
 
 				// Try to retrieve confirmation on the port map we just created:
 				try {
-					Mapping m = device.GetSpecificMapping(Protocol.Tcp, 6001);
+					Mapping m = await device.GetSpecificMappingAsync(Protocol.Tcp, 6001);
 					Console.WriteLine("Specific Mapping: protocol={0}, public={1}, private={2}", m.Protocol, m.PublicPort,
 					                  m.PrivatePort);
 				} catch {
 					Console.WriteLine("Couldn't get specific mapping");
 				}
 
+				// Try retrieving all port maps:
+				foreach (Mapping mp in await device.GetAllMappingsAsync()) {
+					Console.WriteLine("Existing Mappings: protocol={0}, public={1}, private={2}", mp.Protocol, mp.PublicPort,
+					                  mp.PrivatePort);
+				}
+
 				// Try deleting the port we opened before:
 				try {
-					device.DeletePortMap(mapping);
+					await device.DeletePortMapAsync(mapping);
 					Console.WriteLine("Deleting Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort,
 									  mapping.PrivatePort);
 				} catch {
@@ -98,12 +105,16 @@ namespace Mono.Nat.Test {
 				}
 
 				// Try retrieving all port maps:
-				foreach (Mapping mp in device.GetAllMappings()) {
+				var mappings = await device.GetAllMappingsAsync();
+				if (mappings.Length == 0)
+					Console.WriteLine ("No existing uPnP mappings found.");
+
+				foreach (Mapping mp in mappings) {
 					Console.WriteLine("Existing Mapping: protocol={0}, public={1}, private={2}", mp.Protocol, mp.PublicPort,
 					                  mp.PrivatePort);
 				}
 
-				Console.WriteLine("External IP: {0}", device.GetExternalIP());
+				Console.WriteLine("External IP: {0}", await device.GetExternalIPAsync());
 				Console.WriteLine("Done...");
 			} catch (Exception ex) {
 				Console.WriteLine(ex.Message);
