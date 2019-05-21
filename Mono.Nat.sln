@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat", "Mono.Nat\Mono.Nat.csproj", "{F5D74163-145F-47BF-83DC-D0E07249C6CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat.Test", "Mono.Nat.Test\Mono.Nat.Test.csproj", "{E92CFA66-F518-4E66-B0BA-76A7808C939A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		version = 0.1
+		StartupItem = Mono.Nat\Mono.Nat.csproj
+		name = Mono.Nat
+	EndGlobalSection
+EndGlobal
