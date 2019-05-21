@@ -41,6 +41,8 @@ namespace Mono.Nat
 		{
 
 		}
+
+		public abstract IPAddress LocalAddress { get; }
 		
 		public DateTime LastSeen
 		{

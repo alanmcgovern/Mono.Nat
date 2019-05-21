@@ -2,9 +2,11 @@
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //   Ben Motmans <ben.motmans@gmail.com>
+//   Nicholas Terry <nick.i.terry@gmail.com>
 //
 // Copyright (C) 2006 Alan McGovern
 // Copyright (C) 2007 Ben Motmans
+// Copyright (C) 2014 Nicholas Terry
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,33 +31,21 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Net.Sockets;
 using System.Net;
 
 namespace Mono.Nat
 {
-	public interface INatDevice
-	{
-		void CreatePortMap (Mapping mapping);
-		void DeletePortMap (Mapping mapping);
-		
-		Mapping[] GetAllMappings ();
-		IPAddress GetExternalIP ();
-		Mapping GetSpecificMapping (Protocol protocol, int port);
+    public delegate void NatDeviceCallback(INatDevice device);
 
-		IAsyncResult BeginCreatePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
-		IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
+    internal interface ISearcher
+    {
+        event EventHandler<DeviceEventArgs> DeviceFound;
+        event EventHandler<DeviceEventArgs> DeviceLost;
 
-		IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetSpecificMapping (Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
-
-		void EndCreatePortMap (IAsyncResult result);
-		void EndDeletePortMap (IAsyncResult result);
-
-		Mapping[] EndGetAllMappings (IAsyncResult result);
-		IPAddress EndGetExternalIP (IAsyncResult result);
-		Mapping EndGetSpecificMapping (IAsyncResult result);
-
-		DateTime LastSeen { get; set; }
-	}
+        void Search();
+        void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
+        DateTime NextSearch { get; }
+        NatProtocol Protocol { get; }
+    }
 }
