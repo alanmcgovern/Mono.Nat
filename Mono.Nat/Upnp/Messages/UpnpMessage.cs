@@ -106,7 +106,7 @@ namespace Mono.Nat.Upnp
                 return new GetGenericPortMappingEntryResponseMessage(node, true);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
-                return new GetGenericPortMappingEntryResponseMessage(node, false);
+                return new GetSpecificPortMappingEntryResponseMessage(node);
 
             NatUtility.Log("Unknown message returned. Please send me back the following XML:");
             NatUtility.Log(message);

@@ -35,11 +35,9 @@ namespace Mono.Nat.Test {
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
 
-            NatUtility.Verbose = true;
+			NatUtility.Verbose = true;
 
 			NatUtility.StartDiscovery();
-
-            //NatUtility.DirectMap(IPAddress.Parse("192.168.1.1"), MapperType.Upnp);
 
 			Console.WriteLine("Discovery started");
 
