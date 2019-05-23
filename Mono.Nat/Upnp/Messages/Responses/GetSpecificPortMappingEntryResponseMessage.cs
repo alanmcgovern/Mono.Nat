@@ -1,4 +1,4 @@
-//
+﻿//
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //
@@ -27,30 +27,31 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Net;
+using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-	internal class GetAllMappingsAsyncResult : PortMapAsyncResult
+	internal class GetSpecificPortMappingEntryResponseMessage : MessageBase
 	{
-		private List<Mapping> mappings;
-		private Mapping specificMapping;
-		
-		public GetAllMappingsAsyncResult(WebRequest request, AsyncCallback callback, object asyncState)
-			: base(request, callback, asyncState)
+		public bool Enabled { get; }
+		public string InternalClient { get; }
+		public int InternalPort { get; }
+		public int LeaseDuration { get; }
+		public string PortMappingDescription { get; }
+
+		public GetSpecificPortMappingEntryResponseMessage(XmlNode data)
+			: base(null)
 		{
-			mappings = new List<Mapping>();
+			Enabled = data["NewEnabled"].InnerText == "1";
+			InternalClient = data["NewInternalClient"].InnerText;
+			InternalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
+			LeaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
+			PortMappingDescription = data["NewPortMappingDescription"].InnerText;
 		}
 
-		public List<Mapping> Mappings
+		public override System.Net.WebRequest Encode(out byte[] body)
 		{
-			get { return this.mappings; }
-		}
-
-		public Mapping SpecificMapping
-		{
-			get { return this.specificMapping; }
-			set { this.specificMapping = value; }
+			throw new NotImplementedException();
 		}
 	}
 }
