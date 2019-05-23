@@ -163,7 +163,7 @@ namespace Mono.Nat
 					return;
 
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString, urn);
+                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString);
 
                 if (devices.Contains(d))
                 {

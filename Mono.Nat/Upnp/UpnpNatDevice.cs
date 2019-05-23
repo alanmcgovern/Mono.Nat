@@ -32,6 +32,8 @@ using System.Net;
 using System.Xml;
 using System.Text;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Mono.Nat.Upnp
 {
@@ -53,14 +55,13 @@ namespace Mono.Nat.Upnp
 		/// </summary>
 		private NatDeviceCallback callback;
 		
-		internal UpnpNatDevice (IPAddress localAddress, string deviceDetails, string serviceType)
+		internal UpnpNatDevice (IPAddress localAddress, string deviceDetails)
 		{
 			this.LastSeen = DateTime.Now;
 			this.localAddress = localAddress;
 
 			// Split the string at the "location" section so i can extract the ipaddress and service description url
 			string locationDetails = deviceDetails.Substring(deviceDetails.IndexOf("Location", StringComparison.InvariantCultureIgnoreCase) + 9).Split('\r')[0];
-            this.serviceType = serviceType;
 
 			// Make sure we have no excess whitespace
 			locationDetails = locationDetails.Trim();
@@ -561,6 +562,7 @@ namespace Mono.Nat.Upnp
 						if (type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
 							type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", c))
 						{
+							serviceType = type;
 							this.controlUrl = service["controlURL"].InnerText;
 							NatUtility.Log("{0}: Found upnp service at: {1}", HostEndPoint, controlUrl);
 							try

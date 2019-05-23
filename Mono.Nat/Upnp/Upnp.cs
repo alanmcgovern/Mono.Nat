@@ -44,7 +44,6 @@ namespace Mono.Nat.Upnp
             string dataString = null;
 
 
-            string urn;
             dataString = Encoding.UTF8.GetString(response);
 
             if (NatUtility.Verbose)
@@ -65,19 +64,17 @@ namespace Mono.Nat.Upnp
             StringComparison c = StringComparison.OrdinalIgnoreCase;
             if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1)
             {
-                urn = "urn:schemas-upnp-org:service:WANIPConnection:1";
                 NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:1");
             }
             else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1)
             {
-                urn = "urn:schemas-upnp-org:service:WANPPPConnection:1";
                 NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
             }
             else
                 throw new NotSupportedException("Received non-supported device type");
 
             // We have an internet gateway device now
-            return new UpnpNatDevice(localAddress, dataString, urn);
+            return new UpnpNatDevice(localAddress, dataString);
         }
     }
 }
