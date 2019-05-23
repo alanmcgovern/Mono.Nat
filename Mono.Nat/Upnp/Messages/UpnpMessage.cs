@@ -88,7 +88,7 @@ namespace Mono.Nat.Upnp
 				string errorCode = node["errorCode"] != null ? node["errorCode"].InnerText : "";
 				string errorDescription = node["errorDescription"] != null ? node["errorDescription"].InnerText : "";
 
-				return new ErrorMessage(Convert.ToInt32(errorCode, CultureInfo.InvariantCulture), errorDescription);
+				throw new MappingException(Convert.ToInt32(errorCode, CultureInfo.InvariantCulture), errorDescription);
 			}
 
 	        if ((doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm)) != null)
@@ -106,7 +106,7 @@ namespace Mono.Nat.Upnp
                 return new GetGenericPortMappingEntryResponseMessage(node, true);
 
             if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
-                return new GetGenericPortMappingEntryResponseMessage(node, false);
+                return new GetSpecificPortMappingEntryResponseMessage(node);
 
             NatUtility.Log("Unknown message returned. Please send me back the following XML:");
             NatUtility.Log(message);

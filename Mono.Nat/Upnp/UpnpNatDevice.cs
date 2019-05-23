@@ -78,16 +78,16 @@ namespace Mono.Nat.Upnp
 				string hostAddressAndPort = locationDetails.Remove(locationDetails.IndexOf('/'));
 
 				// From this we parse out the IP address and Port
-                if (hostAddressAndPort.IndexOf(':') > 0)
-                {
-                    this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
-                    Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
-                }
-                else
-                {
-                    // there is no port specified, use default port (80)
-                    this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort), 80);
-                }
+				if (hostAddressAndPort.IndexOf(':') > 0)
+				{
+					this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort.Remove(hostAddressAndPort.IndexOf(':'))),
+					Convert.ToUInt16(hostAddressAndPort.Substring(hostAddressAndPort.IndexOf(':') + 1), System.Globalization.CultureInfo.InvariantCulture));
+				}
+				else
+				{
+					// there is no port specified, use default port (80)
+					this.hostEndPoint = new IPEndPoint(IPAddress.Parse(hostAddressAndPort), 80);
+				}
 
 				NatUtility.Log("Parsed device as: {0}", this.hostEndPoint.ToString());
 				
@@ -134,23 +134,105 @@ namespace Mono.Nat.Upnp
 			get { return serviceType; }
 		}
 
-		/// <summary>
-		/// Begins an async call to get the external ip address of the router
-		/// </summary>
-		public override IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState)
+		public override async Task CreatePortMapAsync(Mapping mapping)
 		{
-			// Create the port map message
-			GetExternalIPAddressMessage message = new GetExternalIPAddressMessage(this);
-			return BeginMessageInternal(message, callback, asyncState, EndGetExternalIPInternal);
+			var message = new CreatePortMappingMessage(mapping, localAddress, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
+			if (!(response is CreatePortMappingResponseMessage))
+				throw new MappingException (-1, "Invalid response received when creating the port map");
+		}
+
+		public override async Task DeletePortMapAsync(Mapping mapping)
+		{
+			var message = new DeletePortMappingMessage(mapping, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
+			if (!(response is DeletePortMapResponseMessage))
+				throw new MappingException (-1, "Invalid response received when deleting the port map");
+		}
+
+		public override async Task<Mapping[]> GetAllMappingsAsync()
+		{
+			var mappings = new List<Mapping> ();
+
+			// Is it OK to hardcode 1000 mappings as the maximum? Probably better than an infinite loop
+			// which would rely on routers correctly reporting all the mappings have been retrieved...
+			try {
+				for (int i = 0; i < 1000; i++) {
+					var message = new GetGenericPortMappingEntry(i, this);
+					// If we get a null response, or it's the wrong type, bail out.
+					// It means we've iterated over the entire array.
+					var resp = await SendMessageAsync (message).ConfigureAwait (false);
+					if (!(resp is GetGenericPortMappingEntryResponseMessage response))
+						break;
+
+					mappings.Add (new Mapping (response.Protocol, response.InternalPort, response.ExternalPort, response.LeaseDuration) {
+						Description = response.PortMappingDescription
+					});
+				}
+			} catch (MappingException ex) {
+				// Error code 713 means we successfully iterated to the end of the array and have all the mappings.
+				// Exception driven code flow ftw!
+				if (ex.ErrorCode != 713)
+					throw;
+			}
+
+			return mappings.ToArray ();
+		}
+
+		public override async Task<IPAddress> GetExternalIPAsync()
+		{
+			var message = new GetExternalIPAddressMessage(this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
+			if (!(response is GetExternalIPAddressResponseMessage msg))
+				throw new MappingException (-1, "Invalid response received when getting the external IP address");
+			return msg.ExternalIPAddress;
+		}
+
+		public override async Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int port)
+		{
+			var message = new GetSpecificPortMappingEntryMessage(protocol, port, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
+			if (!(response is GetSpecificPortMappingEntryResponseMessage msg))
+				throw new MappingException (-1, "Invalid response received when getting the specific mapping");
+			return new Mapping(protocol, msg.InternalPort, port, msg.LeaseDuration) {
+				Description = msg.PortMappingDescription
+			};
+		}
+
+		async Task<MessageBase> SendMessageAsync(MessageBase message)
+		{
+			WebRequest request = message.Encode(out byte[] body);
+			if (body.Length > 0) {
+				request.ContentLength = body.Length;
+				using (var stream = await request.GetRequestStreamAsync ().ConfigureAwait (false))
+					stream.Write(body, 0, body.Length);
+			}
+
+			try
+			{
+				using (var response = await request.GetResponseAsync ().ConfigureAwait (false))
+					return DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+			}
+			catch (WebException ex)
+			{
+				// Even if the request "failed" i want to continue on to read out the response from the router
+				using (var response = ex.Response as HttpWebResponse) {
+					if (response == null)
+						throw new MappingException ((int)ex.Status, ex.Message);
+					else
+						return DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+				}
+			}
 		}
 
 		/// <summary>
 		///  Maps the specified port to this computer
 		/// </summary>
-        public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
+		public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
-            CreatePortMappingMessage message = new CreatePortMappingMessage(mapping, localAddress, this);
-            return BeginMessageInternal(message, callback, asyncState, EndCreatePortMapInternal);
+			var result = new TaskAsyncResult (CreatePortMapAsync (mapping), callback, asyncState);
+			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
+			return result;
 		}
 
 		/// <summary>
@@ -158,22 +240,47 @@ namespace Mono.Nat.Upnp
 		/// </summary>
 		public override IAsyncResult BeginDeletePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
 		{
-			DeletePortMappingMessage message = new DeletePortMappingMessage(mapping, this);
-			return BeginMessageInternal(message, callback, asyncState, EndDeletePortMapInternal);
+			 var result = new TaskAsyncResult (DeletePortMapAsync (mapping), callback, asyncState);
+			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
+			return result;
 		}
 
-
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="callback"></param>
+		/// <param name="asyncState"></param>
+		/// <returns></returns>
 		public override IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState)
 		{
-			GetGenericPortMappingEntry message = new GetGenericPortMappingEntry(0, this);
-			return BeginMessageInternal(message, callback, asyncState, EndGetAllMappingsInternal);
+			var result = new TaskAsyncResult (GetAllMappingsAsync (), callback, asyncState);
+			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
+			return result;
+		}
+		
+		/// <summary>
+		/// Begins an async call to get the external ip address of the router
+		/// </summary>
+		public override IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState)
+		{
+			var result = new TaskAsyncResult (GetExternalIPAsync (), callback, asyncState);
+			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
+			return result;
 		}
 
-
-		public override IAsyncResult BeginGetSpecificMapping (Protocol protocol, int port, AsyncCallback callback, object asyncState)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="protocol"></param>
+		/// <param name="port"></param>
+		/// <param name="callback"></param>
+		/// <param name="asyncState"></param>
+		/// <returns></returns>
+		public override IAsyncResult BeginGetSpecificMapping (Protocol protocol, int externalPort, AsyncCallback callback, object asyncState)
 		{
-			GetSpecificPortMappingEntryMessage message = new GetSpecificPortMappingEntryMessage(protocol, port, this);
-			return this.BeginMessageInternal(message, callback, asyncState, new AsyncCallback(this.EndGetSpecificMappingInternal));
+			var result = new TaskAsyncResult (GetSpecificMappingAsync (protocol, externalPort), callback, asyncState);
+			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
+			return result;
 		}
 
 		/// <summary>
@@ -182,27 +289,13 @@ namespace Mono.Nat.Upnp
 		/// <param name="result"></param>
 		public override void EndCreatePortMap(IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException("result");
+			if (result == null) throw new ArgumentNullException(nameof(result));
 
-			PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
-			if (mappingResult == null)
-				throw new ArgumentException("Invalid AsyncResult", "result");
+			if (!(result is TaskAsyncResult mappingResult))
+				throw new ArgumentException("Invalid AsyncResult", nameof(result));
 
-			// Check if we need to wait for the operation to finish
-			if (!result.IsCompleted)
-				result.AsyncWaitHandle.WaitOne();
-
-			// If we have a saved exception, it means something went wrong during the mapping
-			// so we just rethrow the exception and let the user figure out what they should do.
-			if (mappingResult.SavedMessage is ErrorMessage)
-			{
-				ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
-				throw new MappingException(msg.ErrorCode, msg.Description);
-			}
-
-			//return result.AsyncState as Mapping;
+			mappingResult.Task.GetAwaiter ().GetResult ();
 		}
-
 
 		/// <summary>
 		/// 
@@ -210,113 +303,62 @@ namespace Mono.Nat.Upnp
 		/// <param name="result"></param>
 		public override void EndDeletePortMap(IAsyncResult result)
 		{
-			if (result == null)
-				throw new ArgumentNullException("result");
+			if (result == null) throw new ArgumentNullException(nameof(result));
 
-			PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
-			if (mappingResult == null)
-				throw new ArgumentException("Invalid AsyncResult", "result");
+			if (!(result is TaskAsyncResult mappingResult))
+				throw new ArgumentException("Invalid AsyncResult", nameof(result));
 
-			// Check if we need to wait for the operation to finish
-			if (!mappingResult.IsCompleted)
-				mappingResult.AsyncWaitHandle.WaitOne();
-
-			// If we have a saved exception, it means something went wrong during the mapping
-			// so we just rethrow the exception and let the user figure out what they should do.
-			if (mappingResult.SavedMessage is ErrorMessage)
-			{
-				ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
-				throw new MappingException(msg.ErrorCode, msg.Description);
-			}
-
-			// If all goes well, we just return
-			//return true;
+			mappingResult.Task.GetAwaiter ().GetResult ();
 		}
 
-
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="result"></param>
+		/// <returns></returns>
 		public override Mapping[] EndGetAllMappings(IAsyncResult result)
 		{
-			if (result == null)
-				throw new ArgumentNullException("result");
+			if (result == null) throw new ArgumentNullException(nameof(result));
 
-			GetAllMappingsAsyncResult mappingResult = result as GetAllMappingsAsyncResult;
-			if (mappingResult == null)
-				throw new ArgumentException("Invalid AsyncResult", "result");
+			if (!(result is TaskAsyncResult mappingResult))
+				throw new ArgumentException("Invalid AsyncResult", nameof(result));
 
-			if (!mappingResult.IsCompleted)
-				mappingResult.AsyncWaitHandle.WaitOne();
-
-			if (mappingResult.SavedMessage is ErrorMessage)
-			{
-				ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
-				if (msg.ErrorCode != 713)
-					throw new MappingException(msg.ErrorCode, msg.Description);
-			}
-
-			return mappingResult.Mappings.ToArray();
+			return ((Task<Mapping[]>)mappingResult.Task).GetAwaiter ().GetResult ();
 		}
-
 
 		/// <summary>
 		/// Ends an async request to get the external ip address of the router
 		/// </summary>
 		public override IPAddress EndGetExternalIP(IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException("result");
+			if (result == null) throw new ArgumentNullException(nameof(result));
 
-			PortMapAsyncResult mappingResult = result as PortMapAsyncResult;
-			if (mappingResult == null)
-				throw new ArgumentException("Invalid AsyncResult", "result");
+			if (!(result is TaskAsyncResult mappingResult))
+				throw new ArgumentException("Invalid AsyncResult", nameof(result));
 
-			if (!result.IsCompleted)
-				result.AsyncWaitHandle.WaitOne();
-
-			if (mappingResult.SavedMessage is ErrorMessage)
-			{
-				ErrorMessage msg = mappingResult.SavedMessage as ErrorMessage;
-				throw new MappingException(msg.ErrorCode, msg.Description);
-			}
-
-			if (mappingResult.SavedMessage == null)
-				return null;
-			else
-				return ((GetExternalIPAddressResponseMessage)mappingResult.SavedMessage).ExternalIPAddress;
+			return ((Task<IPAddress>)mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
-
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="result"></param>
+		/// <returns></returns>
 		public override Mapping EndGetSpecificMapping(IAsyncResult result)
 		{
-			if (result == null)
-				throw new ArgumentNullException("result");
+			if (result == null) throw new ArgumentNullException(nameof(result));
 
-			GetAllMappingsAsyncResult mappingResult = result as GetAllMappingsAsyncResult;
-			if (mappingResult == null)
-				throw new ArgumentException("Invalid AsyncResult", "result");
+			if (!(result is TaskAsyncResult mappingResult))
+				throw new ArgumentException("Invalid AsyncResult", nameof(result));
 
-			if (!mappingResult.IsCompleted)
-				mappingResult.AsyncWaitHandle.WaitOne();
-
-			if (mappingResult.SavedMessage is ErrorMessage)
-			{
-				ErrorMessage message = mappingResult.SavedMessage as ErrorMessage;
-				if (message.ErrorCode != 0x2ca)
-				{
-					throw new MappingException(message.ErrorCode, message.Description);
-				}
-			}
-			if (mappingResult.Mappings.Count == 0)
-				return new Mapping (Protocol.Tcp, -1, -1);
-
-			return mappingResult.Mappings[0];
+			return ((Task<Mapping>)mappingResult.Task).GetAwaiter ().GetResult ();
 		}
-
 
 		public override bool Equals(object obj)
 		{
 			UpnpNatDevice device = obj as UpnpNatDevice;
 			return (device == null) ? false : this.Equals((device));
 		}
-
 
 		public bool Equals(UpnpNatDevice other)
 		{
@@ -330,46 +372,10 @@ namespace Mono.Nat.Upnp
 			return (this.hostEndPoint.GetHashCode() ^ this.controlUrl.GetHashCode() ^ this.serviceDescriptionUrl.GetHashCode());
 		}
 
-		private IAsyncResult BeginMessageInternal(MessageBase message, AsyncCallback storedCallback, object asyncState, AsyncCallback callback)
-		{
-			byte[] body;
-			WebRequest request = message.Encode(out body);
-			PortMapAsyncResult mappingResult = PortMapAsyncResult.Create(message, request, storedCallback, asyncState);
-
-			if (body.Length > 0)
-			{
-				request.ContentLength = body.Length;
-				request.BeginGetRequestStream(delegate(IAsyncResult result) {
-					try
-					{
-						Stream s = request.EndGetRequestStream(result);
-						s.Write(body, 0, body.Length);
-						request.BeginGetResponse(callback, mappingResult);
-					}
-					catch (Exception ex)
-					{
-						mappingResult.Complete(ex);
-					}
-				}, null);
-			}
-			else
-			{
-				request.BeginGetResponse(callback, mappingResult);
-			}
-			return mappingResult;
-		}
-
-		private void CompleteMessage(IAsyncResult result)
-		{
-			PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
-			mappingResult.CompletedSynchronously = result.CompletedSynchronously;
-            mappingResult.Complete();
-		}
-
-		private MessageBase DecodeMessageFromResponse(Stream s, long length)
+		MessageBase DecodeMessageFromResponse(Stream s, long length)
 		{
 			StringBuilder data = new StringBuilder();
-			int bytesRead = 0;
+			int bytesRead;
 			int totalBytesRead = 0;
 			byte[] buffer = new byte[10240];
 
@@ -389,101 +395,9 @@ namespace Mono.Nat.Upnp
 					data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
 			}
 
-			// Once we have our content, we need to see what kind of message it is. It'll either a an error
-			// or a response based on the action we performed.
+			// Once we have our content, we need to see what kind of message it is. If we received
+			// an error message we will immediately throw a MappingException.
 			return MessageBase.Decode(this, data.ToString());
-		}
-
-		private void EndCreatePortMapInternal(IAsyncResult result)
-		{
-			EndMessageInternal(result);
-			CompleteMessage(result);
-		}
-
-		private void EndMessageInternal(IAsyncResult result)
-		{
-			HttpWebResponse response = null;
-			PortMapAsyncResult mappingResult = result.AsyncState as PortMapAsyncResult;
-
-			try
-			{
-				try
-				{
-					response = (HttpWebResponse)mappingResult.Request.EndGetResponse(result);
-				}
-				catch (WebException ex)
-				{
-					// Even if the request "failed" i want to continue on to read out the response from the router
-					response = ex.Response as HttpWebResponse;
-					if (response == null)
-						mappingResult.SavedMessage = new ErrorMessage((int)ex.Status, ex.Message);
-				}
-				if (response != null)
-					mappingResult.SavedMessage = DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-			}
-
-			finally
-			{
-				if (response != null)
-					response.Close();
-			}
-		}
-
-		private void EndDeletePortMapInternal(IAsyncResult result)
-		{
-			EndMessageInternal(result);
-			CompleteMessage(result);
-		}
-
-		private void EndGetAllMappingsInternal(IAsyncResult result)
-		{
-			EndMessageInternal(result);
-
-			GetAllMappingsAsyncResult mappingResult = result.AsyncState as GetAllMappingsAsyncResult;
-			GetGenericPortMappingEntryResponseMessage message = mappingResult.SavedMessage as GetGenericPortMappingEntryResponseMessage;
-			if (message != null)
-			{
-				Mapping mapping = new Mapping (message.Protocol, message.InternalPort, message.ExternalPort, message.LeaseDuration);
-				mapping.Description = message.PortMappingDescription;
-				mappingResult.Mappings.Add(mapping);
-				GetGenericPortMappingEntry next = new GetGenericPortMappingEntry(mappingResult.Mappings.Count, this);
-
-				// It's ok to do this synchronously because we should already be on anther thread
-				// and this won't block the user.
-				byte[] body;
-				WebRequest request = next.Encode(out body);
-				if (body.Length > 0)
-				{
-					request.ContentLength = body.Length;
-					request.GetRequestStream().Write(body, 0, body.Length);
-				}
-				mappingResult.Request = request;
-				request.BeginGetResponse(EndGetAllMappingsInternal, mappingResult);
-				return;
-			}
-
-			CompleteMessage(result);
-		}
-
-		private void EndGetExternalIPInternal(IAsyncResult result)
-		{
-			EndMessageInternal(result);
-			CompleteMessage(result);
-		}
-
-		private void EndGetSpecificMappingInternal(IAsyncResult result)
-		{
-			EndMessageInternal(result);
-
-			GetAllMappingsAsyncResult mappingResult = result.AsyncState as GetAllMappingsAsyncResult;
-			GetGenericPortMappingEntryResponseMessage message = mappingResult.SavedMessage as GetGenericPortMappingEntryResponseMessage;
-			if (message != null) {
-				Mapping mapping = new Mapping(mappingResult.SpecificMapping.Protocol, message.InternalPort, mappingResult.SpecificMapping.PublicPort, message.LeaseDuration);
-				mapping.Description = mappingResult.SpecificMapping.Description;
-				mappingResult.Mappings.Add(mapping);
-			}
-
-			CompleteMessage(result);
 		}
 
 		internal void GetServicesList(NatDeviceCallback callback)
@@ -536,8 +450,8 @@ namespace Mono.Nat.Upnp
 						// parsed by the xmldoc. Without this, the code will never pick up my router.
 						if (abortCount++ > 50)
 						{
-						    response.Close();
-						    return;
+							response.Close();
+							return;
 						}
 						NatUtility.Log("{0}: Couldn't parse services list", HostEndPoint);
 						System.Threading.Thread.Sleep(10);
@@ -555,9 +469,9 @@ namespace Mono.Nat.Upnp
 					foreach (XmlNode service in node.ChildNodes)
 					{
 						//If the service is a WANIPConnection, then we have what we want
-                        string type = service["serviceType"].InnerText;
+						string type = service["serviceType"].InnerText;
 						NatUtility.Log("{0}: Found service: {1}", HostEndPoint, type);
-                        StringComparison c = StringComparison.OrdinalIgnoreCase;
+						StringComparison c = StringComparison.OrdinalIgnoreCase;
 						// TODO: Add support for version 2 of UPnP.
 						if (type.Equals("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
 							type.Equals("urn:schemas-upnp-org:service:WANIPConnection:1", c))
@@ -603,16 +517,16 @@ namespace Mono.Nat.Upnp
 			}
 		}
 
-        /// <summary>
-        /// Overridden.
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString( )
-        {
-            //GetExternalIP is blocking and can throw exceptions, can't use it here.
-            return String.Format( 
-                "UpnpNatDevice - EndPoint: {0}, External IP: {1}, Control Url: {2}, Service Description Url: {3}, Service Type: {4}, Last Seen: {5}",
-                this.hostEndPoint, "Manually Check" /*this.GetExternalIP()*/, this.controlUrl, this.serviceDescriptionUrl, this.serviceType, this.LastSeen);
-        }
+		/// <summary>
+		/// Overridden.
+		/// </summary>
+		/// <returns></returns>
+		public override string ToString( )
+		{
+			//GetExternalIP is blocking and can throw exceptions, can't use it here.
+			return String.Format( 
+				"UpnpNatDevice - EndPoint: {0}, External IP: {1}, Control Url: {2}, Service Description Url: {3}, Service Type: {4}, Last Seen: {5}",
+				this.hostEndPoint, "Manually Check" /*this.GetExternalIP()*/, this.controlUrl, this.serviceDescriptionUrl, this.serviceType, this.LastSeen);
+		}
 	}
 }

@@ -51,30 +51,30 @@ namespace Mono.Nat
 
 		#region Synchronous APIs
 
-		void CreatePortMap (Mapping mapping);
-		void DeletePortMap (Mapping mapping);
-		
-		Mapping[] GetAllMappings ();
-		IPAddress GetExternalIP ();
-		Mapping GetSpecificMapping (Protocol protocol, int port);
+		void CreatePortMap(Mapping mapping);
+		void DeletePortMap(Mapping mapping);
+
+		Mapping[] GetAllMappings();
+		IPAddress GetExternalIP();
+		Mapping GetSpecificMapping(Protocol protocol, int port);
 
 		#endregion
 
 		#region Old-style async APIs
 
-		IAsyncResult BeginCreatePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
-		IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState);
+		IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState);
+		IAsyncResult BeginDeletePortMap(Mapping mapping, AsyncCallback callback, object asyncState);
 
-		IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetSpecificMapping (Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
+		IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState);
+		IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState);
+		IAsyncResult BeginGetSpecificMapping(Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
 
-		void EndCreatePortMap (IAsyncResult result);
-		void EndDeletePortMap (IAsyncResult result);
+		void EndCreatePortMap(IAsyncResult result);
+		void EndDeletePortMap(IAsyncResult result);
 
-		Mapping[] EndGetAllMappings (IAsyncResult result);
-		IPAddress EndGetExternalIP (IAsyncResult result);
-		Mapping EndGetSpecificMapping (IAsyncResult result);
+		Mapping[] EndGetAllMappings(IAsyncResult result);
+		IPAddress EndGetExternalIP(IAsyncResult result);
+		Mapping EndGetSpecificMapping(IAsyncResult result);
 
 		#endregion
 	}

@@ -41,7 +41,7 @@ namespace Mono.Nat.Pmp
 		public const int ServerPort = 5351;
 		
 		public const int RetryDelay = 250;
-		public const int RetryAttempts = 9;
+		public const int RetryAttempts = 8;
 		
 		public const int RecommendedLeaseTime = 60 * 60;
 		public const int DefaultLeaseTime = RecommendedLeaseTime;
