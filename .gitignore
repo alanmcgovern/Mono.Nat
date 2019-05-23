@@ -1,27 +1,9 @@
-# Ignore makefile foo
-aclocal.m4
-autom4te.cache/
-config.log
-config.status
-configure
-install-sh
-missing
-Makefile
-Makefile.in
-
 # Ignore monodevelop generated files and directories
 *.userprefs
 *.pidb
+.vs/
 
 bin/
 obj/
-
-# Ignore the pc file
-Mono.Nat/mono.nat.pc
-
-# Ignore debug foo
-xdb.il
-xdb.s
-
 
 *.suo
