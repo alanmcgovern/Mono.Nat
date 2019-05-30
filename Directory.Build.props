@@ -9,10 +9,10 @@
 
   <PropertyGroup>
     <!-- This controls the [AssemblyVersion] attribute -->
-    <AssemblyVersion>0.9.0.0</AssemblyVersion>
+    <AssemblyVersion>0.9.9.0</AssemblyVersion>
 
     <!-- This controls the [AssemblyInformationalVersion] and [AssemblyFileVersion] attributes -->
-    <InformationalVersion>0.9.9.0</InformationalVersion>
+    <InformationalVersion>1.9.9.0</InformationalVersion>
     <FileVersion>$(InformationalVersion)</FileVersion>
   </PropertyGroup>
 
