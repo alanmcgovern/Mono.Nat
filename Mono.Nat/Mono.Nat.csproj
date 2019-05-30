@@ -1,4 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+	<Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<CoreCompileDependsOn>SetBuildVersion;$(CoreCompileDependsOn)</CoreCompileDependsOn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="GitInfo" Version="2.0.20" PrivateAssets="all" />
+	</ItemGroup>
+
+	<Target Name="SetBuildVersion" DependsOnTargets="GitInfo">
+		<PropertyGroup>
+			<SourceRevisionId>$(GitSha)</SourceRevisionId>
+		</PropertyGroup>
+	</Target>
 
 </Project>
