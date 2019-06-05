@@ -28,7 +28,7 @@ using System;
 
 namespace Mono.Nat.Pmp
 {
-    internal static class PmpConstants
+    static class PmpConstants
 	{
 		public const byte Version = (byte)0;
 		

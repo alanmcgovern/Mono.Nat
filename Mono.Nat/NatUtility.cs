@@ -33,69 +33,46 @@ using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.NetworkInformation;
-using Mono.Nat.Pmp.Mappers;
-using Mono.Nat.Upnp.Mappers;
+
+using Mono.Nat.Pmp;
+using Mono.Nat.Upnp;
+using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-        private static ManualResetEvent searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
-        
-        public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
-		private static TextWriter logger;
-		private static List<ISearcher> controllers;
-		private static bool verbose;
+		static HashSet<INatDevice> Devices { get; }
 
-        public static List<NatProtocol> EnabledProtocols { get; set; }
+		static readonly object Locker = new object ();
 
-	    public static TextWriter Logger
+		public static TextWriter Logger { get; set; }
+
+		public static bool IsSearching => PmpSearcher.Instance.Listening || UpnpSearcher.Instance.Listening;
+
+		static NatUtility ()
 		{
-			get { return logger; }
-			set { logger = value; }
+			Devices = new HashSet<INatDevice>();
+
+			foreach (var searcher in new ISearcher[] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
+				searcher.DeviceFound += (o, e) => {
+					lock (Devices)
+						if (!Devices.Add (e.Device))
+							return;
+					DeviceFound?.Invoke (searcher, e);
+				};
+
+				searcher.DeviceLost += (o, e) => {
+					lock (Devices)
+						if (!Devices.Remove (e.Device))
+							return;
+					DeviceLost?.Invoke (searcher, e);
+				};
+			}
 		}
-
-		public static bool Verbose
-		{
-			get { return verbose; }
-			set { verbose = value; }
-		}
-		
-        static NatUtility()
-        {
-            EnabledProtocols = new List<NatProtocol>
-            {
-                NatProtocol.Upnp,
-                NatProtocol.Pmp
-            };
-
-            searching = new ManualResetEvent(false);
-
-            controllers = new List<ISearcher>();
-            controllers.Add(UpnpSearcher.Instance);
-            controllers.Add(PmpSearcher.Instance);
-
-            controllers.ForEach(searcher =>
-                {
-                    searcher.DeviceFound += (sender, args) =>
-                    {
-                        if (DeviceFound != null)
-                            DeviceFound(sender, args);
-                    };
-                    searcher.DeviceLost += (sender, args) =>
-                    {
-                        if (DeviceLost != null)
-                            DeviceLost(sender, args);
-                    };
-                });
-            Thread t = new Thread(SearchAndListen);
-            t.IsBackground = true;
-            t.Start();
-        }
 
 		internal static void Log(string format, params object[] args)
 		{
@@ -104,152 +81,36 @@ namespace Mono.Nat
 				logger.WriteLine(format, args);
 		}
 
-        private static void SearchAndListen()
-        {
-            while (true)
-            {
-                searching.WaitOne();
-
-                try
-                {
-                    var enabledProtocols = EnabledProtocols.ToList();
-
-                    if (enabledProtocols.Contains(UpnpSearcher.Instance.Protocol))
-                    {
-                        Receive(UpnpSearcher.Instance, UpnpSearcher.sockets);
-                    }
-                    if (enabledProtocols.Contains(PmpSearcher.Instance.Protocol))
-                    {
-                        Receive(PmpSearcher.Instance, PmpSearcher.sockets);
-                    }
-
-                    foreach (ISearcher s in controllers)
-                        if (s.NextSearch < DateTime.Now && enabledProtocols.Contains(s.Protocol))
-                        {
-                            Log("Searching for: {0}", s.GetType().Name);
-							s.Search();
-                        }
-                }
-                catch (Exception e)
-                {
-                    if (UnhandledException != null)
-                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
-                }
-				Thread.Sleep(10);
-            }
-		}
-
-		static void Receive (ISearcher searcher, List<UdpClient> clients)
+		public static void StartDiscovery (params NatProtocol[] devices)
 		{
-			IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
-			foreach (UdpClient client in clients)
-			{
-				if (client.Available > 0)
-				{
-				    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-					byte[] data = client.Receive(ref received);
-					searcher.Handle(localAddress, data, received);
-				}
-            }
-        }
+			lock (Locker) {
+				if (devices.Length == 0 || devices.Contains (NatProtocol.Pmp))
+					 PmpSearcher.Instance.Search ();
 
-        static void Receive(IMapper mapper, List<UdpClient> clients)
-        {
-            IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
-            foreach (UdpClient client in clients)
-            {
-                if (client.Available > 0)
-                {
-                    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-                    byte[] data = client.Receive(ref received);
-                    mapper.Handle(localAddress, data);
-                }
-            }
-        }
-		
-		public static void StartDiscovery ()
-		{
-            searching.Set();
+				if (devices.Length == 0 || devices.Contains (NatProtocol.Upnp))
+					UpnpSearcher.Instance.Search ();
+			}
 		}
 
 		public static void StopDiscovery ()
 		{
-            searching.Reset();
+			lock (Locker) {
+				PmpSearcher.Instance.Stop ();
+				UpnpSearcher.Instance.Stop ();
+			}
 		}
 
-        //This is for when you know the Gateway IP and want to skip the costly search...
-        public static void DirectMap(IPAddress gatewayAddress, MapperType type)
-        {
-            IMapper mapper;
-            switch (type)
-            {
-                case MapperType.Pmp:
-                    mapper = new PmpMapper();
-                    break;
-                case MapperType.Upnp:
-                    mapper = new UpnpMapper();
-                    mapper.DeviceFound += (sender, args) =>
-                    {
-                        if (DeviceFound != null)
-                            DeviceFound(sender, args);
-                    };
-                    mapper.Map(gatewayAddress);                    
-                    break;
-                default:
-                    throw new InvalidOperationException("Unsuported type given");
-
-            }
-            searching.Reset();
-            
-        }
-
-        //So then why is it here? -Nick
-		[Obsolete ("This method serves no purpose and shouldn't be used")]
-		public static IPAddress[] GetLocalAddresses (bool includeIPv6)
+		public static void Search (IPAddress gatewayAddress, NatProtocol type)
 		{
-			List<IPAddress> addresses = new List<IPAddress> ();
-
-			IPHostEntry hostInfo = Dns.GetHostEntry (Dns.GetHostName ());
-			foreach (IPAddress address in hostInfo.AddressList) {
-				if (address.AddressFamily == AddressFamily.InterNetwork ||
-					(includeIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6)) {
-					addresses.Add (address);
+			lock (Locker) {
+				if (type == NatProtocol.Pmp) {
+					PmpSearcher.Instance.Search (gatewayAddress);
+				} else if (type == NatProtocol.Upnp) {
+					UpnpSearcher.Instance.Search (gatewayAddress);
+				} else {
+					throw new InvalidOperationException("Unsuported type given");
 				}
 			}
-			
-			return addresses.ToArray ();
 		}
-		
-		//checks if an IP address is a private address space as defined by RFC 1918
-		public static bool IsPrivateAddressSpace (IPAddress address)
-		{
-			byte[] ba = address.GetAddressBytes ();
-
-			switch ((int)ba[0]) {
-			case 10:
-				return true; //10.x.x.x
-			case 172:
-				return ((int)ba[1] & 16) != 0; //172.16-31.x.x
-			case 192:
-				return (int)ba[1] == 168; //192.168.x.x
-			default:
-				return false;
-			}
-		}
-
-	    public static void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint, NatProtocol protocol)
-	    {
-	        switch (protocol)
-	        {
-                case NatProtocol.Upnp:
-	                UpnpSearcher.Instance.Handle(localAddress, response, endpoint);
-	                break;
-                case NatProtocol.Pmp:
-	                PmpSearcher.Instance.Handle(localAddress, response, endpoint);
-	                break;
-	            default:
-	                throw new ArgumentException("Unexpected protocol: " + protocol);
-	        }
-	    }
 	}
 }

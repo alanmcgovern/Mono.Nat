@@ -4,15 +4,15 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\mono-nat.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\mono-nat.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- This controls the [AssemblyVersion] attribute -->
-    <AssemblyVersion>0.9.9.0</AssemblyVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
 
     <!-- This controls the [AssemblyInformationalVersion] and [AssemblyFileVersion] attributes -->
-    <InformationalVersion>1.9.9.0</InformationalVersion>
+    <InformationalVersion>2.0.0.0</InformationalVersion>
     <FileVersion>$(InformationalVersion)</FileVersion>
   </PropertyGroup>
 

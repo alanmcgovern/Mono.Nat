@@ -24,37 +24,27 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Xml;
-using System.Net;
 
 namespace Mono.Nat.Upnp
 {
-	internal class GetSpecificPortMappingEntryMessage : MessageBase
-	{
-		internal Protocol protocol;
-		internal int externalPort;
+    sealed class GetSpecificPortMappingEntryMessage : RequestMessage
+    {
+        int ExternalPort { get; }
+        Protocol Protocol { get; }
 
-		public GetSpecificPortMappingEntryMessage(Protocol protocol, int externalPort, UpnpNatDevice device)
-			: base(device)
-		{
-			this.protocol = protocol;
-			this.externalPort = externalPort;
-		}
+        public GetSpecificPortMappingEntryMessage(Protocol protocol, int externalPort, UpnpNatDevice device)
+            : base(device, "GetSpecificPortMappingEntry")
+        {
+            Protocol = protocol;
+            ExternalPort = externalPort;
+        }
 
-		public override WebRequest Encode(out byte[] body)
-		{
-			StringBuilder sb = new StringBuilder(64);
-			XmlWriter writer = CreateWriter(sb);
-
-			WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			WriteFullElement(writer, "NewExternalPort", externalPort.ToString());
-			WriteFullElement(writer, "NewProtocol", protocol == Protocol.Tcp ? "TCP" : "UDP");
-			writer.Flush();
-
-			return CreateRequest("GetSpecificPortMappingEntry", sb.ToString(), out body);
-		}
-	}
+        public override void Encode(XmlWriter writer)
+        {
+            WriteFullElement(writer, "NewRemoteHost", "");
+            WriteFullElement(writer, "NewExternalPort", ExternalPort.ToString());
+            WriteFullElement(writer, "NewProtocol", Protocol);
+        }
+    }
 }

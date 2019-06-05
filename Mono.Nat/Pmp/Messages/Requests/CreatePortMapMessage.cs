@@ -1,8 +1,8 @@
-//
+﻿//
 // Authors:
-//   Alan McGovern alan.mcgovern@gmail.com
+//   Alan McGovern <alan.mcgovern@gmail.com>
 //
-// Copyright (C) 2006 Alan McGovern
+// Copyright (C) 2019 Alan McGovern
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,13 +24,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-
-namespace Mono.Nat
+namespace Mono.Nat.Pmp
 {
-	public enum MapState
+	class CreatePortMappingMessage : PortMappingMessage
 	{
-		AlreadyMapped,
-		Available
+		public CreatePortMappingMessage (Mapping mapping)
+			: base (mapping, true)
+		{
+		}
 	}
 }

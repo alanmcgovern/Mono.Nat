@@ -29,23 +29,49 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace Mono.Nat
 {
-    public delegate void NatDeviceCallback(INatDevice device);
-
-    internal interface ISearcher
+    interface ISearcher
     {
+        /// <summary>
+        /// This event is raised whenever a device which supports port mapping is discovered
+        /// </summary>
         event EventHandler<DeviceEventArgs> DeviceFound;
+
+        /// <summary>
+        /// This event is raised whenever a device which supports port mapping is no longer available
+        /// </summary>
         event EventHandler<DeviceEventArgs> DeviceLost;
 
-        void Search();
-        void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
-        DateTime NextSearch { get; }
+        /// <summary>
+        /// The port mapping protocol supported by the device
+        /// </summary>
         NatProtocol Protocol { get; }
+
+        /// <summary>
+        /// While running the searcher constantly listens for UDP broadcasts when new devices come online.
+        /// </summary>
+        bool Listening { get; }
+
+        /// <summary>
+        /// Periodically send a multicast UDP message to scan for new devices.
+        /// If the searcher is not listening, it will begin listening until 'Stop' is invoked.
+        /// </summary>
+        void Search ();
+
+        /// <summary>
+        /// Immediately sends a unicast UDP message to this IP address to check for a compatible device.
+        /// If the searcher is not listening, it will begin listening until 'Stop' is invoked.
+        /// </summary>
+        /// <param name="gatewayAddress">The IP address which should</param>
+        void Search (IPAddress gatewayAddress);
+
+        /// <summary>
+        /// The searcher will no longer listen for new devices.
+        /// </summary>
+        void Stop ();
     }
 }

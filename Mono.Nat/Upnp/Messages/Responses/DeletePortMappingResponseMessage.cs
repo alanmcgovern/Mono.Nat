@@ -24,21 +24,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-
-using System;
 namespace Mono.Nat.Upnp
 {
-    internal class DeletePortMapResponseMessage : MessageBase
+    class DeletePortMapResponseMessage :  ResponseMessage
     {
-        public DeletePortMapResponseMessage()
-            :base(null)
-        {
-        }
 
-        public override System.Net.WebRequest Encode(out byte[] body)
-        {
-            throw new NotSupportedException();
-        }
-    }
+	}
 }

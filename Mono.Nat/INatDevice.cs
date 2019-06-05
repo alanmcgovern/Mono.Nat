@@ -27,8 +27,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -36,46 +34,56 @@ namespace Mono.Nat
 {
 	public interface INatDevice
 	{
-		IPAddress LocalAddress { get; }
-		DateTime LastSeen { get; set; }
+		/// <summary>
+		/// The endpoint to send messages to the WAN device
+		/// </summary>
+		IPEndPoint DeviceEndpoint { get; }
 
-		#region Async APIs
+		/// <summary>
+		/// The time the last message was received from the WAN device.
+		/// </summary>
+		DateTime LastSeen { get; }
 
-		Task CreatePortMapAsync (Mapping mapping);
-		Task DeletePortMapAsync (Mapping mapping);
+		/// <summary>
+		/// The NAT protocol supported by the WAN device (e.g. NAT-PMP or uPnP)
+		/// </summary>
+		NatProtocol NatProtocol { get; }
+
+		/// <summary>
+		/// Creates a port map using the specified Mapping. If that exact mapping cannot be
+		/// created, a best-effort mapping may be created which uses a different port. The
+		/// return value is actual created mapping.
+		/// </summary>
+		/// <param name="mapping"></param>
+		/// <returns></returns>
+		Task<Mapping> CreatePortMapAsync (Mapping mapping);
+
+		/// <summary>
+		/// Deletes a port mapping from the WAN device.
+		/// </summary>
+		/// <param name="mapping"></param>
+		/// <returns></returns>
+		Task<Mapping> DeletePortMapAsync (Mapping mapping);
+
+		/// <summary>
+		/// Retrieves a list of all mappings on the WAN device.
+		/// </summary>
+		/// <returns></returns>
 		Task<Mapping[]> GetAllMappingsAsync ();
+
+		/// <summary>
+		/// Gets the external IP address associated with the WAN device.
+		/// </summary>
+		/// <returns></returns>
 		Task<IPAddress> GetExternalIPAsync ();
-		Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port);
 
-		#endregion
-
-		#region Synchronous APIs
-
-		void CreatePortMap(Mapping mapping);
-		void DeletePortMap(Mapping mapping);
-
-		Mapping[] GetAllMappings();
-		IPAddress GetExternalIP();
-		Mapping GetSpecificMapping(Protocol protocol, int port);
-
-		#endregion
-
-		#region Old-style async APIs
-
-		IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState);
-		IAsyncResult BeginDeletePortMap(Mapping mapping, AsyncCallback callback, object asyncState);
-
-		IAsyncResult BeginGetAllMappings(AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetExternalIP(AsyncCallback callback, object asyncState);
-		IAsyncResult BeginGetSpecificMapping(Protocol protocol, int externalPort, AsyncCallback callback, object asyncState);
-
-		void EndCreatePortMap(IAsyncResult result);
-		void EndDeletePortMap(IAsyncResult result);
-
-		Mapping[] EndGetAllMappings(IAsyncResult result);
-		IPAddress EndGetExternalIP(IAsyncResult result);
-		Mapping EndGetSpecificMapping(IAsyncResult result);
-
-		#endregion
+		/// <summary>
+		/// Retrieves the mapping associated with this combination of public port and protocol. Throws a MappingException
+		/// if there is no mapping matching the criteria.
+		/// </summary>
+		/// <param name="protocol">The protocol of the mapping</param>
+		/// <param name="publicPort">The external/WAN port of the mapping</param>
+		/// <returns></returns>
+		Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int publicPort);
 	}
 }

@@ -24,34 +24,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Net;
-using System.IO;
-using System.Text;
 using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-	internal class DeletePortMappingMessage : MessageBase
+	sealed class DeletePortMappingMessage : RequestMessage
 	{
-		private Mapping mapping;
+		Mapping Mapping { get; }
 
 		public DeletePortMappingMessage(Mapping mapping, UpnpNatDevice device)
-			: base(device)
+			: base(device, "DeletePortMapping")
 		{
-			this.mapping = mapping;
+			Mapping = mapping;
 		}
 
-		public override WebRequest Encode(out byte[] body)
+		public override void Encode(XmlWriter writer)
 		{
-			StringBuilder builder = new StringBuilder(256);
-			XmlWriter writer = CreateWriter(builder);
-
-			WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			WriteFullElement(writer, "NewExternalPort", mapping.PublicPort.ToString(MessageBase.Culture));
-			WriteFullElement(writer, "NewProtocol", mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-
-			writer.Flush();
-			return CreateRequest("DeletePortMapping", builder.ToString(), out body);
+			WriteFullElement(writer, "NewRemoteHost", "");
+			WriteFullElement(writer, "NewExternalPort", Mapping.PublicPort);
+			WriteFullElement(writer, "NewProtocol", Mapping.Protocol);
 		}
 	}
 }

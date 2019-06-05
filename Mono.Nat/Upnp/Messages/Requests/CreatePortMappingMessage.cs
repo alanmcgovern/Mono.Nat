@@ -25,51 +25,32 @@
 //
 
 using System.Net;
-using System.IO;
-using System.Globalization;
-using System.Text;
 using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-    internal class CreatePortMappingMessage : MessageBase
+    sealed class CreatePortMappingMessage : RequestMessage
     {
-        #region Private Fields
+        IPAddress LocalIpAddress { get; }
+        Mapping Mapping { get; }
 
-        private IPAddress localIpAddress;
-        private Mapping mapping;
-
-        #endregion
-
-
-        #region Constructors
         public CreatePortMappingMessage(Mapping mapping, IPAddress localIpAddress, UpnpNatDevice device)
-            : base(device)
+            : base(device, "AddPortMapping")
         {
-            this.mapping = mapping;
-            this.localIpAddress = localIpAddress;
+            Mapping = mapping;
+            LocalIpAddress = localIpAddress;
         }
-        #endregion
 
-
-        public override WebRequest Encode(out byte[] body)
+        public override void Encode(XmlWriter writer)
         {
-            CultureInfo culture = CultureInfo.InvariantCulture;
-
-            StringBuilder builder = new StringBuilder(256);
-            XmlWriter writer = CreateWriter(builder);
-
-            WriteFullElement(writer, "NewRemoteHost", string.Empty);
-            WriteFullElement(writer, "NewExternalPort", this.mapping.PublicPort.ToString(culture));
-            WriteFullElement(writer, "NewProtocol", this.mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-            WriteFullElement(writer, "NewInternalPort", this.mapping.PrivatePort.ToString(culture));
-            WriteFullElement(writer, "NewInternalClient", this.localIpAddress.ToString());
+            WriteFullElement(writer, "NewRemoteHost", "");
+            WriteFullElement(writer, "NewExternalPort", Mapping.PublicPort);
+            WriteFullElement(writer, "NewProtocol", Mapping.Protocol);
+            WriteFullElement(writer, "NewInternalPort", Mapping.PrivatePort);
+            WriteFullElement(writer, "NewInternalClient", LocalIpAddress);
             WriteFullElement(writer, "NewEnabled", "1");
-            WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(mapping.Description) ? "Mono.Nat" : mapping.Description);
-            WriteFullElement(writer, "NewLeaseDuration", mapping.Lifetime.ToString());
-
-            writer.Flush();
-            return CreateRequest("AddPortMapping", builder.ToString(), out body);
+            WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(Mapping.Description) ? "Mono.Nat" : Mapping.Description);
+            WriteFullElement(writer, "NewLeaseDuration", Mapping.Lifetime);
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿//
 // Authors:
-//   Nicholas Terry <nick.i.terry@gmail.com>
+//   Alan McGovern <alan.mcgovern@gmail.com>
 //
-// Copyright (C) 2014 Nicholas Terry
+// Copyright (C) 2019 Alan McGovern
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,25 +26,39 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 
-namespace Mono.Nat
+namespace Mono.Nat.Pmp
 {
-    public enum MapperType
-    {
-        Pmp,
-        Upnp
-    }
+	abstract class PortMappingMessage
+	{
+		bool Create { get; }
+		public Mapping Mapping { get; }
 
-    internal interface IMapper
-    {
-        event EventHandler<DeviceEventArgs> DeviceFound;
+		public PortMappingMessage (Mapping mapping, bool create)
+		{
+			Mapping = mapping;
+			Create = create;
+		}
 
-        void Map(IPAddress gatewayAddress);
+		public byte[] Encode ()
+		{
+			var package = new List<byte> ();
 
-        void Handle(IPAddress localAddres, byte[] response);
-    }
+			package.Add (PmpConstants.Version);
+			package.Add (Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
+			package.Add ((byte)0); //reserved
+			package.Add ((byte)0); //reserved
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short)Mapping.PrivatePort)));
+			if (Create) {
+				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short)Mapping.PublicPort)));
+				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder (Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime)));
+			} else {
+				package.AddRange (BitConverter.GetBytes ((short) 0));
+				package.AddRange (BitConverter.GetBytes ((int) 0));
+			}
+
+			return package.ToArray ();
+		}
+	}
 }

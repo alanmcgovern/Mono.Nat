@@ -1,8 +1,8 @@
-//
+﻿//
 // Authors:
-//   Alan McGovern alan.mcgovern@gmail.com
+//   Alan McGovern <alan.mcgovern@gmail.com>
 //
-// Copyright (C) 2006 Alan McGovern
+// Copyright (C) 2019 Alan McGovern
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,39 +24,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Diagnostics;
-using System.Net;
-
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Pmp
 {
-    internal class GetServicesMessage : MessageBase
-    {
-        private string servicesDescriptionUrl;
-        private EndPoint hostAddress;
-
-        public GetServicesMessage(string description, EndPoint hostAddress)
-            :base(null)
-        {
-            if (string.IsNullOrEmpty(description))
-                Trace.WriteLine("Description is null");
-
-            if (hostAddress == null)
-                Trace.WriteLine("hostaddress is null");
-
-            this.servicesDescriptionUrl = description;
-            this.hostAddress = hostAddress;
-        }
-
-
-        public override WebRequest Encode(out byte[] body)
-        {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://" + this.hostAddress.ToString() + this.servicesDescriptionUrl);
-            req.Headers.Add("ACCEPT-LANGUAGE", "en");
-            req.Method = "GET";
-
-            body = new byte[0];
-            return req;
-        }
-    }
+	class DeletePortMappingMessage : PortMappingMessage
+	{
+		public DeletePortMappingMessage (Mapping mapping)
+			: base (mapping, false)
+		{
+		}
+	}
 }

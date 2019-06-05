@@ -29,7 +29,7 @@ using System.Text;
 
 namespace Mono.Nat.Upnp
 {
-    internal static class DiscoverDeviceMessage
+    static class DiscoverDeviceMessage
     {
         /// <summary>
         /// The message sent to discover all uPnP devices on the network
@@ -42,7 +42,7 @@ namespace Mono.Nat.Upnp
                         + "MAN: \"ssdp:discover\"\r\n"
                         + "MX: 3\r\n"
                         + "ST: ssdp:all\r\n\r\n";
-            return UTF8Encoding.ASCII.GetBytes(s);
+            return Encoding.ASCII.GetBytes(s);
         }
 
         public static byte[] EncodeUnicast(IPAddress gatewayAddress)
@@ -54,7 +54,7 @@ namespace Mono.Nat.Upnp
                         + "MAN: \"ssdp:discover\"\r\n"
                         + "ST: ssdp:all\r\n\r\n";
                         //+ "USER-AGENT: unix/5.1 UPnP/1.1 MyProduct/1.0\r\n\r\n";
-            return UTF8Encoding.ASCII.GetBytes(s);
+            return Encoding.ASCII.GetBytes(s);
         }
     }
 }

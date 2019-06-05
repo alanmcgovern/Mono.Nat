@@ -1,8 +1,10 @@
-﻿//
+//
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
+//   Ben Motmans <ben.motmans@gmail.com>
 //
 // Copyright (C) 2006 Alan McGovern
+// Copyright (C) 2007 Ben Motmans
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,25 +27,32 @@
 //
 
 using System;
-using System.Xml;
+using System.Net;
+using System.Threading.Tasks;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
-	class GetSpecificPortMappingEntryResponseMessage :  ResponseMessage
+	abstract class NatDevice : INatDevice
 	{
-		public bool Enabled { get; }
-		public string InternalClient { get; }
-		public int InternalPort { get; }
-		public int LeaseDuration { get; }
-		public string PortMappingDescription { get; }
+		public DateTime LastSeen { get; internal set; }
+		public IPEndPoint DeviceEndpoint { get; protected set; }
+		public NatProtocol NatProtocol { get; }
 
-		public GetSpecificPortMappingEntryResponseMessage(XmlNode data)
+		protected NatDevice (IPEndPoint deviceEndpoint, NatProtocol natProtocol)
 		{
-			Enabled = data["NewEnabled"].InnerText == "1";
-			InternalClient = data["NewInternalClient"].InnerText;
-			InternalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
-			LeaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
-			PortMappingDescription = data["NewPortMappingDescription"].InnerText;
+			LastSeen = DateTime.UtcNow;
+			DeviceEndpoint = deviceEndpoint;
+			NatProtocol = natProtocol;
 		}
+
+		public abstract Task<Mapping> CreatePortMapAsync (Mapping mapping);
+
+		public abstract Task<Mapping> DeletePortMapAsync (Mapping mapping);
+
+		public abstract Task<Mapping[]> GetAllMappingsAsync ();
+
+		public abstract Task<IPAddress> GetExternalIPAsync ();
+
+		public abstract Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int publicPort);
 	}
 }

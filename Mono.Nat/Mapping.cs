@@ -30,94 +30,96 @@ using System;
 
 namespace Mono.Nat
 {
-	public class Mapping
+	public sealed class Mapping
 	{
-        private string description;
-        private DateTime expiration;
-        private int lifetime;
-        private int privatePort;
-		private Protocol protocol;
-		private int publicPort;
-		
+		/// <summary>
+		/// The text description for the port mapping.
+		/// </summary>
+		public string Description { get; }
 
+		/// <summary>
+		/// The time the port mapping should expire at.
+		/// </summary>
+		public DateTime Expiration { get; }
 
+		/// <summary>
+		/// The lifetime of the port mapping in seconds. If a lifetime of '0' is specified then the
+		/// protocol default lifetime is used. uPnP defaults to 'indefinite' whereas NAT-PMP defaults
+		/// to 7,200 seconds.
+		/// </summary>
+		public int Lifetime { get; private set; }
+
+		/// <summary>
+		/// The protocol used for the port mapping.
+		/// </summary>
+		public Protocol Protocol { get; }
+
+		/// <summary>
+		/// The internal/LAN port which will receive traffic sent to the <see cref="PublicPort"/> on the WAN device.
+		/// </summary>
+		public int PrivatePort { get; }
+
+		/// <summary>
+		/// Traffic sent to this external/WAN port is forwarded to the <see cref="PrivatePort"/> on the LAN device.
+		/// </summary>
+		public int PublicPort { get; }
+
+		/// <summary>
+		/// Create a port mapping so traffic sent to the <paramref name="publicPort"/> on the WAN device is sent to the <paramref name="privatePort"/> on the LAN device.
+		/// </summary>
+		/// <param name="protocol">The protocol used by the port mapping.</param>
+		/// <param name="privatePort">The internal/LAN port which will receive traffic sent to the <paramref name="publicPort"/> on the WAN device.</param>
+		/// <param name="publicPort">Traffic sent to this external/WAN port is forwarded to the <paramref name="privatePort"/> on the LAN device.</param>
 		public Mapping (Protocol protocol, int privatePort, int publicPort)
-			: this (protocol, privatePort, publicPort, 0)
+			: this (protocol, privatePort, publicPort, 0, null)
 		{
 		}
-		
-		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime)
+
+		/// <summary>
+		/// Create a port mapping so traffic sent to the <paramref name="publicPort"/> on the WAN device is sent to the <paramref name="privatePort"/> on the LAN device.
+		/// </summary>
+		/// <param name="protocol">The protocol used by the port mapping.</param>
+		/// <param name="privatePort">The internal/LAN port which will receive traffic sent to the <paramref name="publicPort"/> on the WAN device.</param>
+		/// <param name="publicPort">Traffic sent to this public/WAN port is forwarded to the <paramref name="privatePort"/> on the LAN device.</param>
+		/// <param name="lifetime">The lifetime of the port mapping in seconds. If a lifetime of '0' is specified then the protocol default lifetime is used. uPnP defaults to 'indefinite' whereas NAT-PMP defaults to 7,200 seconds.</param>
+		/// <param name="description">The text description for the port mapping.</param>
+		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime, string description)
 		{
-			this.protocol = protocol;
-			this.privatePort = privatePort;
-			this.publicPort = publicPort;
-			this.lifetime = lifetime;
+			Protocol = protocol;
+			PrivatePort = privatePort;
+			PublicPort = publicPort;
+			Lifetime = lifetime;
+			Description = description;
 
 			if (lifetime == int.MaxValue)
-				this.expiration = DateTime.MaxValue;
+				Expiration = DateTime.MaxValue;
 			else if (lifetime == 0)
-				this.expiration = DateTime.Now;
+				Expiration = DateTime.Now;
 			else
-				this.expiration = DateTime.Now.AddSeconds (lifetime);
+				Expiration = DateTime.Now.AddSeconds (lifetime);
 		}
 
-        public string Description
-        {
-            get { return description; }
-            set { description = value; }
-        }
-		
-		public Protocol Protocol
-		{
-			get { return protocol; }
-			internal set { protocol = value; }
-		}
-
-		public int PrivatePort
-		{
-			get { return privatePort; }
-			internal set { privatePort = value; }
-		}
-		
-		public int PublicPort
-		{
-			get { return publicPort; }
-			internal set { publicPort = value; }
-		}
-		
-		public int Lifetime
-		{
-			get { return lifetime; }
-			internal set { lifetime = value; }
-		}
-		
-		public DateTime Expiration
-		{
-			get { return expiration; }
-			internal set { expiration = value; }
-		}
-		
 		public bool IsExpired ()
 		{
-			return expiration < DateTime.Now;
+			return Expiration < DateTime.Now;
 		}
 
 		public override bool Equals (object obj)
 		{
 			Mapping other = obj as Mapping;
-			return other == null ? false : this.protocol == other.protocol &&
-				this.privatePort == other.privatePort && this.publicPort == other.publicPort;
+			return other == null ? false : Protocol == other.Protocol &&
+				PrivatePort == other.PrivatePort && PublicPort == other.PublicPort;
 		}
 
 		public override int GetHashCode()
 		{
-			return this.protocol.GetHashCode() ^ this.privatePort.GetHashCode() ^ this.publicPort.GetHashCode();
+			return Protocol.GetHashCode() ^ PrivatePort.GetHashCode() ^ PublicPort.GetHashCode();
 		}
 
-        public override string ToString( )
-        {
-            return String.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
-                this.protocol, this.publicPort, this.privatePort, this.description, this.expiration, this.lifetime );
-        }
+		public override string ToString( )
+		{
+			return string.Format ("Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}",
+				Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime);
+		}
 	}
 }
