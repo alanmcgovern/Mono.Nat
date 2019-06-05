@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
-	public static class SemaphoreSlimExtensions
+	static class SemaphoreSlimExtensions
 	{
 		class SemaphoreSlimDisposable : IDisposable
 		{
