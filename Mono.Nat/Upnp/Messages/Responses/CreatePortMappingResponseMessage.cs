@@ -24,23 +24,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-
-using System;
 namespace Mono.Nat.Upnp
 {
-    internal class CreatePortMappingResponseMessage : MessageBase
+    class CreatePortMappingResponseMessage :  ResponseMessage
     {
-        #region Constructors
-        public CreatePortMappingResponseMessage()
-            :base(null)
-        {
-        }
-        #endregion
 
-        public override System.Net.WebRequest Encode(out byte[] body)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -26,18 +26,17 @@
 
 using System;
 using System.Threading;
-using Mono.Nat.Upnp;
-using System.Net;
 
 namespace Mono.Nat.Test {
-	internal class NatTest {
+	class NatTest {
 		public NatTest() {
 			NatUtility.DeviceFound += DeviceFound;
 			NatUtility.DeviceLost += DeviceLost;
 
-			NatUtility.Verbose = true;
-
-			NatUtility.StartDiscovery();
+			// If you know the gateway address, you can directly search for a device at that IP
+			//NatUtility.Search (System.Net.IPAddress.Parse ("192.168.0.1"), NatProtocol.Pmp);
+			//NatUtility.Search (System.Net.IPAddress.Parse ("192.168.0.1"), NatProtocol.Upnp);
+			NatUtility.StartDiscovery ();
 
 			Console.WriteLine("Discovery started");
 
@@ -52,12 +51,18 @@ namespace Mono.Nat.Test {
 			new NatTest();
 		}
 
+		readonly SemaphoreSlim locker = new SemaphoreSlim (1, 1);
+
 		private async void DeviceFound(object sender, DeviceEventArgs args) {
-			try {
+
+			using (await locker.DisposableWaitAsync ()) {
 				INatDevice device = args.Device;
 
+				// Only interact with one device at a time. Some devices support both
+				// upnp and nat-pmp.
+
 				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("Device found");
+				Console.WriteLine("Device found: {0}", device.NatProtocol);
 				Console.ResetColor();
 				Console.WriteLine("Type: {0}", device.GetType().Name);
 
@@ -119,9 +124,6 @@ namespace Mono.Nat.Test {
 
 				Console.WriteLine("External IP: {0}", await device.GetExternalIPAsync());
 				Console.WriteLine("Done...");
-			} catch (Exception ex) {
-				Console.WriteLine(ex.Message);
-				Console.WriteLine(ex.StackTrace);
 			}
 		}
 

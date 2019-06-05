@@ -1,8 +1,8 @@
 ﻿//
 // Authors:
-//   Alan McGovern alan.mcgovern@gmail.com
+//   Alan McGovern <alan.mcgovern@gmail.com>
 //
-// Copyright (C) 2006 Alan McGovern
+// Copyright (C) 2019 Alan McGovern
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,26 +24,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Xml;
-
-namespace Mono.Nat.Upnp
+namespace Mono.Nat.Pmp
 {
-	class GetSpecificPortMappingEntryResponseMessage :  ResponseMessage
+	class MappingResponseMessage : ResponseMessage
 	{
-		public bool Enabled { get; }
-		public string InternalClient { get; }
-		public int InternalPort { get; }
-		public int LeaseDuration { get; }
-		public string PortMappingDescription { get; }
+		public Mapping Mapping { get; }
 
-		public GetSpecificPortMappingEntryResponseMessage(XmlNode data)
+		public MappingResponseMessage (Mapping mapping)
 		{
-			Enabled = data["NewEnabled"].InnerText == "1";
-			InternalClient = data["NewInternalClient"].InnerText;
-			InternalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
-			LeaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
-			PortMappingDescription = data["NewPortMappingDescription"].InnerText;
+			Mapping = mapping;
 		}
 	}
 }

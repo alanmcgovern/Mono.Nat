@@ -1,4 +1,4 @@
-﻿//
+//
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //
@@ -25,25 +25,27 @@
 //
 
 using System;
-using System.Xml;
+using System.Net;
 
 namespace Mono.Nat.Upnp
 {
-	class GetSpecificPortMappingEntryResponseMessage :  ResponseMessage
-	{
-		public bool Enabled { get; }
-		public string InternalClient { get; }
-		public int InternalPort { get; }
-		public int LeaseDuration { get; }
-		public string PortMappingDescription { get; }
+    class GetServicesMessage : IRequestMessage
+    {
+        Uri DeviceServiceUri { get; }
 
-		public GetSpecificPortMappingEntryResponseMessage(XmlNode data)
-		{
-			Enabled = data["NewEnabled"].InnerText == "1";
-			InternalClient = data["NewInternalClient"].InnerText;
-			InternalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
-			LeaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
-			PortMappingDescription = data["NewPortMappingDescription"].InnerText;
-		}
-	}
+        public GetServicesMessage (Uri deviceServiceUri)
+        {
+            DeviceServiceUri = deviceServiceUri ?? throw new ArgumentNullException (nameof (deviceServiceUri));
+        }
+
+        public WebRequest Encode(out byte[] body)
+        {
+            HttpWebRequest req = (HttpWebRequest) WebRequest.Create (DeviceServiceUri);
+            req.Headers.Add("ACCEPT-LANGUAGE", "en");
+            req.Method = "GET";
+
+            body = new byte[0];
+            return req;
+        }
+    }
 }

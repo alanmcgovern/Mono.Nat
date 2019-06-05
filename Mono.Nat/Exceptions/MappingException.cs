@@ -32,22 +32,11 @@ namespace Mono.Nat
 	[Serializable]
 	public class MappingException : Exception
 	{
-		private int errorCode;
-		private string errorText;
-
-		public int ErrorCode
-		{
-			get { return this.errorCode; }
-		}
-
-		public string ErrorText
-		{
-			get { return this.errorText; }
-		}
+		public ErrorCode ErrorCode { get; private set; } = ErrorCode.Unknown;
+		public string ErrorText { get; private set; }
 
 		#region Constructors
 		public MappingException()
-			: base()
 		{
 		}
 
@@ -56,11 +45,11 @@ namespace Mono.Nat
 		{
 		}
 
-		public MappingException(int errorCode, string errorText)
+		public MappingException(ErrorCode errorCode, string errorText)
 			: base (string.Format ("Error {0}: {1}", errorCode, errorText))
 		{
-			this.errorCode = errorCode;
-			this.errorText = errorText;
+			ErrorCode = errorCode;
+			ErrorText = errorText;
 		}
 
 		public MappingException(string message, Exception innerException)
@@ -79,8 +68,8 @@ namespace Mono.Nat
 		{
 			if(info==null) throw new ArgumentNullException("info");
 
-			this.errorCode = info.GetInt32("errorCode");
-			this.errorText = info.GetString("errorText");
+			ErrorCode = (ErrorCode)info.GetInt32("errorCode");
+			ErrorText = info.GetString("errorText");
 			base.GetObjectData(info, context);
 		}
 	}

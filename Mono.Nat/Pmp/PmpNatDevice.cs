@@ -25,190 +25,91 @@
 //
 
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Mono.Nat.Pmp
 {
-	internal sealed class PmpNatDevice : AbstractNatDevice, IEquatable<PmpNatDevice> 
+	sealed class PmpNatDevice : NatDevice, IEquatable<PmpNatDevice>
 	{
-		readonly IPAddress localAddress;
-		readonly IPAddress publicAddress;
+		IPAddress PublicAddress { get; }
 
-		public override IPAddress LocalAddress => localAddress;
-		
-		internal PmpNatDevice (IPAddress localAddress, IPAddress publicAddress)
+		internal PmpNatDevice (IPEndPoint deviceEndpoint, IPAddress publicAddress)
+			: base (deviceEndpoint, NatProtocol.Pmp)
 		{
-			this.localAddress = localAddress;
-			this.publicAddress = publicAddress;
+			PublicAddress = publicAddress;
 		}
 
-		public override async Task CreatePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> CreatePortMapAsync(Mapping mapping)
 		{
-			var message = CreatePortMapMessage (mapping, true);
-			mapping.Lifetime = await SendMessageAsync (localAddress, message);
+			var message = new CreatePortMappingMessage (mapping);
+			var actualMapping = (MappingResponseMessage) await SendMessageAsync (DeviceEndpoint, message);
+			return actualMapping.Mapping;
 		}
 
-		public override async Task DeletePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> DeletePortMapAsync(Mapping mapping)
 		{
-			var message = CreatePortMapMessage (mapping, false);
-			mapping.Lifetime = await SendMessageAsync (localAddress, message);
+			var message = new DeletePortMappingMessage (mapping);
+			var actualMapping = (MappingResponseMessage) await SendMessageAsync (DeviceEndpoint, message);
+			return actualMapping.Mapping;
 		}
+
+		public override Task<Mapping[]> GetAllMappingsAsync()
+			=> throw new MappingException (ErrorCode.UnsupportedOperation, "The NAT-PMP protocol does not support listing all mappings");
 
 		public override Task<IPAddress> GetExternalIPAsync()
-		{
-			return Task.FromResult (publicAddress);
-		}
+			=> Task.FromResult (PublicAddress);
 
-		public override IAsyncResult BeginCreatePortMap(Mapping mapping, AsyncCallback callback, object asyncState)
-		{
-			var result = new TaskAsyncResult (CreatePortMapAsync (mapping), callback, asyncState);
-			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
-			return result;
-		}
+		public override Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int publicPort)
+			=> throw new MappingException (ErrorCode.UnsupportedOperation, "The NAT-PMP protocol does not support retrieving a specific mappings");
 
-		public override IAsyncResult BeginDeletePortMap (Mapping mapping, AsyncCallback callback, object asyncState)
-		{
-			var result = new TaskAsyncResult (DeletePortMapAsync (mapping), callback, asyncState);
-			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
-			return result;
-		}
-
-		public override void EndCreatePortMap (IAsyncResult result)
-		{
-			((TaskAsyncResult)result).Task.GetAwaiter ().GetResult ();
-		}
-
-		public override void EndDeletePortMap (IAsyncResult result)
-		{
-			((TaskAsyncResult)result).Task.GetAwaiter ().GetResult ();
-		}
-		
-		public override IAsyncResult BeginGetAllMappings (AsyncCallback callback, object asyncState)
-		{
-			//NAT-PMP does not specify a way to get all port mappings
-			throw new NotSupportedException ();
-		}
-
-		public override IAsyncResult BeginGetExternalIP (AsyncCallback callback, object asyncState)
-		{
-			var result = new TaskAsyncResult (GetExternalIPAsync (), callback, asyncState);
-			result.Task.ContinueWith (t => result.Complete (), TaskScheduler.Default);
-			return result;
-		}
-
-		public override IAsyncResult BeginGetSpecificMapping (Protocol protocol, int port, AsyncCallback callback, object asyncState)
-		{
-			//NAT-PMP does not specify a way to get a specific port map
-			throw new NotSupportedException ();
-		}
-		
-		public override Mapping[] EndGetAllMappings (IAsyncResult result)
-		{
-			//NAT-PMP does not specify a way to get all port mappings
-			throw new NotSupportedException ();
-		}
-
-		public override IPAddress EndGetExternalIP (IAsyncResult result)
-		{
-			var tar = (TaskAsyncResult)result;
-			return ((Task<IPAddress>)tar.Task).GetAwaiter ().GetResult ();
-		}
-
-		public override Mapping EndGetSpecificMapping (IAsyncResult result)
-		{
-			//NAT-PMP does not specify a way to get a specific port map
-			throw new NotSupportedException ();
-		}
-		
 		public override bool Equals(object obj)
 		{
-			PmpNatDevice device = obj as PmpNatDevice;
+			var device = obj as PmpNatDevice;
 			return (device == null) ? false : this.Equals(device);
 		}
 		
 		public override int GetHashCode ()
 		{
-			return this.publicAddress.GetHashCode();
+			return PublicAddress.GetHashCode();
 		}
 
 		public bool Equals (PmpNatDevice other)
 		{
-			return (other == null) ? false : this.publicAddress.Equals(other.publicAddress);
+			return (other == null) ? false : PublicAddress.Equals(other.PublicAddress);
 		}
 
-		static byte[] CreatePortMapMessage (Mapping mapping, bool create)
-		{
-			List<byte> package = new List<byte> ();
-			
-			package.Add (PmpConstants.Version);
-			package.Add (mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
-			package.Add ((byte)0); //reserved
-			package.Add ((byte)0); //reserved
-			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder((short)mapping.PrivatePort)));
-			package.AddRange (BitConverter.GetBytes (create ? IPAddress.HostToNetworkOrder((short)mapping.PublicPort) : (short)0));
-			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder(mapping.Lifetime)));
-
-			return package.ToArray ();
-		}
-
-		
-		static async Task<int> SendMessageAsync (IPAddress localAddress, byte[] message)
+		static async Task<ResponseMessage> SendMessageAsync (IPEndPoint deviceEndpoint, PortMappingMessage message)
 		{
 			int delay = PmpConstants.RetryDelay;
 			UdpClient udpClient = new UdpClient ();
 			CancellationTokenSource tcs = new CancellationTokenSource ();
 			tcs.Token.Register (() => udpClient.Dispose ());
 
-			await udpClient.SendAsync (message, message.Length, new IPEndPoint (localAddress, PmpConstants.ServerPort)).ConfigureAwait (false);
+			var data = message.Encode ();
+			await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
 			var receiveTask = ReceiveMessageAsync (udpClient);
 
 			await Task.Delay (delay);
 			for (int i = 0; i < PmpConstants.RetryAttempts && !receiveTask.IsCompleted; i ++) {
 				delay *= 2;
-				await Task.Delay (delay);
-				await udpClient.SendAsync (message, message.Length, new IPEndPoint (localAddress, PmpConstants.ServerPort)).ConfigureAwait (false);
+				await Task.Delay (delay).ConfigureAwait (false);
+				await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
 			}
 
 			tcs.Dispose ();
 			return await receiveTask;
 		}
-		
-		static async Task<int> ReceiveMessageAsync (UdpClient udpClient)
+
+		static async Task<ResponseMessage> ReceiveMessageAsync (UdpClient udpClient)
 		{
 			while (true)
 			{
-				var receiveResult = await udpClient.ReceiveAsync ();
-				var data = receiveResult.Buffer;
-
-				if (data.Length < 16)
-					continue;
-
-				if (data[0] != PmpConstants.Version)
-					continue;
-
-				byte opCode = (byte)(data[1] & (byte)127);
-
-				Protocol protocol = Protocol.Tcp;
-				if (opCode == PmpConstants.OperationCodeUdp)
-					protocol = Protocol.Udp;
-
-				short resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
-				uint epoch = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
-
-				int privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
-				int publicPort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
-
-				uint lifetime = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
-
-				if (publicPort < 0 || privatePort < 0 || resultCode != PmpConstants.ResultCodeSuccess)
-					throw new MappingException (resultCode, "Could not modify the port map");
-
-				return (int)lifetime;
+				var receiveResult = await udpClient.ReceiveAsync ().ConfigureAwait (false);
+				var message = ResponseMessage.Decode (receiveResult.Buffer);
+				return message;
 			}
 		}
 
@@ -219,7 +120,7 @@ namespace Mono.Nat.Pmp
 		public override string ToString( )
 		{
 			return String.Format( "PmpNatDevice - Local Address: {0}, Public IP: {1}, Last Seen: {2}",
-				this.localAddress, this.publicAddress, this.LastSeen );
+				DeviceEndpoint, PublicAddress, LastSeen );
 		}
 	}
 }
