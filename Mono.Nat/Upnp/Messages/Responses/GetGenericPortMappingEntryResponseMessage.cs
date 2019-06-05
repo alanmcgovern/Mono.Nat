@@ -40,17 +40,17 @@ namespace Mono.Nat.Upnp
 		public Protocol Protocol { get; }
 		public string RemoteHost { get; }
 
-		public GetGenericPortMappingEntryResponseMessage(XmlNode data)
+		public GetGenericPortMappingEntryResponseMessage (XmlNode data)
 		{
-			RemoteHost = data["NewRemoteHost"].InnerText;
-			ExternalPort = Convert.ToInt32(data["NewExternalPort"].InnerText);
-			Protocol = data["NewProtocol"].InnerText == "TCP" ? Protocol.Tcp : Protocol.Udp;
+			RemoteHost = data ["NewRemoteHost"].InnerText;
+			ExternalPort = Convert.ToInt32 (data ["NewExternalPort"].InnerText);
+			Protocol = data ["NewProtocol"].InnerText == "TCP" ? Protocol.Tcp : Protocol.Udp;
 
-			InternalPort = Convert.ToInt32(data["NewInternalPort"].InnerText);
-			InternalClient = data["NewInternalClient"].InnerText;
-			Enabled = data["NewEnabled"].InnerText == "1";
-			PortMappingDescription = data["NewPortMappingDescription"].InnerText;
-			LeaseDuration = Convert.ToInt32(data["NewLeaseDuration"].InnerText);
+			InternalPort = Convert.ToInt32 (data ["NewInternalPort"].InnerText);
+			InternalClient = data ["NewInternalClient"].InnerText;
+			Enabled = data ["NewEnabled"].InnerText == "1";
+			PortMappingDescription = data ["NewPortMappingDescription"].InnerText;
+			LeaseDuration = Convert.ToInt32 (data ["NewLeaseDuration"].InnerText);
 		}
 	}
 }

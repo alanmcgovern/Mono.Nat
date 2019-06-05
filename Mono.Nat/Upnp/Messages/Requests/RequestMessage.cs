@@ -31,74 +31,74 @@ using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-    abstract class RequestMessage : IRequestMessage
-    {
-        protected UpnpNatDevice Device { get; }
+	abstract class RequestMessage : IRequestMessage
+	{
+		protected UpnpNatDevice Device { get; }
 
-        string RequestType { get; }
+		string RequestType { get; }
 
-        protected RequestMessage(UpnpNatDevice device, string requestType)
-        {
-            Device = device;
-            RequestType = requestType;
-        }
-
-        protected WebRequest CreateRequest(string upnpMethod, string methodParameters, out byte[] body)
-        {
-            var location = Device.DeviceControlUri;
-
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(location);
-            req.KeepAlive = false;
-            req.Method = "POST";
-            req.ContentType = "text/xml; charset=\"utf-8\"";
-            req.Headers.Add("SOAPACTION", "\"" + Device.ServiceType + "#" + upnpMethod + "\"");
-
-            string bodyString = "<s:Envelope "
-               + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-               + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
-               + "<s:Body>"
-               + "<u:" + upnpMethod + " "
-               + "xmlns:u=\"" + Device.ServiceType + "\">"
-               + methodParameters
-               + "</u:" + upnpMethod + ">"
-               + "</s:Body>"
-               + "</s:Envelope>\r\n\r\n";
-
-            body = Encoding.UTF8.GetBytes(bodyString);
-            return req;
-        }
-
-        public WebRequest Encode(out byte[] body)
+		protected RequestMessage (UpnpNatDevice device, string requestType)
 		{
-            var builder = new StringBuilder(256);
-            var settings = new XmlWriterSettings {
-                ConformanceLevel = ConformanceLevel.Fragment
-            };
+			Device = device;
+			RequestType = requestType;
+		}
 
-            using (var writer = XmlWriter.Create(builder, settings))
-                Encode (writer);
-            return CreateRequest(RequestType, builder.ToString(), out body);
-        }
+		protected WebRequest CreateRequest (string upnpMethod, string methodParameters, out byte [] body)
+		{
+			var location = Device.DeviceControlUri;
 
-        public virtual void Encode (XmlWriter writer)
-        {
+			HttpWebRequest req = (HttpWebRequest) WebRequest.Create (location);
+			req.KeepAlive = false;
+			req.Method = "POST";
+			req.ContentType = "text/xml; charset=\"utf-8\"";
+			req.Headers.Add ("SOAPACTION", "\"" + Device.ServiceType + "#" + upnpMethod + "\"");
 
-        }
+			string bodyString = "<s:Envelope "
+			   + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+			   + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
+			   + "<s:Body>"
+			   + "<u:" + upnpMethod + " "
+			   + "xmlns:u=\"" + Device.ServiceType + "\">"
+			   + methodParameters
+			   + "</u:" + upnpMethod + ">"
+			   + "</s:Body>"
+			   + "</s:Envelope>\r\n\r\n";
 
-        protected static void WriteFullElement (XmlWriter writer, string element, IPAddress value)
-            => WriteFullElement (writer, element, value.ToString ());
+			body = Encoding.UTF8.GetBytes (bodyString);
+			return req;
+		}
 
-        protected static void WriteFullElement (XmlWriter writer, string element, Protocol value)
-            => WriteFullElement (writer, element, value == Protocol.Tcp ? "TCP" : "UDP");
+		public WebRequest Encode (out byte [] body)
+		{
+			var builder = new StringBuilder (256);
+			var settings = new XmlWriterSettings {
+				ConformanceLevel = ConformanceLevel.Fragment
+			};
 
-        protected static void WriteFullElement (XmlWriter writer, string element, int value)
-            => WriteFullElement (writer, element, value.ToString ());
+			using (var writer = XmlWriter.Create (builder, settings))
+				Encode (writer);
+			return CreateRequest (RequestType, builder.ToString (), out body);
+		}
 
-        protected static void WriteFullElement (XmlWriter writer, string element, string value)
-        {
-            writer.WriteStartElement(element);
-            writer.WriteString(value);
-            writer.WriteEndElement();
-        }
-    }
+		public virtual void Encode (XmlWriter writer)
+		{
+
+		}
+
+		protected static void WriteFullElement (XmlWriter writer, string element, IPAddress value)
+			=> WriteFullElement (writer, element, value.ToString ());
+
+		protected static void WriteFullElement (XmlWriter writer, string element, Protocol value)
+			=> WriteFullElement (writer, element, value == Protocol.Tcp ? "TCP" : "UDP");
+
+		protected static void WriteFullElement (XmlWriter writer, string element, int value)
+			=> WriteFullElement (writer, element, value.ToString ());
+
+		protected static void WriteFullElement (XmlWriter writer, string element, string value)
+		{
+			writer.WriteStartElement (element);
+			writer.WriteString (value);
+			writer.WriteEndElement ();
+		}
+	}
 }

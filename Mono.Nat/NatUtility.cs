@@ -55,17 +55,19 @@ namespace Mono.Nat
 
 		static NatUtility ()
 		{
-			Devices = new HashSet<INatDevice>();
+			Devices = new HashSet<INatDevice> ();
 
-			foreach (var searcher in new ISearcher[] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
-				searcher.DeviceFound += (o, e) => {
+			foreach (var searcher in new ISearcher [] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
+				searcher.DeviceFound += (o, e) =>
+				{
 					lock (Devices)
 						if (!Devices.Add (e.Device))
 							return;
 					DeviceFound?.Invoke (searcher, e);
 				};
 
-				searcher.DeviceLost += (o, e) => {
+				searcher.DeviceLost += (o, e) =>
+				{
 					lock (Devices)
 						if (!Devices.Remove (e.Device))
 							return;
@@ -74,18 +76,18 @@ namespace Mono.Nat
 			}
 		}
 
-		internal static void Log(string format, params object[] args)
+		internal static void Log (string format, params object [] args)
 		{
 			TextWriter logger = Logger;
 			if (logger != null)
-				logger.WriteLine(format, args);
+				logger.WriteLine (format, args);
 		}
 
-		public static void StartDiscovery (params NatProtocol[] devices)
+		public static void StartDiscovery (params NatProtocol [] devices)
 		{
 			lock (Locker) {
 				if (devices.Length == 0 || devices.Contains (NatProtocol.Pmp))
-					 PmpSearcher.Instance.Search ();
+					PmpSearcher.Instance.Search ();
 
 				if (devices.Length == 0 || devices.Contains (NatProtocol.Upnp))
 					UpnpSearcher.Instance.Search ();
@@ -108,7 +110,7 @@ namespace Mono.Nat
 				} else if (type == NatProtocol.Upnp) {
 					UpnpSearcher.Instance.Search (gatewayAddress);
 				} else {
-					throw new InvalidOperationException("Unsuported type given");
+					throw new InvalidOperationException ("Unsuported type given");
 				}
 			}
 		}

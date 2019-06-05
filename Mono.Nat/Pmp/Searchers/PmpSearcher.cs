@@ -39,92 +39,75 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat.Pmp
 {
-    class PmpSearcher : Searcher
-    {
-        public static PmpSearcher Instance { get; } = new PmpSearcher();
+	class PmpSearcher : Searcher
+	{
+		public static PmpSearcher Instance { get; } = new PmpSearcher ();
 
-        static List<UdpClient> sockets;
-        static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
+		static List<UdpClient> sockets;
+		static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
 
-        public override NatProtocol Protocol => NatProtocol.Pmp;
+		public override NatProtocol Protocol => NatProtocol.Pmp;
 
-        CancellationTokenSource CurrentSearchCancellation;
+		CancellationTokenSource CurrentSearchCancellation;
 
-        static PmpSearcher()
-        {
-            sockets = new List<UdpClient>();
-            gatewayLists = new Dictionary<UdpClient, List<IPEndPoint>>();
+		static PmpSearcher ()
+		{
+			sockets = new List<UdpClient> ();
+			gatewayLists = new Dictionary<UdpClient, List<IPEndPoint>> ();
 
-            try
-            {
-                foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
-                        continue;
-                    IPInterfaceProperties properties = n.GetIPProperties();
-                    List<IPEndPoint> gatewayList = new List<IPEndPoint>();
+			try {
+				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ()) {
+					if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
+						continue;
+					IPInterfaceProperties properties = n.GetIPProperties ();
+					List<IPEndPoint> gatewayList = new List<IPEndPoint> ();
 
-                    foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
-                    {
-                        if (gateway.Address.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
-                        }
-                    }
-                    if (gatewayList.Count == 0)
-                    {
-                        /* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-                        foreach (var gw2 in properties.DnsAddresses)
-                        {
-                            if (gw2.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                gatewayList.Add(new IPEndPoint(gw2, PmpConstants.ServerPort));
-                            }
-                        }
-                        foreach (var unicast in properties.UnicastAddresses)
-                        {
-                            if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
+					foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses) {
+						if (gateway.Address.AddressFamily == AddressFamily.InterNetwork) {
+							gatewayList.Add (new IPEndPoint (gateway.Address, PmpConstants.ServerPort));
+						}
+					}
+					if (gatewayList.Count == 0) {
+						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
+						foreach (var gw2 in properties.DnsAddresses) {
+							if (gw2.AddressFamily == AddressFamily.InterNetwork) {
+								gatewayList.Add (new IPEndPoint (gw2, PmpConstants.ServerPort));
+							}
+						}
+						foreach (var unicast in properties.UnicastAddresses) {
+							if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
 							    && unicast.AddressPreferredLifetime != UInt32.MaxValue
-							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                var bytes = unicast.Address.GetAddressBytes();
-                                bytes[3] = 1;
-                                gatewayList.Add(new IPEndPoint(new IPAddress(bytes), PmpConstants.ServerPort));
-                            }
-                        }
-                    }
+							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
+								var bytes = unicast.Address.GetAddressBytes ();
+								bytes [3] = 1;
+								gatewayList.Add (new IPEndPoint (new IPAddress (bytes), PmpConstants.ServerPort));
+							}
+						}
+					}
 
-                    if (gatewayList.Count > 0)
-                    {
-                        foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
-                        {
-                            if (address.Address.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                UdpClient client;
+					if (gatewayList.Count > 0) {
+						foreach (UnicastIPAddressInformation address in properties.UnicastAddresses) {
+							if (address.Address.AddressFamily == AddressFamily.InterNetwork) {
+								UdpClient client;
 
-                                try
-                                {
-                                    client = new UdpClient(new IPEndPoint(address.Address, 0));
-                                }
-                                catch (SocketException)
-                                {
-                                    continue; // Move on to the next address.
-                                }
+								try {
+									client = new UdpClient (new IPEndPoint (address.Address, 0));
+								} catch (SocketException) {
+									continue; // Move on to the next address.
+								}
 
-                                gatewayLists.Add(client, gatewayList);
-                                sockets.Add(client);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // NAT-PMP does not use multicast, so there isn't really a good fallback.
-            }
-        }
+								gatewayLists.Add (client, gatewayList);
+								sockets.Add (client);
+							}
+						}
+					}
+				}
+			} catch (Exception) {
+				// NAT-PMP does not use multicast, so there isn't really a good fallback.
+			}
+		}
 
-		public override void Search()
+		public override void Search ()
 		{
 			Search (null, SearchPeriod);
 		}
@@ -143,21 +126,21 @@ namespace Mono.Nat.Pmp
 		async Task Search (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken overallSearchToken)
 		{
 			var timeout = PmpConstants.RetryDelay;
-			var buffer = new[] { PmpConstants.Version, PmpConstants.OperationCode };
+			var buffer = new [] { PmpConstants.Version, PmpConstants.OperationCode };
 			while (!overallSearchToken.IsCancellationRequested) {
 				try {
 					var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (overallSearchToken);
 					var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
 					oldSearch?.Cancel ();
 
-					for (int i = 0; i < 9; i ++) {
+					for (int i = 0; i < 9; i++) {
 						foreach (var client in sockets) {
 							try {
 								if (gatewayAddress == null) {
-									foreach (IPEndPoint gatewayEndpoint in gatewayLists[client])
-										client.Send(buffer, buffer.Length, new IPEndPoint(gatewayEndpoint.Address, PmpConstants.ServerPort));
+									foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
+										client.Send (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
 								} else {
-									client.Send(buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
+									client.Send (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
 								}
 							} catch (Exception) {
 
@@ -187,34 +170,34 @@ namespace Mono.Nat.Pmp
 			return Task.CompletedTask;
 		}
 
-        bool IsSearchAddress(IPAddress address)
-        {
-            foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
-                foreach (IPEndPoint gatewayEndpoint in gatewayList)
-                    if (gatewayEndpoint.Address.Equals(address))
-                        return true;
-            return false;
-        }
+		bool IsSearchAddress (IPAddress address)
+		{
+			foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
+				foreach (IPEndPoint gatewayEndpoint in gatewayList)
+					if (gatewayEndpoint.Address.Equals (address))
+						return true;
+			return false;
+		}
 
-        void Handle(byte[] response, IPEndPoint endpoint)
-        {
-            if (!IsSearchAddress(endpoint.Address))
-                return;
-            if (response.Length != 12)
-                return;
-            if (response[0] != PmpConstants.Version)
-                return;
-            if (response[1] != PmpConstants.ServerNoop)
-                return;
-            int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
-            if (errorcode != 0)
-                NatUtility.Log("Non zero error: {0}", errorcode);
+		void Handle (byte [] response, IPEndPoint endpoint)
+		{
+			if (!IsSearchAddress (endpoint.Address))
+				return;
+			if (response.Length != 12)
+				return;
+			if (response [0] != PmpConstants.Version)
+				return;
+			if (response [1] != PmpConstants.ServerNoop)
+				return;
+			int errorcode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (response, 2));
+			if (errorcode != 0)
+				NatUtility.Log ("Non zero error: {0}", errorcode);
 
-            IPAddress publicIp = new IPAddress(new byte[] { response[8], response[9], response[10], response[11] });
+			IPAddress publicIp = new IPAddress (new byte [] { response [8], response [9], response [10], response [11] });
 
-            CurrentSearchCancellation?.Cancel ();
+			CurrentSearchCancellation?.Cancel ();
 
-            RaiseDeviceFound (new DeviceEventArgs(new PmpNatDevice(endpoint, publicIp)));
-        }
-    }
+			RaiseDeviceFound (new DeviceEventArgs (new PmpNatDevice (endpoint, publicIp)));
+		}
+	}
 }

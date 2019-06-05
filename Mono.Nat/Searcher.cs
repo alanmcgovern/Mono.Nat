@@ -92,6 +92,7 @@ namespace Mono.Nat
 		}
 
 		public abstract void Search ();
+
 		public abstract void Search (IPAddress gatewayAddress);
 
 		public void Stop ()

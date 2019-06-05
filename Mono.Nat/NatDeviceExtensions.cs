@@ -10,27 +10,27 @@ namespace Mono.Nat
 
 		public static Mapping CreatePortMap (this INatDevice device, Mapping mapping)
 		{
-			return device.CreatePortMapAsync(mapping).GetAwaiter ().GetResult ();
+			return device.CreatePortMapAsync (mapping).GetAwaiter ().GetResult ();
 		}
 
 		public static Mapping DeletePortMap (this INatDevice device, Mapping mapping)
 		{
-			return device.DeletePortMapAsync(mapping).GetAwaiter ().GetResult ();
+			return device.DeletePortMapAsync (mapping).GetAwaiter ().GetResult ();
 		}
 
-		public static Mapping[] GetAllMappings (this INatDevice device)
+		public static Mapping [] GetAllMappings (this INatDevice device)
 		{
-			return device.GetAllMappingsAsync().GetAwaiter ().GetResult ();
+			return device.GetAllMappingsAsync ().GetAwaiter ().GetResult ();
 		}
 
 		public static IPAddress GetExternalIP (this INatDevice device)
 		{
-			return device.GetExternalIPAsync().GetAwaiter ().GetResult ();
+			return device.GetExternalIPAsync ().GetAwaiter ().GetResult ();
 		}
 
 		public static Mapping GetSpecificMapping (this INatDevice device, Protocol protocol, int port)
 		{
-			return device.GetSpecificMappingAsync(protocol, port).GetAwaiter ().GetResult ();
+			return device.GetSpecificMappingAsync (protocol, port).GetAwaiter ().GetResult ();
 		}
 
 		#endregion Synchronous methods
@@ -46,12 +46,12 @@ namespace Mono.Nat
 
 		public static Mapping EndCreatePortMap (this INatDevice device, IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException(nameof(result));
+			if (result == null) throw new ArgumentNullException (nameof (result));
 
 			if (!(result is TaskAsyncResult mappingResult))
-				throw new ArgumentException("Invalid AsyncResult", nameof(result));
+				throw new ArgumentException ("Invalid AsyncResult", nameof (result));
 
-			return ((Task<Mapping>)mappingResult.Task).GetAwaiter().GetResult();
+			return ((Task<Mapping>) mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
 		public static IAsyncResult BeginDeletePortMap (this INatDevice device, Mapping mapping, AsyncCallback callback, object asyncState)
@@ -63,12 +63,12 @@ namespace Mono.Nat
 
 		public static Mapping EndDeletePortMap (this INatDevice device, IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException(nameof(result));
+			if (result == null) throw new ArgumentNullException (nameof (result));
 
 			if (!(result is TaskAsyncResult mappingResult))
-				throw new ArgumentException("Invalid AsyncResult", nameof(result));
+				throw new ArgumentException ("Invalid AsyncResult", nameof (result));
 
-			return ((Task<Mapping>)mappingResult.Task).GetAwaiter().GetResult();
+			return ((Task<Mapping>) mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
 		public static IAsyncResult BeginGetAllMappings (this INatDevice device, AsyncCallback callback, object asyncState)
@@ -78,14 +78,14 @@ namespace Mono.Nat
 			return result;
 		}
 
-		public static Mapping[] EndGetAllMappings (this INatDevice device, IAsyncResult result)
+		public static Mapping [] EndGetAllMappings (this INatDevice device, IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException(nameof(result));
+			if (result == null) throw new ArgumentNullException (nameof (result));
 
 			if (!(result is TaskAsyncResult mappingResult))
-				throw new ArgumentException("Invalid AsyncResult", nameof(result));
+				throw new ArgumentException ("Invalid AsyncResult", nameof (result));
 
-			return ((Task<Mapping[]>)mappingResult.Task).GetAwaiter().GetResult();
+			return ((Task<Mapping []>) mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
 		public static IAsyncResult BeginGetExternalIP (this INatDevice device, AsyncCallback callback, object asyncState)
@@ -97,12 +97,12 @@ namespace Mono.Nat
 
 		public static IPAddress EndGetExternalIP (this INatDevice device, IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException(nameof(result));
+			if (result == null) throw new ArgumentNullException (nameof (result));
 
 			if (!(result is TaskAsyncResult mappingResult))
-				throw new ArgumentException("Invalid AsyncResult", nameof(result));
+				throw new ArgumentException ("Invalid AsyncResult", nameof (result));
 
-			return ((Task<IPAddress>)mappingResult.Task).GetAwaiter().GetResult();
+			return ((Task<IPAddress>) mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
 		public static IAsyncResult BeginGetSpecificMapping (this INatDevice device, Protocol protocol, int externalPort, AsyncCallback callback, object asyncState)
@@ -114,12 +114,12 @@ namespace Mono.Nat
 
 		public static Mapping EndGetSpecificMapping (this INatDevice device, IAsyncResult result)
 		{
-			if (result == null) throw new ArgumentNullException(nameof(result));
+			if (result == null) throw new ArgumentNullException (nameof (result));
 
 			if (!(result is TaskAsyncResult mappingResult))
-				throw new ArgumentException("Invalid AsyncResult", nameof(result));
+				throw new ArgumentException ("Invalid AsyncResult", nameof (result));
 
-			return ((Task<Mapping>)mappingResult.Task).GetAwaiter().GetResult();
+			return ((Task<Mapping>) mappingResult.Task).GetAwaiter ().GetResult ();
 		}
 
 		#endregion Old async methods

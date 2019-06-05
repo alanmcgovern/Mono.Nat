@@ -46,7 +46,7 @@ namespace Mono.Nat
 			Callback = callback;
 			CompletedSynchronously = task.IsCompleted;
 			Task = task;
-			WaitHandle = new ManualResetEvent(false);
+			WaitHandle = new ManualResetEvent (false);
 		}
 
 		public void Complete ()

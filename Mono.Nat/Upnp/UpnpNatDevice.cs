@@ -62,148 +62,135 @@ namespace Mono.Nat.Upnp
 			ServiceType = serviceType;
 		}
 
-		public override async Task<Mapping> CreatePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> CreatePortMapAsync (Mapping mapping)
 		{
-			var message = new CreatePortMappingMessage(mapping, LocalAddress, this);
-			var response = await SendMessageAsync(message).ConfigureAwait(false);
+			var message = new CreatePortMappingMessage (mapping, LocalAddress, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
 			if (!(response is CreatePortMappingResponseMessage))
-				throw new MappingException(ErrorCode.Unknown, "Invalid response received when creating the port map");
+				throw new MappingException (ErrorCode.Unknown, "Invalid response received when creating the port map");
 			return mapping;
 		}
 
-		public override async Task<Mapping> DeletePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> DeletePortMapAsync (Mapping mapping)
 		{
-			var message = new DeletePortMappingMessage(mapping, this);
-			var response = await SendMessageAsync(message).ConfigureAwait(false);
+			var message = new DeletePortMappingMessage (mapping, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
 			if (!(response is DeletePortMapResponseMessage))
-				throw new MappingException(ErrorCode.Unknown, "Invalid response received when deleting the port map");
+				throw new MappingException (ErrorCode.Unknown, "Invalid response received when deleting the port map");
 			return mapping;
 		}
 
-		public override async Task<Mapping[]> GetAllMappingsAsync()
+		public override async Task<Mapping []> GetAllMappingsAsync ()
 		{
-			var mappings = new List<Mapping>();
+			var mappings = new List<Mapping> ();
 
 			// Is it OK to hardcode 1000 mappings as the maximum? Probably better than an infinite loop
 			// which would rely on routers correctly reporting all the mappings have been retrieved...
-			try
-			{
-				for (int i = 0; i < 1000; i++)
-				{
-					var message = new GetGenericPortMappingEntry(i, this);
+			try {
+				for (int i = 0; i < 1000; i++) {
+					var message = new GetGenericPortMappingEntry (i, this);
 					// If we get a null response, or it's the wrong type, bail out.
 					// It means we've iterated over the entire array.
-					var resp = await SendMessageAsync(message).ConfigureAwait(false);
+					var resp = await SendMessageAsync (message).ConfigureAwait (false);
 					if (!(resp is GetGenericPortMappingEntryResponseMessage response))
 						break;
 
-					mappings.Add(new Mapping(response.Protocol, response.InternalPort, response.ExternalPort, response.LeaseDuration, response.PortMappingDescription));
+					mappings.Add (new Mapping (response.Protocol, response.InternalPort, response.ExternalPort, response.LeaseDuration, response.PortMappingDescription));
 				}
-			}
-			catch (MappingException ex)
-			{
+			} catch (MappingException ex) {
 				// Error code 713 means we successfully iterated to the end of the array and have all the mappings.
 				// Exception driven code flow ftw!
 				if (ex.ErrorCode != ErrorCode.SpecifiedArrayIndexInvalid)
 					throw;
 			}
 
-			return mappings.ToArray();
+			return mappings.ToArray ();
 		}
 
-		public override async Task<IPAddress> GetExternalIPAsync()
+		public override async Task<IPAddress> GetExternalIPAsync ()
 		{
-			var message = new GetExternalIPAddressMessage(this);
-			var response = await SendMessageAsync(message).ConfigureAwait(false);
+			var message = new GetExternalIPAddressMessage (this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
 			if (!(response is GetExternalIPAddressResponseMessage msg))
-				throw new MappingException(ErrorCode.Unknown, "Invalid response received when getting the external IP address");
+				throw new MappingException (ErrorCode.Unknown, "Invalid response received when getting the external IP address");
 			return msg.ExternalIPAddress;
 		}
 
-		public override async Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int publicPort)
+		public override async Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int publicPort)
 		{
-			var message = new GetSpecificPortMappingEntryMessage(protocol, publicPort, this);
-			var response = await SendMessageAsync(message).ConfigureAwait(false);
+			var message = new GetSpecificPortMappingEntryMessage (protocol, publicPort, this);
+			var response = await SendMessageAsync (message).ConfigureAwait (false);
 			if (!(response is GetSpecificPortMappingEntryResponseMessage msg))
-				throw new MappingException(ErrorCode.Unknown, "Invalid response received when getting the specific mapping");
-			return new Mapping(protocol, msg.InternalPort, publicPort, msg.LeaseDuration, msg.PortMappingDescription);
+				throw new MappingException (ErrorCode.Unknown, "Invalid response received when getting the specific mapping");
+			return new Mapping (protocol, msg.InternalPort, publicPort, msg.LeaseDuration, msg.PortMappingDescription);
 		}
 
-		async Task<ResponseMessage> SendMessageAsync(RequestMessage message)
+		async Task<ResponseMessage> SendMessageAsync (RequestMessage message)
 		{
-			WebRequest request = message.Encode(out byte[] body);
-			if (body.Length > 0)
-			{
+			WebRequest request = message.Encode (out byte [] body);
+			if (body.Length > 0) {
 				request.ContentLength = body.Length;
-				using (var stream = await request.GetRequestStreamAsync().ConfigureAwait(false))
-					stream.Write(body, 0, body.Length);
+				using (var stream = await request.GetRequestStreamAsync ().ConfigureAwait (false))
+					stream.Write (body, 0, body.Length);
 			}
 
-			try
-			{
-				using (var response = await request.GetResponseAsync().ConfigureAwait(false))
-					return DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
-			}
-			catch (WebException ex)
-			{
+			try {
+				using (var response = await request.GetResponseAsync ().ConfigureAwait (false))
+					return DecodeMessageFromResponse (response.GetResponseStream (), response.ContentLength);
+			} catch (WebException ex) {
 				// Even if the request "failed" i want to continue on to read out the response from the router
-				using (var response = ex.Response as HttpWebResponse)
-				{
+				using (var response = ex.Response as HttpWebResponse) {
 					if (response == null)
-						throw new MappingException("Unexpected error sending a message to the device", ex);
+						throw new MappingException ("Unexpected error sending a message to the device", ex);
 					else
-						return DecodeMessageFromResponse(response.GetResponseStream(), response.ContentLength);
+						return DecodeMessageFromResponse (response.GetResponseStream (), response.ContentLength);
 				}
 			}
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals (object obj)
 		{
 			UpnpNatDevice device = obj as UpnpNatDevice;
-			return device != null && Equals((device));
+			return device != null && Equals ((device));
 		}
 
-		public bool Equals(UpnpNatDevice other)
+		public bool Equals (UpnpNatDevice other)
 		{
 			return other != null
 				&& DeviceEndpoint.Equals (other.DeviceEndpoint)
 				&& DeviceControlUri == other.DeviceControlUri;
 		}
 
-		public override int GetHashCode()
+		public override int GetHashCode ()
 		{
-			return DeviceEndpoint.GetHashCode() ^ DeviceControlUri.GetHashCode();
+			return DeviceEndpoint.GetHashCode () ^ DeviceControlUri.GetHashCode ();
 		}
 
-		ResponseMessage DecodeMessageFromResponse(Stream s, long length)
+		ResponseMessage DecodeMessageFromResponse (Stream s, long length)
 		{
-			StringBuilder data = new StringBuilder();
+			StringBuilder data = new StringBuilder ();
 			int bytesRead;
 			int totalBytesRead = 0;
-			byte[] buffer = new byte[10240];
+			byte [] buffer = new byte [10240];
 
 			// Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
-			if (length != -1)
-			{
-				while (totalBytesRead < length)
-				{
-					bytesRead = s.Read(buffer, 0, buffer.Length);
-					data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+			if (length != -1) {
+				while (totalBytesRead < length) {
+					bytesRead = s.Read (buffer, 0, buffer.Length);
+					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 					totalBytesRead += bytesRead;
 				}
-			}
-			else
-			{
-				while ((bytesRead = s.Read(buffer, 0, buffer.Length)) != 0)
-					data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+			} else {
+				while ((bytesRead = s.Read (buffer, 0, buffer.Length)) != 0)
+					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 			}
 
 			// Once we have our content, we need to see what kind of message it is. If we received
 			// an error message we will immediately throw a MappingException.
-			return ResponseMessage.Decode(this, data.ToString());
+			return ResponseMessage.Decode (this, data.ToString ());
 		}
 
-		public override string ToString()
+		public override string ToString ()
 		{
 			return $"UpnpNatDevice - EndPoint: {DeviceEndpoint}, External IP: Manually Check, Control Url: {DeviceControlUri}, Service Type: {ServiceType}, Last Seen: {LastSeen}";
 		}
