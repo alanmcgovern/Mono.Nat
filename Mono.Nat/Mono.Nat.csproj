@@ -4,6 +4,11 @@
 	<Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
+	<PropertyGroup>
+		<GitThisAssembly>false</GitThisAssembly>
+		<Deterministic>true</Deterministic>
+	</PropertyGroup>
+
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<CoreCompileDependsOn>SetBuildVersion;$(CoreCompileDependsOn)</CoreCompileDependsOn>
 	</PropertyGroup>
