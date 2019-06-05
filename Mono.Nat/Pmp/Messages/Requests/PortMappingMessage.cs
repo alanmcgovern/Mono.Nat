@@ -41,17 +41,17 @@ namespace Mono.Nat.Pmp
 			Create = create;
 		}
 
-		public byte[] Encode ()
+		public byte [] Encode ()
 		{
 			var package = new List<byte> ();
 
 			package.Add (PmpConstants.Version);
 			package.Add (Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
-			package.Add ((byte)0); //reserved
-			package.Add ((byte)0); //reserved
-			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short)Mapping.PrivatePort)));
+			package.Add ((byte) 0); //reserved
+			package.Add ((byte) 0); //reserved
+			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PrivatePort)));
 			if (Create) {
-				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short)Mapping.PublicPort)));
+				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PublicPort)));
 				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder (Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime)));
 			} else {
 				package.AddRange (BitConverter.GetBytes ((short) 0));

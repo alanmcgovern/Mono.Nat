@@ -29,28 +29,28 @@ using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-    sealed class CreatePortMappingMessage : RequestMessage
-    {
-        IPAddress LocalIpAddress { get; }
-        Mapping Mapping { get; }
+	sealed class CreatePortMappingMessage : RequestMessage
+	{
+		IPAddress LocalIpAddress { get; }
+		Mapping Mapping { get; }
 
-        public CreatePortMappingMessage(Mapping mapping, IPAddress localIpAddress, UpnpNatDevice device)
-            : base(device, "AddPortMapping")
-        {
-            Mapping = mapping;
-            LocalIpAddress = localIpAddress;
-        }
+		public CreatePortMappingMessage (Mapping mapping, IPAddress localIpAddress, UpnpNatDevice device)
+			: base (device, "AddPortMapping")
+		{
+			Mapping = mapping;
+			LocalIpAddress = localIpAddress;
+		}
 
-        public override void Encode(XmlWriter writer)
-        {
-            WriteFullElement(writer, "NewRemoteHost", "");
-            WriteFullElement(writer, "NewExternalPort", Mapping.PublicPort);
-            WriteFullElement(writer, "NewProtocol", Mapping.Protocol);
-            WriteFullElement(writer, "NewInternalPort", Mapping.PrivatePort);
-            WriteFullElement(writer, "NewInternalClient", LocalIpAddress);
-            WriteFullElement(writer, "NewEnabled", "1");
-            WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(Mapping.Description) ? "Mono.Nat" : Mapping.Description);
-            WriteFullElement(writer, "NewLeaseDuration", Mapping.Lifetime);
-        }
-    }
+		public override void Encode (XmlWriter writer)
+		{
+			WriteFullElement (writer, "NewRemoteHost", "");
+			WriteFullElement (writer, "NewExternalPort", Mapping.PublicPort);
+			WriteFullElement (writer, "NewProtocol", Mapping.Protocol);
+			WriteFullElement (writer, "NewInternalPort", Mapping.PrivatePort);
+			WriteFullElement (writer, "NewInternalClient", LocalIpAddress);
+			WriteFullElement (writer, "NewEnabled", "1");
+			WriteFullElement (writer, "NewPortMappingDescription", string.IsNullOrEmpty (Mapping.Description) ? "Mono.Nat" : Mapping.Description);
+			WriteFullElement (writer, "NewLeaseDuration", Mapping.Lifetime);
+		}
+	}
 }

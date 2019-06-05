@@ -49,7 +49,7 @@ namespace Mono.Nat
 
 		public abstract Task<Mapping> DeletePortMapAsync (Mapping mapping);
 
-		public abstract Task<Mapping[]> GetAllMappingsAsync ();
+		public abstract Task<Mapping []> GetAllMappingsAsync ();
 
 		public abstract Task<IPAddress> GetExternalIPAsync ();
 

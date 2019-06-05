@@ -111,12 +111,12 @@ namespace Mono.Nat
 				PrivatePort == other.PrivatePort && PublicPort == other.PublicPort;
 		}
 
-		public override int GetHashCode()
+		public override int GetHashCode ()
 		{
-			return Protocol.GetHashCode() ^ PrivatePort.GetHashCode() ^ PublicPort.GetHashCode();
+			return Protocol.GetHashCode () ^ PrivatePort.GetHashCode () ^ PublicPort.GetHashCode ();
 		}
 
-		public override string ToString( )
+		public override string ToString ()
 		{
 			return string.Format ("Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}",
 				Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime);

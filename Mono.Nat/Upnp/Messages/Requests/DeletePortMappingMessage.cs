@@ -32,17 +32,17 @@ namespace Mono.Nat.Upnp
 	{
 		Mapping Mapping { get; }
 
-		public DeletePortMappingMessage(Mapping mapping, UpnpNatDevice device)
-			: base(device, "DeletePortMapping")
+		public DeletePortMappingMessage (Mapping mapping, UpnpNatDevice device)
+			: base (device, "DeletePortMapping")
 		{
 			Mapping = mapping;
 		}
 
-		public override void Encode(XmlWriter writer)
+		public override void Encode (XmlWriter writer)
 		{
-			WriteFullElement(writer, "NewRemoteHost", "");
-			WriteFullElement(writer, "NewExternalPort", Mapping.PublicPort);
-			WriteFullElement(writer, "NewProtocol", Mapping.Protocol);
+			WriteFullElement (writer, "NewRemoteHost", "");
+			WriteFullElement (writer, "NewExternalPort", Mapping.PublicPort);
+			WriteFullElement (writer, "NewProtocol", Mapping.Protocol);
 		}
 	}
 }

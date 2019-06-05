@@ -42,43 +42,43 @@ namespace Mono.Nat.Pmp
 			PublicAddress = publicAddress;
 		}
 
-		public override async Task<Mapping> CreatePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> CreatePortMapAsync (Mapping mapping)
 		{
 			var message = new CreatePortMappingMessage (mapping);
 			var actualMapping = (MappingResponseMessage) await SendMessageAsync (DeviceEndpoint, message);
 			return actualMapping.Mapping;
 		}
 
-		public override async Task<Mapping> DeletePortMapAsync(Mapping mapping)
+		public override async Task<Mapping> DeletePortMapAsync (Mapping mapping)
 		{
 			var message = new DeletePortMappingMessage (mapping);
 			var actualMapping = (MappingResponseMessage) await SendMessageAsync (DeviceEndpoint, message);
 			return actualMapping.Mapping;
 		}
 
-		public override Task<Mapping[]> GetAllMappingsAsync()
+		public override Task<Mapping []> GetAllMappingsAsync ()
 			=> throw new MappingException (ErrorCode.UnsupportedOperation, "The NAT-PMP protocol does not support listing all mappings");
 
-		public override Task<IPAddress> GetExternalIPAsync()
+		public override Task<IPAddress> GetExternalIPAsync ()
 			=> Task.FromResult (PublicAddress);
 
-		public override Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int publicPort)
+		public override Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int publicPort)
 			=> throw new MappingException (ErrorCode.UnsupportedOperation, "The NAT-PMP protocol does not support retrieving a specific mappings");
 
-		public override bool Equals(object obj)
+		public override bool Equals (object obj)
 		{
 			var device = obj as PmpNatDevice;
-			return (device == null) ? false : this.Equals(device);
+			return (device == null) ? false : this.Equals (device);
 		}
-		
+
 		public override int GetHashCode ()
 		{
-			return PublicAddress.GetHashCode();
+			return PublicAddress.GetHashCode ();
 		}
 
 		public bool Equals (PmpNatDevice other)
 		{
-			return (other == null) ? false : PublicAddress.Equals(other.PublicAddress);
+			return (other == null) ? false : PublicAddress.Equals (other.PublicAddress);
 		}
 
 		static async Task<ResponseMessage> SendMessageAsync (IPEndPoint deviceEndpoint, PortMappingMessage message)
@@ -93,7 +93,7 @@ namespace Mono.Nat.Pmp
 			var receiveTask = ReceiveMessageAsync (udpClient);
 
 			await Task.Delay (delay);
-			for (int i = 0; i < PmpConstants.RetryAttempts && !receiveTask.IsCompleted; i ++) {
+			for (int i = 0; i < PmpConstants.RetryAttempts && !receiveTask.IsCompleted; i++) {
 				delay *= 2;
 				await Task.Delay (delay).ConfigureAwait (false);
 				await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
@@ -105,8 +105,7 @@ namespace Mono.Nat.Pmp
 
 		static async Task<ResponseMessage> ReceiveMessageAsync (UdpClient udpClient)
 		{
-			while (true)
-			{
+			while (true) {
 				var receiveResult = await udpClient.ReceiveAsync ().ConfigureAwait (false);
 				var message = ResponseMessage.Decode (receiveResult.Buffer);
 				return message;
@@ -117,10 +116,10 @@ namespace Mono.Nat.Pmp
 		/// Overridden.
 		/// </summary>
 		/// <returns></returns>
-		public override string ToString( )
+		public override string ToString ()
 		{
-			return String.Format( "PmpNatDevice - Local Address: {0}, Public IP: {1}, Last Seen: {2}",
-				DeviceEndpoint, PublicAddress, LastSeen );
+			return String.Format ("PmpNatDevice - Local Address: {0}, Public IP: {1}, Last Seen: {2}",
+				DeviceEndpoint, PublicAddress, LastSeen);
 		}
 	}
 }

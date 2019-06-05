@@ -69,7 +69,7 @@ namespace Mono.Nat
 		/// Retrieves a list of all mappings on the WAN device.
 		/// </summary>
 		/// <returns></returns>
-		Task<Mapping[]> GetAllMappingsAsync ();
+		Task<Mapping []> GetAllMappingsAsync ();
 
 		/// <summary>
 		/// Gets the external IP address associated with the WAN device.
