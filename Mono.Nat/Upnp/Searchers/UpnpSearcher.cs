@@ -225,15 +225,13 @@ namespace Mono.Nat.Upnp
 				servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 				try {
 					xmldoc.LoadXml (servicesXml.ToString ());
-					response.Close ();
 					break;
 				} catch (XmlException) {
-					// If we can't receive the entire XML within 500ms, then drop the connection
+					// If we can't receive the entire XML within 5 seconds, then drop the connection
 					// Unfortunately not all routers supply a valid ContentLength (mine doesn't)
 					// so this hack is needed to keep testing our recieved data until it gets successfully
 					// parsed by the xmldoc. Without this, the code will never pick up my router.
-					if (abortCount++ > 50) {
-						response.Close ();
+					if (abortCount++ > 5000) {
 						return null;
 					}
 					NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
