@@ -261,6 +261,8 @@ namespace Mono.Nat.Upnp
 							if (controlUrl.IsAbsoluteUri) {
 								deviceEndpoint = new IPEndPoint (IPAddress.Parse (controlUrl.Host), controlUrl.Port);
 								NatUtility.Log ("{0}: New control url: {1}", deviceEndpoint, controlUrl);
+							} else {
+								controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
 							}
 						} catch {
 							controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
