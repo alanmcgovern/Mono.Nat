@@ -140,7 +140,7 @@ namespace Mono.Nat.Pmp
 					}
 
 					for (int i = 0; i < 9; i++) {
-						using (await SocketSendLocker.DisposableWaitAsync ()) {
+						using (await SocketSendLocker.DisposableWaitAsync (currentSearch.Token)) {
 							foreach (var client in sockets) {
 								try {
 									if (gatewayAddress == null) {
@@ -172,7 +172,7 @@ namespace Mono.Nat.Pmp
 			}
 		}
 
-		protected override Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result)
+		protected override Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token)
 		{
 			var response = result.Buffer;
 			var endpoint = result.RemoteEndPoint;

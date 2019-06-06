@@ -109,30 +109,26 @@ namespace Mono.Nat.Upnp
 		async Task Search (byte [] data, IPEndPoint endpoint, TimeSpan? searchInternal, CancellationToken token)
 		{
 			while (!token.IsCancellationRequested) {
-				try {
-					using (await SocketSendLocker.DisposableWaitAsync ()) {
-						foreach (var client in sockets) {
-							for (int i = 0; i < 3; i++) {
-								try {
-									await client.SendAsync (data, data.Length, endpoint);
-								} catch {
+				using (await SocketSendLocker.DisposableWaitAsync (token)) {
+					foreach (var client in sockets) {
+						for (int i = 0; i < 3; i++) {
+							try {
+								await client.SendAsync (data, data.Length, endpoint);
+							} catch {
 
-								}
 							}
 						}
 					}
-
-					if (searchInternal == null)
-						break;
-
-					await Task.Delay (searchInternal.Value, token);
-				} catch (OperationCanceledException) {
-					break;
 				}
+
+				if (searchInternal == null)
+					break;
+
+				await Task.Delay (searchInternal.Value, token);
 			}
 		}
 
-		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result)
+		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token)
 		{
 			// Convert it to a string for easy parsing
 			string dataString = null;
@@ -175,7 +171,7 @@ namespace Mono.Nat.Upnp
 				var deviceLocation = location.Split (new [] { ':' }, 2).Skip (1).FirstOrDefault ();
 				var deviceServiceUri = new Uri (deviceLocation);
 
-				using (await Locker.DisposableWaitAsync ()) {
+				using (await Locker.DisposableWaitAsync (token)) {
 					// If we send 3 requests at a time, ensure we only fetch the services list once
 					// even if three responses are received
 					if (LastFetched.TryGetValue (deviceServiceUri, out DateTime last))
@@ -188,7 +184,7 @@ namespace Mono.Nat.Upnp
 				// Once we've parsed the information we need, we tell the device to retrieve it's service list
 				// Once we successfully receive the service list, the callback provided will be invoked.
 				NatUtility.Log ("Fetching service list: {0}", deviceServiceUri);
-				var d = await GetServicesList (localAddress, deviceServiceUri).ConfigureAwait (false);
+				var d = await GetServicesList (localAddress, deviceServiceUri, token).ConfigureAwait (false);
 				if (d != null)
 					RaiseDeviceFound (d);
 			} catch (Exception ex) {
@@ -200,12 +196,13 @@ namespace Mono.Nat.Upnp
 			}
 		}
 
-		async Task<UpnpNatDevice> GetServicesList (IPAddress localAddress, Uri deviceServiceUri)
+		async Task<UpnpNatDevice> GetServicesList (IPAddress localAddress, Uri deviceServiceUri, CancellationToken token)
 		{
 			// Create a HTTPWebRequest to download the list of services the device offers
 			var request = new GetServicesMessage (deviceServiceUri).Encode (out byte[] body);
 			if (body.Length > 0)
 				NatUtility.Log ("Error: Services Message contained a body");
+			using (token.Register (() => request.Abort ()))
 			using (var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false))
 				return await ServicesReceived (localAddress, deviceServiceUri, response).ConfigureAwait (false);
 		}
@@ -224,7 +221,7 @@ namespace Mono.Nat.Upnp
 			}
 
 			while (true) {
-				var bytesRead = s.Read (buffer, 0, buffer.Length);
+				var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length);
 				servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 				try {
 					xmldoc.LoadXml (servicesXml.ToString ());

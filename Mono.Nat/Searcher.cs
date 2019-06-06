@@ -58,7 +58,7 @@ namespace Mono.Nat
 			SocketSendLocker = new SemaphoreSlim (1, 1);
 		}
 
-		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result);
+		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token);
 
 		async Task ListenAsync (IEnumerable<UdpClient> sockets, CancellationToken token)
 		{
@@ -69,7 +69,7 @@ namespace Mono.Nat
 							if (client.Available > 0) {
 								var localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
 								var data = await client.ReceiveAsync ();
-								await HandleMessageReceived (localAddress, data);
+								await HandleMessageReceived (localAddress, data, token);
 							}
 						} catch (Exception) {
 							// Ignore any errors
