@@ -100,8 +100,8 @@ namespace Mono.Nat
 		public void Stop ()
 		{
 			Cancellation?.Cancel ();
-			ListeningTask?.Wait ();
-			SearchTask?.Wait ();
+			ListeningTask?.WaitAndForget ();
+			SearchTask?.WaitAndForget ();
 
 			Cancellation = null;
 			ListeningTask = null;

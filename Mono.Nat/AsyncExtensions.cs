@@ -28,10 +28,21 @@ namespace Mono.Nat
 			return new SemaphoreSlimDisposable (semaphore);
 		}
 
-		public static async void FireAndForget(this Task task)
+		public static async void FireAndForget (this Task task)
 		{
 			try {
 				await task;
+			} catch (OperationCanceledException) {
+				// If we cancel the task then we don't need to log anything.
+			} catch (Exception ex) {
+				NatUtility.Log ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+			}
+		}
+
+		public static void WaitAndForget (this Task task)
+		{
+			try {
+				task.GetAwaiter ().GetResult ();
 			} catch (OperationCanceledException) {
 				// If we cancel the task then we don't need to log anything.
 			} catch (Exception ex) {
