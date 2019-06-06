@@ -164,9 +164,29 @@ namespace Mono.Nat.Pmp
 			}
 		}
 
-		protected override Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult data)
+		protected override Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result)
 		{
-			Handle (data.Buffer, data.RemoteEndPoint);
+			var response = result.Buffer;
+			var endpoint = result.RemoteEndPoint;
+
+			if (!IsSearchAddress (endpoint.Address))
+				return Task.CompletedTask;
+			if (response.Length != 12)
+				return Task.CompletedTask;
+			if (response [0] != PmpConstants.Version)
+				return Task.CompletedTask;
+			if (response [1] != PmpConstants.ServerNoop)
+				return Task.CompletedTask;
+
+			int errorcode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (response, 2));
+			if (errorcode != 0)
+				NatUtility.Log ("Non zero error: {0}", errorcode);
+
+			var publicIp = new IPAddress (new byte [] { response [8], response [9], response [10], response [11] });
+
+			CurrentSearchCancellation?.Cancel ();
+
+			RaiseDeviceFound (new DeviceEventArgs (new PmpNatDevice (endpoint, publicIp)));
 			return Task.CompletedTask;
 		}
 
@@ -181,23 +201,6 @@ namespace Mono.Nat.Pmp
 
 		void Handle (byte [] response, IPEndPoint endpoint)
 		{
-			if (!IsSearchAddress (endpoint.Address))
-				return;
-			if (response.Length != 12)
-				return;
-			if (response [0] != PmpConstants.Version)
-				return;
-			if (response [1] != PmpConstants.ServerNoop)
-				return;
-			int errorcode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (response, 2));
-			if (errorcode != 0)
-				NatUtility.Log ("Non zero error: {0}", errorcode);
-
-			IPAddress publicIp = new IPAddress (new byte [] { response [8], response [9], response [10], response [11] });
-
-			CurrentSearchCancellation?.Cancel ();
-
-			RaiseDeviceFound (new DeviceEventArgs (new PmpNatDevice (endpoint, publicIp)));
 		}
 	}
 }

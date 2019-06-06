@@ -49,7 +49,7 @@ namespace Mono.Nat
 		protected CancellationTokenSource OverallSearchCancellation;
 		protected Task SearchTask { get; set; }
 
-		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult data);
+		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result);
 
 		async Task ListenAsync (IEnumerable<UdpClient> sockets, CancellationToken token)
 		{

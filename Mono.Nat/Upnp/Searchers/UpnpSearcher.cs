@@ -124,15 +124,11 @@ namespace Mono.Nat.Upnp
 			}
 		}
 
-		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult data)
-		{
-			await Handle (localAddress, data.Buffer);
-		}
-
-		async Task Handle (IPAddress localAddress, byte [] response)
+		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result)
 		{
 			// Convert it to a string for easy parsing
 			string dataString = null;
+			var response = result.Buffer;
 
 			// No matter what, this method should never throw an exception. If something goes wrong
 			// we should still be in a position to handle the next reply correctly.
@@ -198,91 +194,79 @@ namespace Mono.Nat.Upnp
 
 		async Task<UpnpNatDevice> GetServicesList (IPAddress localAddress, Uri deviceServiceUri)
 		{
-			// Save the callback so i can use it again later when i've finished parsing the services available
-
 			// Create a HTTPWebRequest to download the list of services the device offers
-			byte [] body;
-			WebRequest request = new GetServicesMessage (deviceServiceUri).Encode (out body);
+			var request = new GetServicesMessage (deviceServiceUri).Encode (out byte[] body);
 			if (body.Length > 0)
 				NatUtility.Log ("Error: Services Message contained a body");
-			var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false);
-			return await ServicesReceived (localAddress, deviceServiceUri, response).ConfigureAwait (false);
+			using (var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false))
+				return await ServicesReceived (localAddress, deviceServiceUri, response).ConfigureAwait (false);
 		}
 
 		async Task<UpnpNatDevice> ServicesReceived (IPAddress localAddress, Uri deviceServiceUri, HttpWebResponse response)
 		{
-			try {
-				int abortCount = 0;
-				int bytesRead = 0;
-				byte [] buffer = new byte [10240];
-				StringBuilder servicesXml = new StringBuilder ();
-				XmlDocument xmldoc = new XmlDocument ();
-				Stream s = response.GetResponseStream ();
+			int abortCount = 0;
+			byte [] buffer = new byte [10240];
+			StringBuilder servicesXml = new StringBuilder ();
+			XmlDocument xmldoc = new XmlDocument ();
+			Stream s = response.GetResponseStream ();
 
-				if (response.StatusCode != HttpStatusCode.OK) {
-					NatUtility.Log ("{0}: Couldn't get services list: {1}", response.ResponseUri, response.StatusCode);
-					return null; // FIXME: This the best thing to do??
-				}
+			if (response.StatusCode != HttpStatusCode.OK) {
+				NatUtility.Log ("{0}: Couldn't get services list: {1}", response.ResponseUri, response.StatusCode);
+				return null; // FIXME: This the best thing to do??
+			}
 
-				while (true) {
-					bytesRead = s.Read (buffer, 0, buffer.Length);
-					servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
-					try {
-						xmldoc.LoadXml (servicesXml.ToString ());
-						response.Close ();
-						break;
-					} catch (XmlException) {
-						// If we can't receive the entire XML within 500ms, then drop the connection
-						// Unfortunately not all routers supply a valid ContentLength (mine doesn't)
-						// so this hack is needed to keep testing our recieved data until it gets successfully
-						// parsed by the xmldoc. Without this, the code will never pick up my router.
-						if (abortCount++ > 50) {
-							response.Close ();
-							return null;
-						}
-						NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
-						await Task.Delay (10);
-					}
-				}
-
-				NatUtility.Log ("{0}: Parsed services list", response.ResponseUri);
-				XmlNamespaceManager ns = new XmlNamespaceManager (xmldoc.NameTable);
-				ns.AddNamespace ("ns", "urn:schemas-upnp-org:device-1-0");
-				XmlNodeList nodes = xmldoc.SelectNodes ("//*/ns:serviceList", ns);
-
-				foreach (XmlNode node in nodes) {
-					//Go through each service there
-					foreach (XmlNode service in node.ChildNodes) {
-						//If the service is a WANIPConnection, then we have what we want
-						string serviceType = service ["serviceType"].InnerText;
-						NatUtility.Log ("{0}: Found service: {1}", response.ResponseUri, serviceType);
-						StringComparison c = StringComparison.OrdinalIgnoreCase;
-						// TODO: Add support for version 2 of UPnP.
-						if (serviceType.Equals ("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
-							serviceType.Equals ("urn:schemas-upnp-org:service:WANIPConnection:1", c)) {
-							var controlUrl = new Uri (service ["controlURL"].InnerText, UriKind.RelativeOrAbsolute);
-							IPEndPoint deviceEndpoint = new IPEndPoint (IPAddress.Parse (response.ResponseUri.Host), response.ResponseUri.Port);
-							NatUtility.Log ("{0}: Found upnp service at: {1}", response.ResponseUri, controlUrl.OriginalString);
-							try {
-								if (controlUrl.IsAbsoluteUri) {
-									deviceEndpoint = new IPEndPoint (IPAddress.Parse (controlUrl.Host), controlUrl.Port);
-									NatUtility.Log ("{0}: New control url: {1}", deviceEndpoint, controlUrl);
-								}
-							} catch {
-								controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
-								NatUtility.Log ("{0}: Assuming control Uri is relative: {1}", deviceEndpoint, controlUrl);
-							}
-							NatUtility.Log ("{0}: Handshake Complete", deviceEndpoint);
-							return new UpnpNatDevice (localAddress, deviceEndpoint, controlUrl, serviceType);
-						}
-					}
-				}
-			} catch (WebException ex) {
-				// Just drop the connection, FIXME: Should i retry?
-				NatUtility.Log ("{0}: Device denied the connection attempt: {1}", ex.Response.ResponseUri, ex);
-			} finally {
-				if (response != null)
+			while (true) {
+				var bytesRead = s.Read (buffer, 0, buffer.Length);
+				servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
+				try {
+					xmldoc.LoadXml (servicesXml.ToString ());
 					response.Close ();
+					break;
+				} catch (XmlException) {
+					// If we can't receive the entire XML within 500ms, then drop the connection
+					// Unfortunately not all routers supply a valid ContentLength (mine doesn't)
+					// so this hack is needed to keep testing our recieved data until it gets successfully
+					// parsed by the xmldoc. Without this, the code will never pick up my router.
+					if (abortCount++ > 50) {
+						response.Close ();
+						return null;
+					}
+					NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
+					await Task.Delay (10);
+				}
+			}
+
+			NatUtility.Log ("{0}: Parsed services list", response.ResponseUri);
+			XmlNamespaceManager ns = new XmlNamespaceManager (xmldoc.NameTable);
+			ns.AddNamespace ("ns", "urn:schemas-upnp-org:device-1-0");
+			XmlNodeList nodes = xmldoc.SelectNodes ("//*/ns:serviceList", ns);
+
+			foreach (XmlNode node in nodes) {
+				//Go through each service there
+				foreach (XmlNode service in node.ChildNodes) {
+					//If the service is a WANIPConnection, then we have what we want
+					string serviceType = service ["serviceType"].InnerText;
+					NatUtility.Log ("{0}: Found service: {1}", response.ResponseUri, serviceType);
+					StringComparison c = StringComparison.OrdinalIgnoreCase;
+					// TODO: Add support for version 2 of UPnP.
+					if (serviceType.Equals ("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
+						serviceType.Equals ("urn:schemas-upnp-org:service:WANIPConnection:1", c)) {
+						var controlUrl = new Uri (service ["controlURL"].InnerText, UriKind.RelativeOrAbsolute);
+						IPEndPoint deviceEndpoint = new IPEndPoint (IPAddress.Parse (response.ResponseUri.Host), response.ResponseUri.Port);
+						NatUtility.Log ("{0}: Found upnp service at: {1}", response.ResponseUri, controlUrl.OriginalString);
+						try {
+							if (controlUrl.IsAbsoluteUri) {
+								deviceEndpoint = new IPEndPoint (IPAddress.Parse (controlUrl.Host), controlUrl.Port);
+								NatUtility.Log ("{0}: New control url: {1}", deviceEndpoint, controlUrl);
+							}
+						} catch {
+							controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
+							NatUtility.Log ("{0}: Assuming control Uri is relative: {1}", deviceEndpoint, controlUrl);
+						}
+						NatUtility.Log ("{0}: Handshake Complete", deviceEndpoint);
+						return new UpnpNatDevice (localAddress, deviceEndpoint, controlUrl, serviceType);
+					}
+				}
 			}
 
 			//If we get here, it means that we didn't get WANIPConnection service, which means no uPnP forwarding
