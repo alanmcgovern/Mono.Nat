@@ -131,19 +131,19 @@ namespace Mono.Nat.Upnp
 			if (body.Length > 0) {
 				request.ContentLength = body.Length;
 				using (var stream = await request.GetRequestStreamAsync ().ConfigureAwait (false))
-					stream.Write (body, 0, body.Length);
+					await stream.WriteAsync (body, 0, body.Length).ConfigureAwait (false);
 			}
 
 			try {
 				using (var response = await request.GetResponseAsync ().ConfigureAwait (false))
-					return DecodeMessageFromResponse (response.GetResponseStream (), response.ContentLength);
+					return await DecodeMessageFromResponse (response.GetResponseStream (), (int) response.ContentLength);
 			} catch (WebException ex) {
 				// Even if the request "failed" i want to continue on to read out the response from the router
 				using (var response = ex.Response as HttpWebResponse) {
 					if (response == null)
 						throw new MappingException ("Unexpected error sending a message to the device", ex);
 					else
-						return DecodeMessageFromResponse (response.GetResponseStream (), response.ContentLength);
+						return await DecodeMessageFromResponse (response.GetResponseStream (), (int) response.ContentLength);
 				}
 			}
 		}
@@ -166,22 +166,21 @@ namespace Mono.Nat.Upnp
 			return DeviceEndpoint.GetHashCode () ^ DeviceControlUri.GetHashCode ();
 		}
 
-		ResponseMessage DecodeMessageFromResponse (Stream s, long length)
+		async Task<ResponseMessage> DecodeMessageFromResponse (Stream s, int length)
 		{
 			StringBuilder data = new StringBuilder ();
 			int bytesRead;
-			int totalBytesRead = 0;
 			byte [] buffer = new byte [10240];
 
 			// Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
 			if (length != -1) {
-				while (totalBytesRead < length) {
-					bytesRead = s.Read (buffer, 0, buffer.Length);
+				while (length > 0) {
+					bytesRead = await s.ReadAsync (buffer, 0, Math.Min (buffer.Length, length)).ConfigureAwait (false);
 					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
-					totalBytesRead += bytesRead;
+					length -= bytesRead;
 				}
 			} else {
-				while ((bytesRead = s.Read (buffer, 0, buffer.Length)) != 0)
+				while ((bytesRead = await s.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false)) != 0)
 					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 			}
 
