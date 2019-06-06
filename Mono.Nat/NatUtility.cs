@@ -66,30 +66,44 @@ namespace Mono.Nat
 				logger.WriteLine (format, args);
 		}
 
+		/// <summary>
+		/// Sends a single (non-periodic) message to the specified IP address to see if it supports the
+		/// specified port mapping protocol, and begin listening indefinitely for responses.
+		/// </summary>
+		/// <param name="gatewayAddress">The IP address</param>
+		/// <param name="type"></param>
 		public static void Search (IPAddress gatewayAddress, NatProtocol type)
 		{
 			lock (Locker) {
 				if (type == NatProtocol.Pmp) {
-					PmpSearcher.Instance.Search (gatewayAddress);
+					PmpSearcher.Instance.SearchAsync (gatewayAddress).FireAndForget ();
 				} else if (type == NatProtocol.Upnp) {
-					UpnpSearcher.Instance.Search (gatewayAddress);
+					UpnpSearcher.Instance.SearchAsync (gatewayAddress).FireAndForget ();
 				} else {
 					throw new InvalidOperationException ("Unsuported type given");
 				}
 			}
 		}
 
+		/// <summary>
+		/// Periodically send a multicast UDP message to scan for new devices, and begin listening indefinitely
+		/// for responses.
+		/// </summary>
+		/// <param name="devices">The protocols which should be searched for. An empty array will result in all supported protocols being used.</param>
 		public static void StartDiscovery (params NatProtocol [] devices)
 		{
 			lock (Locker) {
 				if (devices.Length == 0 || devices.Contains (NatProtocol.Pmp))
-					PmpSearcher.Instance.Search ();
+					PmpSearcher.Instance.SearchAsync ().FireAndForget ();
 
 				if (devices.Length == 0 || devices.Contains (NatProtocol.Upnp))
-					UpnpSearcher.Instance.Search ();
+					UpnpSearcher.Instance.SearchAsync ().FireAndForget ();
 			}
 		}
 
+		/// <summary>
+		/// Stop listening for responses to the search messages, and cancel any pending searches.
+		/// </summary>
 		public static void StopDiscovery ()
 		{
 			lock (Locker) {

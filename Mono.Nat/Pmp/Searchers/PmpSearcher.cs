@@ -107,20 +107,24 @@ namespace Mono.Nat.Pmp
 			}
 		}
 
-		public override void Search ()
+		public override async Task SearchAsync ()
 		{
-			Search (null, SearchPeriod);
+			// Cancel any existing continuous search operation.
+			OverallSearchCancellation?.Cancel ();
+			if (SearchTask != null)
+				await SearchTask;
+
+			// Create a CancellationTokenSource for the search we're about to perform.
+			BeginListening (sockets);
+			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
+			SearchTask = Search (null, SearchPeriod, OverallSearchCancellation.Token);
+			await SearchTask;
 		}
 
-		public override void Search (IPAddress gatewayAddress)
+		public override async Task SearchAsync (IPAddress gatewayAddress)
 		{
-			Search (gatewayAddress, null);
-		}
-
-		void Search (IPAddress gatewayAddress, TimeSpan? repeatInterval)
-		{
-			PrepareToSearch (sockets);
-			SearchTask = Search (gatewayAddress, repeatInterval, OverallSearchCancellation.Token);
+			BeginListening (sockets);
+			await Search (gatewayAddress, null, Cancellation.Token).ConfigureAwait (false);
 		}
 
 		async Task Search (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken overallSearchToken)
@@ -130,20 +134,24 @@ namespace Mono.Nat.Pmp
 			while (!overallSearchToken.IsCancellationRequested) {
 				try {
 					var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (overallSearchToken);
-					var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
-					oldSearch?.Cancel ();
+					if (repeatInterval.HasValue) {
+						var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
+						oldSearch?.Cancel ();
+					}
 
 					for (int i = 0; i < 9; i++) {
-						foreach (var client in sockets) {
-							try {
-								if (gatewayAddress == null) {
-									foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
-										client.Send (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
-								} else {
-									client.Send (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
-								}
-							} catch (Exception) {
+						using (await SocketSendLocker.DisposableWaitAsync ()) {
+							foreach (var client in sockets) {
+								try {
+									if (gatewayAddress == null) {
+										foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
+											await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
+									} else {
+										await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
+									}
+								} catch (Exception) {
 
+								}
 							}
 						}
 
@@ -197,10 +205,6 @@ namespace Mono.Nat.Pmp
 					if (gatewayEndpoint.Address.Equals (address))
 						return true;
 			return false;
-		}
-
-		void Handle (byte [] response, IPEndPoint endpoint)
-		{
 		}
 	}
 }

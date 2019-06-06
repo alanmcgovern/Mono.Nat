@@ -50,10 +50,12 @@ namespace Mono.Nat
 		protected CancellationTokenSource Cancellation;
 		protected CancellationTokenSource OverallSearchCancellation;
 		protected Task SearchTask { get; set; }
+		protected SemaphoreSlim SocketSendLocker { get; }
 
 		protected Searcher ()
 		{
 			Devices = new Dictionary<NatDevice, NatDevice> ();
+			SocketSendLocker = new SemaphoreSlim (1, 1);
 		}
 
 		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result);
@@ -81,7 +83,7 @@ namespace Mono.Nat
 			}
 		}
 
-		protected void PrepareToSearch (IEnumerable<UdpClient> sockets)
+		protected void BeginListening (IEnumerable<UdpClient> sockets)
 		{
 			// Begin listening, if we are not already listening.
 			if (!Listening) {
@@ -89,18 +91,11 @@ namespace Mono.Nat
 				Cancellation = new CancellationTokenSource ();
 				ListeningTask = ListenAsync (sockets, Cancellation.Token);
 			}
-
-			// Cancel any existing search operation.
-			OverallSearchCancellation?.Cancel ();
-			SearchTask?.Wait ();
-
-			// Create a CancellationTokenSource for the search we're about to perform.
-			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
 		}
 
-		public abstract void Search ();
+		public abstract Task SearchAsync ();
 
-		public abstract void Search (IPAddress gatewayAddress);
+		public abstract Task SearchAsync (IPAddress gatewayAddress);
 
 		public void Stop ()
 		{

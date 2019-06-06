@@ -82,34 +82,42 @@ namespace Mono.Nat.Upnp
 			return clients;
 		}
 
-		public override void Search ()
+		public override async Task SearchAsync ()
 		{
+			// Cancel any existing continuous search operation.
+			OverallSearchCancellation?.Cancel ();
+			if (SearchTask != null)
+				await SearchTask;
+
+			// Create a CancellationTokenSource for the search we're about to perform.
+			BeginListening (sockets);
+			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
+
 			var data = DiscoverDeviceMessage.EncodeSSDP ();
-			Search (data, SearchEndpoint, SearchPeriod);
+			SearchTask = Search (data, SearchEndpoint, SearchPeriod, OverallSearchCancellation.Token);
+			await SearchTask;
 		}
 
-		public override void Search (IPAddress gatewayAddress)
+		public override async Task SearchAsync (IPAddress gatewayAddress)
 		{
+			BeginListening (sockets);
+
 			var data = DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
-			Search (data, new IPEndPoint (gatewayAddress, SearchEndpoint.Port), null);
-		}
-
-		void Search (byte [] data, IPEndPoint gatewayAddress, TimeSpan? searchInternal)
-		{
-			PrepareToSearch (sockets);
-			SearchTask = Search (data, gatewayAddress, searchInternal, OverallSearchCancellation.Token);
+			await Search (data, new IPEndPoint (gatewayAddress, SearchEndpoint.Port), null, Cancellation.Token);
 		}
 
 		async Task Search (byte [] data, IPEndPoint endpoint, TimeSpan? searchInternal, CancellationToken token)
 		{
 			while (!token.IsCancellationRequested) {
 				try {
-					foreach (var client in sockets) {
-						for (int i = 0; i < 3; i++) {
-							try {
-								client.Send (data, data.Length, endpoint);
-							} catch {
+					using (await SocketSendLocker.DisposableWaitAsync ()) {
+						foreach (var client in sockets) {
+							for (int i = 0; i < 3; i++) {
+								try {
+									await client.SendAsync (data, data.Length, endpoint);
+								} catch {
 
+								}
 							}
 						}
 					}

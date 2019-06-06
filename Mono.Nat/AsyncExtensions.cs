@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
-	static class SemaphoreSlimExtensions
+	static class AsyncExtensions
 	{
 		class SemaphoreSlimDisposable : IDisposable
 		{
@@ -26,6 +26,17 @@ namespace Mono.Nat
 		{
 			await semaphore.WaitAsync ();
 			return new SemaphoreSlimDisposable (semaphore);
+		}
+
+		public static async void FireAndForget(this Task task)
+		{
+			try {
+				await task;
+			} catch (OperationCanceledException) {
+				// If we cancel the task then we don't need to log anything.
+			} catch (Exception ex) {
+				NatUtility.Log ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+			}
 		}
 	}
 }
