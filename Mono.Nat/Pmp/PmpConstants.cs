@@ -30,27 +30,18 @@ namespace Mono.Nat.Pmp
 {
 	static class PmpConstants
 	{
-		public const byte Version = (byte) 0;
+		public const byte Version = 0;
 
-		public const byte OperationCode = (byte) 0;
-		public const byte OperationCodeUdp = (byte) 1;
-		public const byte OperationCodeTcp = (byte) 2;
-		public const byte ServerNoop = (byte) 128;
+		public const byte OperationCode = 0;
+		public const byte OperationCodeUdp = 1;
+		public const byte OperationCodeTcp = 2;
+		public const byte ServerNoop = 128;
 
-		public const int ClientPort = 5350;
 		public const int ServerPort = 5351;
 
-		public const int RetryDelay = 250;
+		public static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds (250);
 		public const int RetryAttempts = 8;
 
-		public const int RecommendedLeaseTime = 60 * 60;
-		public const int DefaultLeaseTime = RecommendedLeaseTime;
-
-		public const short ResultCodeSuccess = 0;
-		public const short ResultCodeUnsupportedVersion = 1;
-		public const short ResultCodeNotAuthorized = 2;
-		public const short ResultCodeNetworkFailure = 3;
-		public const short ResultCodeOutOfResources = 4;
-		public const short ResultCodeUnsupportedOperationCode = 5;
+		public static readonly TimeSpan RecommendedLeaseTime = TimeSpan.FromHours (2);
 	}
 }

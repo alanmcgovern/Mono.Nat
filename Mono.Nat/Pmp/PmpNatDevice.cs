@@ -83,19 +83,18 @@ namespace Mono.Nat.Pmp
 
 		static async Task<ResponseMessage> SendMessageAsync (IPEndPoint deviceEndpoint, PortMappingMessage message)
 		{
-			int delay = PmpConstants.RetryDelay;
-			UdpClient udpClient = new UdpClient ();
-			CancellationTokenSource tcs = new CancellationTokenSource ();
+			var udpClient = new UdpClient ();
+			var tcs = new CancellationTokenSource ();
 			tcs.Token.Register (() => udpClient.Dispose ());
 
 			var data = message.Encode ();
 			await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
 			var receiveTask = ReceiveMessageAsync (udpClient);
 
-			await Task.Delay (delay);
+			var delay = PmpConstants.RetryDelay;
 			for (int i = 0; i < PmpConstants.RetryAttempts && !receiveTask.IsCompleted; i++) {
-				delay *= 2;
 				await Task.Delay (delay).ConfigureAwait (false);
+				delay = TimeSpan.FromTicks (delay.Ticks * 2);
 				await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
 			}
 

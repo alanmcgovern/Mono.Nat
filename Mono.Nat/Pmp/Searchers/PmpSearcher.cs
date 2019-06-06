@@ -125,7 +125,7 @@ namespace Mono.Nat.Pmp
 
 		async Task Search (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken overallSearchToken)
 		{
-			var timeout = PmpConstants.RetryDelay;
+			var delay = PmpConstants.RetryDelay;
 			var buffer = new [] { PmpConstants.Version, PmpConstants.OperationCode };
 			while (!overallSearchToken.IsCancellationRequested) {
 				try {
@@ -148,8 +148,8 @@ namespace Mono.Nat.Pmp
 						}
 
 						try {
-							await Task.Delay (timeout, currentSearch.Token);
-							timeout *= 2;
+							await Task.Delay (delay, currentSearch.Token);
+							delay = TimeSpan.FromTicks (delay.Ticks * 2);
 						} catch (OperationCanceledException) {
 							break;
 						}

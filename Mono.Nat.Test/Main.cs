@@ -55,7 +55,8 @@ namespace Mono.Nat.Test {
 
 		private async void DeviceFound(object sender, DeviceEventArgs args) {
 
-			using (await locker.DisposableWaitAsync ()) {
+			await locker.WaitAsync ();
+			try {
 				INatDevice device = args.Device;
 
 				// Only interact with one device at a time. Some devices support both
@@ -124,6 +125,8 @@ namespace Mono.Nat.Test {
 
 				Console.WriteLine("External IP: {0}", await device.GetExternalIPAsync());
 				Console.WriteLine("Done...");
+			} finally {
+				locker.Release ();
 			}
 		}
 

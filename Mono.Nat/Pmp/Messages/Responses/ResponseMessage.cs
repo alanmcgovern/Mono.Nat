@@ -45,7 +45,7 @@ namespace Mono.Nat.Pmp
 			if (opCode == PmpConstants.OperationCodeUdp)
 				protocol = Protocol.Udp;
 
-			short resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
+			var resultCode = (ErrorCode) IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
 			uint epoch = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
 			int privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
@@ -53,7 +53,7 @@ namespace Mono.Nat.Pmp
 
 			uint lifetime = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 
-			if (publicPort < 0 || privatePort < 0 || resultCode != PmpConstants.ResultCodeSuccess)
+			if (publicPort < 0 || privatePort < 0 || resultCode != ErrorCode.Success)
 				throw new MappingException ((ErrorCode) resultCode, "Could not modify the port map");
 
 			var mapping = new Mapping (protocol, privatePort, publicPort, (int) lifetime, null);
