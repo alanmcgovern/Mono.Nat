@@ -87,7 +87,7 @@ namespace Mono.Nat.Upnp
 			// Cancel any existing continuous search operation.
 			OverallSearchCancellation?.Cancel ();
 			if (SearchTask != null)
-				await SearchTask;
+				await SearchTask.CatchExceptions ();
 
 			// Create a CancellationTokenSource for the search we're about to perform.
 			BeginListening (sockets);
