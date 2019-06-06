@@ -45,8 +45,6 @@ namespace Mono.Nat
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
 
-		static HashSet<INatDevice> Devices { get; }
-
 		static readonly object Locker = new object ();
 
 		public static TextWriter Logger { get; set; }
@@ -55,24 +53,9 @@ namespace Mono.Nat
 
 		static NatUtility ()
 		{
-			Devices = new HashSet<INatDevice> ();
-
 			foreach (var searcher in new ISearcher [] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
-				searcher.DeviceFound += (o, e) =>
-				{
-					lock (Devices)
-						if (!Devices.Add (e.Device))
-							return;
-					DeviceFound?.Invoke (searcher, e);
-				};
-
-				searcher.DeviceLost += (o, e) =>
-				{
-					lock (Devices)
-						if (!Devices.Remove (e.Device))
-							return;
-					DeviceLost?.Invoke (searcher, e);
-				};
+				searcher.DeviceFound += (o, e) => DeviceFound?.Invoke (o, e);
+				searcher.DeviceLost += (o, e) => DeviceLost?.Invoke (o, e);
 			}
 		}
 
@@ -81,6 +64,19 @@ namespace Mono.Nat
 			TextWriter logger = Logger;
 			if (logger != null)
 				logger.WriteLine (format, args);
+		}
+
+		public static void Search (IPAddress gatewayAddress, NatProtocol type)
+		{
+			lock (Locker) {
+				if (type == NatProtocol.Pmp) {
+					PmpSearcher.Instance.Search (gatewayAddress);
+				} else if (type == NatProtocol.Upnp) {
+					UpnpSearcher.Instance.Search (gatewayAddress);
+				} else {
+					throw new InvalidOperationException ("Unsuported type given");
+				}
+			}
 		}
 
 		public static void StartDiscovery (params NatProtocol [] devices)
@@ -99,19 +95,6 @@ namespace Mono.Nat
 			lock (Locker) {
 				PmpSearcher.Instance.Stop ();
 				UpnpSearcher.Instance.Stop ();
-			}
-		}
-
-		public static void Search (IPAddress gatewayAddress, NatProtocol type)
-		{
-			lock (Locker) {
-				if (type == NatProtocol.Pmp) {
-					PmpSearcher.Instance.Search (gatewayAddress);
-				} else if (type == NatProtocol.Upnp) {
-					UpnpSearcher.Instance.Search (gatewayAddress);
-				} else {
-					throw new InvalidOperationException ("Unsuported type given");
-				}
 			}
 		}
 	}

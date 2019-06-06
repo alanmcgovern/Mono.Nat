@@ -186,7 +186,7 @@ namespace Mono.Nat.Pmp
 
 			CurrentSearchCancellation?.Cancel ();
 
-			RaiseDeviceFound (new DeviceEventArgs (new PmpNatDevice (endpoint, publicIp)));
+			RaiseDeviceFound (new PmpNatDevice (endpoint, publicIp));
 			return Task.CompletedTask;
 		}
 

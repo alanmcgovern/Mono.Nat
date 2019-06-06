@@ -40,14 +40,21 @@ namespace Mono.Nat
 		public event EventHandler<DeviceEventArgs> DeviceFound;
 		public event EventHandler<DeviceEventArgs> DeviceLost;
 
+
 		public bool Listening => ListeningTask != null;
 		public abstract NatProtocol Protocol { get; }
 
+		Dictionary<NatDevice, NatDevice> Devices { get; }
 		Task ListeningTask { get; set; }
 
 		protected CancellationTokenSource Cancellation;
 		protected CancellationTokenSource OverallSearchCancellation;
 		protected Task SearchTask { get; set; }
+
+		protected Searcher ()
+		{
+			Devices = new Dictionary<NatDevice, NatDevice> ();
+		}
 
 		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result);
 
@@ -106,10 +113,32 @@ namespace Mono.Nat
 			SearchTask = null;
 		}
 
-		protected void RaiseDeviceFound (DeviceEventArgs e)
-			=> DeviceFound?.Invoke (this, e);
+		protected void RaiseDeviceFound (NatDevice device)
+		{
+			NatDevice actualDevice;
+			lock (Devices) {
+				if (Devices.TryGetValue (device, out actualDevice))
+					actualDevice.LastSeen = DateTime.UtcNow;
+				else
+					Devices[device] = device;
+			}
+			// If we did not find the device in the dictionary, raise an event as it's the first time
+			// we've encountered it!
+			if (actualDevice == null)
+				DeviceFound?.Invoke (this, new DeviceEventArgs (device));
+		}
 
-		protected void RaiseDeviceLost (DeviceEventArgs e)
-			=> DeviceLost?.Invoke (this, e);
+		protected void RaiseDeviceLost (NatDevice device)
+		{
+			NatDevice actualDevice;
+			lock (Devices) {
+				// If the device is not in the dictionary, bail out.
+				if (!Devices.TryGetValue (device, out actualDevice))
+					return;
+				Devices.Remove (actualDevice);
+			}
+
+			DeviceLost?.Invoke (this, new DeviceEventArgs (actualDevice));
+		}
 	}
 }

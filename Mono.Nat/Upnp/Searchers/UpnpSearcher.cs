@@ -182,7 +182,7 @@ namespace Mono.Nat.Upnp
 				NatUtility.Log ("Fetching service list: {0}", deviceServiceUri);
 				var d = await GetServicesList (localAddress, deviceServiceUri).ConfigureAwait (false);
 				if (d != null)
-					RaiseDeviceFound (new DeviceEventArgs (d));
+					RaiseDeviceFound (d);
 			} catch (Exception ex) {
 				Trace.WriteLine ("Unhandled exception when trying to decode a device's response Send me the following data: ");
 				Trace.WriteLine ("ErrorMessage:");
