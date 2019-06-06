@@ -40,7 +40,7 @@ namespace Mono.Nat
 		IPEndPoint DeviceEndpoint { get; }
 
 		/// <summary>
-		/// The time the last message was received from the WAN device.
+		/// The UTC time the last message was received from the WAN device.
 		/// </summary>
 		DateTime LastSeen { get; }
 

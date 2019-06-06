@@ -35,7 +35,7 @@ namespace Mono.Nat
 	abstract class NatDevice : INatDevice
 	{
 		public DateTime LastSeen { get; internal set; }
-		public IPEndPoint DeviceEndpoint { get; protected set; }
+		public IPEndPoint DeviceEndpoint { get; }
 		public NatProtocol NatProtocol { get; }
 
 		protected NatDevice (IPEndPoint deviceEndpoint, NatProtocol natProtocol)
