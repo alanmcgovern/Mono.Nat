@@ -63,23 +63,19 @@ namespace Mono.Nat
 		async Task ListenAsync (IEnumerable<UdpClient> sockets, CancellationToken token)
 		{
 			while (!token.IsCancellationRequested) {
-				try {
-					foreach (UdpClient client in sockets) {
-						try {
-							if (client.Available > 0) {
-								var localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
-								var data = await client.ReceiveAsync ();
-								await HandleMessageReceived (localAddress, data, token);
-							}
-						} catch (Exception) {
-							// Ignore any errors
+				foreach (UdpClient client in sockets) {
+					try {
+						if (client.Available > 0) {
+							var localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
+							var data = await client.ReceiveAsync ();
+							await HandleMessageReceived (localAddress, data, token);
 						}
+					} catch (Exception) {
+						// Ignore any errors
 					}
-
-					await Task.Delay (10, token).ConfigureAwait (false);
-				} catch (OperationCanceledException) {
-					break;
 				}
+
+				await Task.Delay (10, token).ConfigureAwait (false);
 			}
 		}
 

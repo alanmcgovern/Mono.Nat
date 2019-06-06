@@ -132,43 +132,40 @@ namespace Mono.Nat.Pmp
 			var delay = PmpConstants.RetryDelay;
 			var buffer = new [] { PmpConstants.Version, PmpConstants.OperationCode };
 			while (!overallSearchToken.IsCancellationRequested) {
-				try {
-					var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (overallSearchToken);
-					if (repeatInterval.HasValue) {
-						var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
-						oldSearch?.Cancel ();
-					}
+				var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (overallSearchToken);
+				if (repeatInterval.HasValue) {
+					var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
+					oldSearch?.Cancel ();
+				}
 
-					for (int i = 0; i < 9; i++) {
-						using (await SocketSendLocker.DisposableWaitAsync (currentSearch.Token)) {
-							foreach (var client in sockets) {
-								try {
-									if (gatewayAddress == null) {
-										foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
-											await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
-									} else {
-										await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
-									}
-								} catch (Exception) {
-
+				for (int i = 0; i < 9; i++) {
+					using (await SocketSendLocker.DisposableWaitAsync (overallSearchToken)) {
+						foreach (var client in sockets) {
+							try {
+								if (gatewayAddress == null) {
+									foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
+										await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
+								} else {
+									await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
 								}
+							} catch (Exception) {
+
 							}
 						}
-
-						try {
-							await Task.Delay (delay, currentSearch.Token);
-							delay = TimeSpan.FromTicks (delay.Ticks * 2);
-						} catch (OperationCanceledException) {
-							break;
-						}
 					}
 
-					if (repeatInterval == null)
+					try {
+						await Task.Delay (delay, currentSearch.Token);
+						delay = TimeSpan.FromTicks (delay.Ticks * 2);
+					} catch (OperationCanceledException) {
 						break;
-
-					await Task.Delay (repeatInterval.Value, overallSearchToken);
-				} catch (OperationCanceledException) {
+					}
 				}
+
+				if (repeatInterval == null)
+					break;
+
+				await Task.Delay (repeatInterval.Value, overallSearchToken);
 			}
 		}
 
