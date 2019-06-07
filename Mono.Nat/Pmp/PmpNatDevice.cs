@@ -66,20 +66,13 @@ namespace Mono.Nat.Pmp
 			=> throw new MappingException (ErrorCode.UnsupportedOperation, "The NAT-PMP protocol does not support retrieving a specific mappings");
 
 		public override bool Equals (object obj)
-		{
-			var device = obj as PmpNatDevice;
-			return (device == null) ? false : this.Equals (device);
-		}
+			=> Equals (obj as PmpNatDevice);
 
 		public override int GetHashCode ()
-		{
-			return PublicAddress.GetHashCode ();
-		}
+			=> PublicAddress.GetHashCode ();
 
 		public bool Equals (PmpNatDevice other)
-		{
-			return (other == null) ? false : PublicAddress.Equals (other.PublicAddress);
-		}
+			=> other != null && PublicAddress.Equals (other.PublicAddress);
 
 		static async Task<ResponseMessage> SendMessageAsync (IPEndPoint deviceEndpoint, PortMappingMessage message)
 		{

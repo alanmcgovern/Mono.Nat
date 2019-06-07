@@ -45,7 +45,7 @@ namespace Mono.Nat.Upnp
 		internal Uri DeviceControlUri { get; private set; }
 
 		/// <summary>
-		/// The local IP address
+		/// The IP address of the LAN device (the current machine)
 		/// </summary>
 		IPAddress LocalAddress { get; }
 
@@ -149,22 +149,13 @@ namespace Mono.Nat.Upnp
 		}
 
 		public override bool Equals (object obj)
-		{
-			UpnpNatDevice device = obj as UpnpNatDevice;
-			return device != null && Equals ((device));
-		}
+			=> Equals (obj as UpnpNatDevice);
 
 		public bool Equals (UpnpNatDevice other)
-		{
-			return other != null
-				&& DeviceEndpoint.Equals (other.DeviceEndpoint)
-				&& DeviceControlUri == other.DeviceControlUri;
-		}
+			=> other != null && DeviceControlUri == other.DeviceControlUri;
 
 		public override int GetHashCode ()
-		{
-			return DeviceEndpoint.GetHashCode () ^ DeviceControlUri.GetHashCode ();
-		}
+			=> DeviceControlUri.GetHashCode ();
 
 		async Task<ResponseMessage> DecodeMessageFromResponse (Stream s, int length)
 		{

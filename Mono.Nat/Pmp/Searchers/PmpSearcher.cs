@@ -28,7 +28,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -117,6 +116,7 @@ namespace Mono.Nat.Pmp
 			// Create a CancellationTokenSource for the search we're about to perform.
 			BeginListening (sockets);
 			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
+
 			SearchTask = Search (null, SearchPeriod, OverallSearchCancellation.Token);
 			await SearchTask;
 		}
