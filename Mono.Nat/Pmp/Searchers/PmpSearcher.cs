@@ -40,37 +40,29 @@ namespace Mono.Nat.Pmp
 {
 	class PmpSearcher : Searcher
 	{
-		public static PmpSearcher Instance { get; } = new PmpSearcher ();
-
-		static List<UdpClient> sockets;
-		static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
-
-		public override NatProtocol Protocol => NatProtocol.Pmp;
-
-		CancellationTokenSource CurrentSearchCancellation;
+		public static ISearcher Instance { get; }
 
 		static PmpSearcher ()
 		{
-			sockets = new List<UdpClient> ();
-			gatewayLists = new Dictionary<UdpClient, List<IPEndPoint>> ();
+			var clients = new Dictionary<UdpClient, List<IPAddress>> ();
 
 			try {
 				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ()) {
 					if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
 						continue;
 					IPInterfaceProperties properties = n.GetIPProperties ();
-					List<IPEndPoint> gatewayList = new List<IPEndPoint> ();
+					var gatewayList = new List<IPAddress> ();
 
 					foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses) {
 						if (gateway.Address.AddressFamily == AddressFamily.InterNetwork) {
-							gatewayList.Add (new IPEndPoint (gateway.Address, PmpConstants.ServerPort));
+							gatewayList.Add (gateway.Address);
 						}
 					}
 					if (gatewayList.Count == 0) {
 						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
 						foreach (var gw2 in properties.DnsAddresses) {
 							if (gw2.AddressFamily == AddressFamily.InterNetwork) {
-								gatewayList.Add (new IPEndPoint (gw2, PmpConstants.ServerPort));
+								gatewayList.Add (gw2);
 							}
 						}
 						foreach (var unicast in properties.UnicastAddresses) {
@@ -79,7 +71,7 @@ namespace Mono.Nat.Pmp
 							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
 								var bytes = unicast.Address.GetAddressBytes ();
 								bytes [3] = 1;
-								gatewayList.Add (new IPEndPoint (new IPAddress (bytes), PmpConstants.ServerPort));
+								gatewayList.Add (new IPAddress (bytes));
 							}
 						}
 					}
@@ -95,8 +87,7 @@ namespace Mono.Nat.Pmp
 									continue; // Move on to the next address.
 								}
 
-								gatewayLists.Add (client, gatewayList);
-								sockets.Add (client);
+								clients.Add (client, gatewayList);
 							}
 						}
 					}
@@ -104,68 +95,44 @@ namespace Mono.Nat.Pmp
 			} catch (Exception) {
 				// NAT-PMP does not use multicast, so there isn't really a good fallback.
 			}
+
+			Instance = new PmpSearcher (new SocketGroup (clients, PmpConstants.ServerPort));
 		}
 
-		public override async Task SearchAsync ()
+		public override NatProtocol Protocol => NatProtocol.Pmp;
+
+		PmpSearcher (SocketGroup sockets)
+			: base (sockets)
 		{
-			// Cancel any existing continuous search operation.
-			OverallSearchCancellation?.Cancel ();
-			if (SearchTask != null)
-				await SearchTask.CatchExceptions ();
 
-			// Create a CancellationTokenSource for the search we're about to perform.
-			BeginListening (sockets);
-			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
-
-			SearchTask = Search (null, SearchPeriod, OverallSearchCancellation.Token);
-			await SearchTask;
 		}
 
-		public override async Task SearchAsync (IPAddress gatewayAddress)
+		protected override async Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
 		{
-			BeginListening (sockets);
-			await Search (gatewayAddress, null, Cancellation.Token).ConfigureAwait (false);
-		}
+			do {
+				var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (token);
+				Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch)?.Cancel ();
 
-		async Task Search (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken overallSearchToken)
-		{
-			var delay = PmpConstants.RetryDelay;
-			var buffer = new [] { PmpConstants.Version, PmpConstants.OperationCode };
-			while (!overallSearchToken.IsCancellationRequested) {
-				var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (overallSearchToken);
-				if (repeatInterval.HasValue) {
-					var oldSearch = Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch);
-					oldSearch?.Cancel ();
+				try {
+					await SearchOnce (gatewayAddress, currentSearch.Token);
+				} catch (OperationCanceledException) {
+					token.ThrowIfCancellationRequested ();
 				}
-
-				for (int i = 0; i < 9; i++) {
-					using (await SocketSendLocker.DisposableWaitAsync (overallSearchToken)) {
-						foreach (var client in sockets) {
-							try {
-								if (gatewayAddress == null) {
-									foreach (IPEndPoint gatewayEndpoint in gatewayLists [client])
-										await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayEndpoint.Address, PmpConstants.ServerPort));
-								} else {
-									await client.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, PmpConstants.ServerPort));
-								}
-							} catch (Exception) {
-
-							}
-						}
-					}
-
-					try {
-						await Task.Delay (delay, currentSearch.Token);
-						delay = TimeSpan.FromTicks (delay.Ticks * 2);
-					} catch (OperationCanceledException) {
-						break;
-					}
-				}
-
-				if (repeatInterval == null)
+				if (!repeatInterval.HasValue)
 					break;
+				await Task.Delay (repeatInterval.Value, token);
+			} while (true);
+		}
 
-				await Task.Delay (repeatInterval.Value, overallSearchToken);
+		async Task SearchOnce (IPAddress gatewayAddress, CancellationToken token)
+		{
+			var buffer = new [] { PmpConstants.Version, PmpConstants.OperationCode };
+			var delay = PmpConstants.RetryDelay;
+
+			for (int i = 0; i < PmpConstants.RetryAttempts; i ++) {
+				await Clients.SendAsync (buffer, gatewayAddress, token);
+				await Task.Delay (delay, token);
+				delay = TimeSpan.FromTicks (delay.Ticks * 2);
 			}
 		}
 
@@ -174,8 +141,6 @@ namespace Mono.Nat.Pmp
 			var response = result.Buffer;
 			var endpoint = result.RemoteEndPoint;
 
-			if (!IsSearchAddress (endpoint.Address))
-				return Task.CompletedTask;
 			if (response.Length != 12)
 				return Task.CompletedTask;
 			if (response [0] != PmpConstants.Version)
@@ -189,19 +154,8 @@ namespace Mono.Nat.Pmp
 
 			var publicIp = new IPAddress (new byte [] { response [8], response [9], response [10], response [11] });
 
-			CurrentSearchCancellation?.Cancel ();
-
 			RaiseDeviceFound (new PmpNatDevice (endpoint, publicIp));
 			return Task.CompletedTask;
-		}
-
-		bool IsSearchAddress (IPAddress address)
-		{
-			foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
-				foreach (IPEndPoint gatewayEndpoint in gatewayList)
-					if (gatewayEndpoint.Address.Equals (address))
-						return true;
-			return false;
 		}
 	}
 }

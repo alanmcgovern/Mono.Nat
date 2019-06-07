@@ -45,31 +45,20 @@ namespace Mono.Nat.Upnp
 {
 	class UpnpSearcher : Searcher
 	{
-		public static UpnpSearcher Instance { get; } = new UpnpSearcher ();
-		static readonly IPEndPoint SearchEndpoint = new IPEndPoint (IPAddress.Parse ("239.255.255.250"), 1900);
+		public static ISearcher Instance { get; }
 
-		static readonly List<UdpClient> sockets = CreateSockets ();
-
-		public override NatProtocol Protocol => NatProtocol.Upnp;
-
-		Dictionary<Uri, DateTime> LastFetched { get; }
-		SemaphoreSlim Locker { get; }
-
-		UpnpSearcher ()
+		static UpnpSearcher ()
 		{
-			LastFetched = new Dictionary<Uri, DateTime> ();
-			Locker = new SemaphoreSlim (1, 1);
-		}
+			var clients = new Dictionary<UdpClient, List<IPAddress>> ();
+			var gateways = new List<IPAddress> { IPAddress.Parse ("239.255.255.250") };
 
-		static List<UdpClient> CreateSockets ()
-		{
-			List<UdpClient> clients = new List<UdpClient> ();
 			try {
 				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ()) {
 					foreach (UnicastIPAddressInformation address in n.GetIPProperties ().UnicastAddresses) {
 						if (address.Address.AddressFamily == AddressFamily.InterNetwork) {
 							try {
-								clients.Add (new UdpClient (new IPEndPoint (address.Address, 0)));
+								var client = new UdpClient (new IPEndPoint (address.Address, 0));
+								clients.Add (client, gateways);
 							} catch {
 								continue; // Move on to the next address.
 							}
@@ -77,55 +66,34 @@ namespace Mono.Nat.Upnp
 					}
 				}
 			} catch (Exception) {
-				clients.Add (new UdpClient (0));
+				clients.Add (new UdpClient (0), gateways);
 			}
-			return clients;
+
+			Instance = new UpnpSearcher (new SocketGroup (clients, 1900));
 		}
 
-		public override async Task SearchAsync ()
+		public override NatProtocol Protocol => NatProtocol.Upnp;
+
+		Dictionary<Uri, DateTime> LastFetched { get; }
+		SemaphoreSlim Locker { get; }
+
+		UpnpSearcher (SocketGroup sockets)
+			: base (sockets)
 		{
-			// Cancel any existing continuous search operation.
-			OverallSearchCancellation?.Cancel ();
-			if (SearchTask != null)
-				await SearchTask.CatchExceptions ();
-
-			// Create a CancellationTokenSource for the search we're about to perform.
-			BeginListening (sockets);
-			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
-
-			var data = DiscoverDeviceMessage.EncodeSSDP ();
-			SearchTask = Search (data, SearchEndpoint, SearchPeriod, OverallSearchCancellation.Token);
-			await SearchTask;
+			LastFetched = new Dictionary<Uri, DateTime> ();
+			Locker = new SemaphoreSlim (1, 1);
 		}
 
-		public override async Task SearchAsync (IPAddress gatewayAddress)
+		protected override async Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
 		{
-			BeginListening (sockets);
+			var buffer = gatewayAddress == null ? DiscoverDeviceMessage.EncodeSSDP () : DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
 
-			var data = DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
-			await Search (data, new IPEndPoint (gatewayAddress, SearchEndpoint.Port), null, Cancellation.Token);
-		}
-
-		async Task Search (byte [] data, IPEndPoint endpoint, TimeSpan? searchInternal, CancellationToken token)
-		{
-			while (!token.IsCancellationRequested) {
-				using (await SocketSendLocker.DisposableWaitAsync (token)) {
-					foreach (var client in sockets) {
-						for (int i = 0; i < 3; i++) {
-							try {
-								await client.SendAsync (data, data.Length, endpoint);
-							} catch {
-
-							}
-						}
-					}
-				}
-
-				if (searchInternal == null)
+			do {
+				await Clients.SendAsync (buffer, gatewayAddress, token);
+				if (!repeatInterval.HasValue)
 					break;
-
-				await Task.Delay (searchInternal.Value, token);
-			}
+				await Task.Delay (repeatInterval.Value, token);
+			} while (true);
 		}
 
 		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token)

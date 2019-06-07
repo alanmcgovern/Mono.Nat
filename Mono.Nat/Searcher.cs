@@ -35,7 +35,7 @@ namespace Mono.Nat
 {
 	abstract class Searcher : ISearcher
 	{
-		protected static readonly TimeSpan SearchPeriod = TimeSpan.FromSeconds (5);
+		protected static readonly TimeSpan SearchPeriod = TimeSpan.FromMinutes (5);
 
 		public event EventHandler<DeviceEventArgs> DeviceFound;
 		public event EventHandler<DeviceEventArgs> DeviceLost;
@@ -45,52 +45,61 @@ namespace Mono.Nat
 
 		Dictionary<NatDevice, NatDevice> Devices { get; }
 		Task ListeningTask { get; set; }
+		protected SocketGroup Clients { get; }
 
-		protected CancellationTokenSource Cancellation;
-		protected CancellationTokenSource OverallSearchCancellation;
-		protected Task SearchTask { get; set; }
-		protected SemaphoreSlim SocketSendLocker { get; }
+		CancellationTokenSource Cancellation;
+		protected CancellationTokenSource CurrentSearchCancellation;
+		CancellationTokenSource OverallSearchCancellation;
+		Task SearchTask { get; set; }
 
-		protected Searcher ()
+		protected Searcher (SocketGroup clients)
 		{
+			Clients = clients;
 			Devices = new Dictionary<NatDevice, NatDevice> ();
-			SocketSendLocker = new SemaphoreSlim (1, 1);
 		}
 
-		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token);
-
-		async Task ListenAsync (IEnumerable<UdpClient> sockets, CancellationToken token)
-		{
-			while (!token.IsCancellationRequested) {
-				foreach (UdpClient client in sockets) {
-					try {
-						if (client.Available > 0) {
-							var localAddress = ((IPEndPoint) client.Client.LocalEndPoint).Address;
-							var data = await client.ReceiveAsync ();
-							await HandleMessageReceived (localAddress, data, token);
-						}
-					} catch (Exception) {
-						// Ignore any errors
-					}
-				}
-
-				await Task.Delay (10, token).ConfigureAwait (false);
-			}
-		}
-
-		protected void BeginListening (IEnumerable<UdpClient> sockets)
+		protected void BeginListening ()
 		{
 			// Begin listening, if we are not already listening.
 			if (!Listening) {
 				Cancellation?.Cancel ();
 				Cancellation = new CancellationTokenSource ();
-				ListeningTask = ListenAsync (sockets, Cancellation.Token);
+				ListeningTask = ListenAsync (Cancellation.Token);
 			}
 		}
 
-		public abstract Task SearchAsync ();
+		async Task ListenAsync (CancellationToken token)
+		{
+			while (!token.IsCancellationRequested) {
+				(var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
+				await HandleMessageReceived (localAddress, data, token).ConfigureAwait (false);
+			}
+		}
 
-		public abstract Task SearchAsync (IPAddress gatewayAddress);
+		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token);
+
+		public async Task SearchAsync ()
+		{
+			// Cancel any existing continuous search operation.
+			OverallSearchCancellation?.Cancel ();
+			if (SearchTask != null)
+				await SearchTask.CatchExceptions ();
+
+			// Create a CancellationTokenSource for the search we're about to perform.
+			BeginListening ();
+			OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
+
+			SearchTask = SearchAsync (null, SearchPeriod, OverallSearchCancellation.Token);
+			await SearchTask;
+		}
+
+		public async Task SearchAsync (IPAddress gatewayAddress)
+		{
+			BeginListening ();
+			await SearchAsync (gatewayAddress, null, Cancellation.Token).ConfigureAwait (false);
+		}
+
+		protected abstract Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token);
 
 		public void Stop ()
 		{
@@ -105,6 +114,8 @@ namespace Mono.Nat
 
 		protected void RaiseDeviceFound (NatDevice device)
 		{
+			CurrentSearchCancellation?.Cancel ();
+
 			NatDevice actualDevice;
 			lock (Devices) {
 				if (Devices.TryGetValue (device, out actualDevice))
