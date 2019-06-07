@@ -30,7 +30,7 @@ using System;
 
 namespace Mono.Nat
 {
-	public sealed class Mapping
+	public sealed class Mapping : IEquatable<Mapping>
 	{
 		/// <summary>
 		/// The text description for the port mapping.
@@ -100,21 +100,31 @@ namespace Mono.Nat
 		}
 
 		public bool IsExpired ()
-		{
-			return Expiration < DateTime.Now;
-		}
+			=> Expiration < DateTime.Now;
 
+		/// <summary>
+		/// Mappings are considered equal if they have the same PrivatePort, PublicPort and Protocol.
+		/// </summary>
+		/// <param name="obj">The other object to compare with</param>
+		/// <returns></returns>
 		public override bool Equals (object obj)
+			=> Equals (obj as Mapping);
+
+		/// <summary>
+		/// Mappings are considered equal if they have the same PrivatePort, PublicPort and Protocol.
+		/// </summary>
+		/// <param name="other">The other mapping to compare with</param>
+		/// <returns></returns>
+		public bool Equals (Mapping other)
 		{
-			Mapping other = obj as Mapping;
-			return other == null ? false : Protocol == other.Protocol &&
-				PrivatePort == other.PrivatePort && PublicPort == other.PublicPort;
+			return other != null
+				&& Protocol == other.Protocol
+				&& PrivatePort == other.PrivatePort
+				&& PublicPort == other.PublicPort;
 		}
 
 		public override int GetHashCode ()
-		{
-			return Protocol.GetHashCode () ^ PrivatePort.GetHashCode () ^ PublicPort.GetHashCode ();
-		}
+			=> Protocol.GetHashCode () ^ PrivatePort.GetHashCode () ^ PublicPort.GetHashCode ();
 
 		public override string ToString ()
 		{

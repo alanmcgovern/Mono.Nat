@@ -40,7 +40,6 @@ namespace Mono.Nat
 		public event EventHandler<DeviceEventArgs> DeviceFound;
 		public event EventHandler<DeviceEventArgs> DeviceLost;
 
-
 		public bool Listening => ListeningTask != null;
 		public abstract NatProtocol Protocol { get; }
 
