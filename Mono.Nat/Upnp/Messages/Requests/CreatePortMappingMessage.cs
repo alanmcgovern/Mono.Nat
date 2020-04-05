@@ -49,8 +49,30 @@ namespace Mono.Nat.Upnp
 			WriteFullElement (writer, "NewInternalPort", Mapping.PrivatePort);
 			WriteFullElement (writer, "NewInternalClient", LocalIpAddress);
 			WriteFullElement (writer, "NewEnabled", "1");
-			WriteFullElement (writer, "NewPortMappingDescription", string.IsNullOrEmpty (Mapping.Description) ? "Mono.Nat" : Mapping.Description);
+			WriteFullElement (writer, "NewPortMappingDescription", string.IsNullOrEmpty (Mapping.Description) ? CreateDefaultDescription(Mapping) : Mapping.Description);
 			WriteFullElement (writer, "NewLeaseDuration", Mapping.Lifetime);
+		}
+
+		internal static string CreateDefaultDescription(Mapping mapping)
+		{
+			string executableName = null;
+			try {
+				executableName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+			} catch {
+
+			}
+
+			// If we can get a process name - use it. Note: We shorten it to 12 characters arbitrarily. The
+			// reason is that I am concerned that some routers will fail to create port mappings if the
+			// description is too long, and about 28 characters total seems like it should be safe. 32 is
+			// the next power of two and we're comfortably below that.
+			if (string.IsNullOrEmpty(executableName))
+				executableName = "Mono.Nat";
+			else if (executableName.Length > 12)
+				executableName = executableName.Substring(0, 12);
+
+			// longest string is: "aaaaaaaaaaaa TCP 65535 65535"
+			return string.Format($"{executableName} {mapping.Protocol} {mapping.PublicPort} {mapping.PrivatePort}");
 		}
 	}
 }
