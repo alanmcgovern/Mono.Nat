@@ -48,6 +48,7 @@ namespace Mono.Nat
 		static readonly object Locker = new object ();
 
 		public static TextWriter Logger { get; set; }
+		static readonly object LoggerLocker = new object();
 
 		public static bool IsSearching => PmpSearcher.Instance.Listening || UpnpSearcher.Instance.Listening;
 
@@ -63,7 +64,8 @@ namespace Mono.Nat
 		{
 			TextWriter logger = Logger;
 			if (logger != null)
-				logger.WriteLine (format, args);
+				lock (LoggerLocker)
+					logger.WriteLine (format, args);
 		}
 
 		/// <summary>
