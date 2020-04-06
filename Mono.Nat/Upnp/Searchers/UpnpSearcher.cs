@@ -107,7 +107,7 @@ namespace Mono.Nat.Upnp
 			try {
 				dataString = Encoding.UTF8.GetString (response);
 
-				NatUtility.Log ("UPnP Response: {0}", dataString);
+				NatUtility.Log ("uPnP Search Response: {0}", dataString);
 
 				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection. 
 				 Any other device type is no good to us for this purpose. See the IGP overview paper 
@@ -120,7 +120,7 @@ namespace Mono.Nat.Upnp
 				/* Some routers don't correctly implement the version ID on the URN, so we only search for the type
 				 prefix. */
 
-				string log = "UPnP Response: Router advertised a '{0}' service";
+				string log = "uPnP Search Response: Router advertised a '{0}' service";
 				StringComparison c = StringComparison.OrdinalIgnoreCase;
 				if (dataString.IndexOf ("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1) {
 					NatUtility.Log (log, "urn:schemas-upnp-org:service:WANIPConnection:1");

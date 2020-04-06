@@ -128,6 +128,9 @@ namespace Mono.Nat.Upnp
 		async Task<ResponseMessage> SendMessageAsync (RequestMessage message)
 		{
 			WebRequest request = message.Encode (out byte [] body);
+			if (NatUtility.Logger != null)
+				NatUtility.Log($"uPnP Request: {Environment.NewLine}{Encoding.UTF8.GetString (body)}");
+
 			if (body.Length > 0) {
 				request.ContentLength = body.Length;
 				using (var stream = await request.GetRequestStreamAsync ().ConfigureAwait (false))
@@ -177,7 +180,10 @@ namespace Mono.Nat.Upnp
 
 			// Once we have our content, we need to see what kind of message it is. If we received
 			// an error message we will immediately throw a MappingException.
-			return ResponseMessage.Decode (this, data.ToString ());
+			var dataString = data.ToString();
+			if (NatUtility.Logger != null)
+				NatUtility.Log($"uPnP Response: {Environment.NewLine}{dataString}");
+			return ResponseMessage.Decode (this, dataString);
 		}
 
 		public override string ToString ()
