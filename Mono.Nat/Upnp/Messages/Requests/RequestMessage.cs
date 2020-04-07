@@ -43,7 +43,7 @@ namespace Mono.Nat.Upnp
 			RequestType = requestType;
 		}
 
-		protected WebRequest CreateRequest (string upnpMethod, string methodParameters, out byte [] body)
+		protected HttpWebRequest CreateRequest (string upnpMethod, string methodParameters, out byte [] body)
 		{
 			var location = Device.DeviceControlUri;
 
@@ -68,7 +68,7 @@ namespace Mono.Nat.Upnp
 			return req;
 		}
 
-		public WebRequest Encode (out byte [] body)
+		public HttpWebRequest Encode (out byte [] body)
 		{
 			var builder = new StringBuilder (256);
 			var settings = new XmlWriterSettings {

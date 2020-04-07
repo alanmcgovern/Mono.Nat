@@ -127,7 +127,16 @@ namespace Mono.Nat.Upnp
 
 		async Task<ResponseMessage> SendMessageAsync (RequestMessage message)
 		{
-			WebRequest request = message.Encode (out byte [] body);
+			HttpWebRequest request = message.Encode (out byte [] body);
+			// If this device has multiple active network devices, ensure the web request is sent from the network device which
+			// received the response from the router. That way when we attempt to map a port, the IPAddress we are mapping to
+			// is the same as the IPAddress which issues the WebRequest. Most uPnP implementations don't allow a device to
+			// forward a port to a *different* IP address.
+			request.ServicePoint.BindIPEndPointDelegate = delegate (ServicePoint servicePoint, IPEndPoint remoteEndPoint, int retryCount) {
+				NatUtility.Log($"The WebRequest being sent to {remoteEndPoint} has been bound to local IP address {LocalAddress}");
+				return new IPEndPoint(LocalAddress, 0);
+			};
+
 			if (NatUtility.Logger != null)
 				NatUtility.Log($"uPnP Request: {Environment.NewLine}{Encoding.UTF8.GetString (body)}");
 

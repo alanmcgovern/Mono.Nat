@@ -38,7 +38,7 @@ namespace Mono.Nat.Upnp
 			DeviceServiceUri = deviceServiceUri ?? throw new ArgumentNullException (nameof (deviceServiceUri));
 		}
 
-		public WebRequest Encode (out byte [] body)
+		public HttpWebRequest Encode (out byte [] body)
 		{
 			HttpWebRequest req = (HttpWebRequest) WebRequest.Create (DeviceServiceUri);
 			req.Headers.Add ("ACCEPT-LANGUAGE", "en");
