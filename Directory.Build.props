@@ -2,9 +2,12 @@
 <Project>
 
   <PropertyGroup>
+    <Deterministic>true</Deterministic>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\mono-nat.snk</AssemblyOriginatorKeyFile>
+    <Out>out</Out>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)$(Out)</PackageOutputPath>
   </PropertyGroup>
 
 </Project>
