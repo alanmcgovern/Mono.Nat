@@ -11,10 +11,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -25,7 +25,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 
 namespace Mono.Nat.Pmp
@@ -43,22 +42,35 @@ namespace Mono.Nat.Pmp
 
 		public byte [] Encode ()
 		{
-			var package = new List<byte> ();
+			var package = new byte[12];
+			var i = 0;
 
-			package.Add (PmpConstants.Version);
-			package.Add (Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp);
-			package.Add ((byte) 0); //reserved
-			package.Add ((byte) 0); //reserved
-			package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PrivatePort)));
+			package[i++] = PmpConstants.Version;
+			package[i++] = Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp;
+			package[i++] = (byte) 0; //reserved
+			package[i++] = (byte) 0; //reserved
+
+			var tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PrivatePort));
+			tmp.CopyTo(package, i);
+			i += tmp.Length;
+
 			if (Create) {
-				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PublicPort)));
-				package.AddRange (BitConverter.GetBytes (IPAddress.HostToNetworkOrder (Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime)));
+				tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PublicPort));
+				tmp.CopyTo(package, i);
+				i += tmp.Length;
+				tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder (Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime));
+				tmp.CopyTo(package, i);
+				i += tmp.Length;
 			} else {
-				package.AddRange (BitConverter.GetBytes ((short) 0));
-				package.AddRange (BitConverter.GetBytes ((int) 0));
+				tmp = BitConverter.GetBytes ((short) 0);
+				tmp.CopyTo(package, i);
+				i += tmp.Length;
+				tmp = BitConverter.GetBytes ((int) 0);
+				tmp.CopyTo(package, i);
+				i += tmp.Length;
 			}
 
-			return package.ToArray ();
+			return package;
 		}
 	}
 }

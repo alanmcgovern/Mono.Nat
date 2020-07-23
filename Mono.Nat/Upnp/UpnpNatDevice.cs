@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -27,17 +27,16 @@
 //
 
 using System;
+using System.Buffers;
 using System.IO;
 using System.Net;
-using System.Xml;
 using System.Text;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace Mono.Nat.Upnp
 {
-	sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
+    sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
 	{
 		/// <summary>
 		/// The url we can use to control the port forwarding
@@ -173,18 +172,21 @@ namespace Mono.Nat.Upnp
 		{
 			StringBuilder data = new StringBuilder ();
 			int bytesRead;
-			byte [] buffer = new byte [10240];
-
-			// Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
-			if (length != -1) {
-				while (length > 0) {
-					bytesRead = await s.ReadAsync (buffer, 0, Math.Min (buffer.Length, length)).ConfigureAwait (false);
-					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
-					length -= bytesRead;
+			byte [] buffer = ArrayPool<byte>.Shared.Rent (10240);
+			try {
+				// Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
+				if (length != -1) {
+					while (length > 0) {
+						bytesRead = await s.ReadAsync (buffer, 0, Math.Min (buffer.Length, length)).ConfigureAwait (false);
+						data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
+						length -= bytesRead;
+					}
+				} else {
+					while ((bytesRead = await s.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false)) != 0)
+						data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 				}
-			} else {
-				while ((bytesRead = await s.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false)) != 0)
-					data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
+			} finally {
+				ArrayPool<byte>.Shared.Return (buffer);
 			}
 
 			// Once we have our content, we need to see what kind of message it is. If we received

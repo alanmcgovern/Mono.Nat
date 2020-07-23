@@ -15,10 +15,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,6 +29,7 @@
 //
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -109,8 +110,8 @@ namespace Mono.Nat.Upnp
 
 				NatUtility.Log ("uPnP Search Response: {0}", dataString);
 
-				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection. 
-				 Any other device type is no good to us for this purpose. See the IGP overview paper 
+				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection.
+				 Any other device type is no good to us for this purpose. See the IGP overview paper
 				 page 5 for an overview of device types and their hierarchy.
 				 http://upnp.org/specs/gw/UPnP-gw-InternetGatewayDevice-v1-Device.pdf */
 
@@ -177,10 +178,6 @@ namespace Mono.Nat.Upnp
 
 		async Task<UpnpNatDevice> ServicesReceived (IPAddress localAddress, Uri deviceServiceUri, HttpWebResponse response)
 		{
-			int abortCount = 0;
-			byte [] buffer = new byte [10240];
-			StringBuilder servicesXml = new StringBuilder ();
-			XmlDocument xmldoc = new XmlDocument ();
 			Stream s = response.GetResponseStream ();
 
 			if (response.StatusCode != HttpStatusCode.OK) {
@@ -188,23 +185,31 @@ namespace Mono.Nat.Upnp
 				return null; // FIXME: This the best thing to do??
 			}
 
-			while (true) {
-				var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length);
-				servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
-				try {
-					xmldoc.LoadXml (servicesXml.ToString ());
-					break;
-				} catch (XmlException) {
-					// If we can't receive the entire XML within 5 seconds, then drop the connection
-					// Unfortunately not all routers supply a valid ContentLength (mine doesn't)
-					// so this hack is needed to keep testing our recieved data until it gets successfully
-					// parsed by the xmldoc. Without this, the code will never pick up my router.
-					if (abortCount++ > 5000) {
-						return null;
+			int abortCount = 0;
+			StringBuilder servicesXml = new StringBuilder ();
+			XmlDocument xmldoc = new XmlDocument ();
+			byte [] buffer = ArrayPool<byte>.Shared.Rent (10240);
+			try {
+				while (true) {
+					var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length);
+					servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
+					try {
+						xmldoc.LoadXml (servicesXml.ToString ());
+						break;
+					} catch (XmlException) {
+						// If we can't receive the entire XML within 5 seconds, then drop the connection
+						// Unfortunately not all routers supply a valid ContentLength (mine doesn't)
+						// so this hack is needed to keep testing our recieved data until it gets successfully
+						// parsed by the xmldoc. Without this, the code will never pick up my router.
+						if (abortCount++ > 5000) {
+							return null;
+						}
+						NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
+						await Task.Delay (10);
 					}
-					NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
-					await Task.Delay (10);
 				}
+			} finally {
+				ArrayPool<byte>.Shared.Return (buffer);
 			}
 
 			NatUtility.Log ("{0}: Parsed services list", response.ResponseUri);
@@ -218,10 +223,10 @@ namespace Mono.Nat.Upnp
 					//If the service is a WANIPConnection, then we have what we want
 					string serviceType = service ["serviceType"].InnerText;
 					NatUtility.Log ("{0}: Found service: {1}", response.ResponseUri, serviceType);
-					StringComparison c = StringComparison.OrdinalIgnoreCase;
+					const StringComparison C = StringComparison.OrdinalIgnoreCase;
 					// TODO: Add support for version 2 of UPnP.
-					if (serviceType.Equals ("urn:schemas-upnp-org:service:WANPPPConnection:1", c) ||
-						serviceType.Equals ("urn:schemas-upnp-org:service:WANIPConnection:1", c)) {
+					if (serviceType.Equals ("urn:schemas-upnp-org:service:WANPPPConnection:1", C) ||
+						serviceType.Equals ("urn:schemas-upnp-org:service:WANIPConnection:1", C)) {
 						var controlUrl = new Uri (service ["controlURL"].InnerText, UriKind.RelativeOrAbsolute);
 						IPEndPoint deviceEndpoint = new IPEndPoint (IPAddress.Parse (response.ResponseUri.Host), response.ResponseUri.Port);
 						NatUtility.Log ("{0}: Found upnp service at: {1}", response.ResponseUri, controlUrl.OriginalString);
