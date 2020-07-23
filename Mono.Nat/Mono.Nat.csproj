@@ -6,7 +6,7 @@
 	<PropertyGroup>
 		<Deterministic>true</Deterministic>
 		<GitThisAssembly>false</GitThisAssembly>
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
 
 		<MonoNatABIVersion>2.0.0.0</MonoNatABIVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -15,7 +15,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Buffers" Version="4.5.1" PrivateAssets="all" />
+		<PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Buffers" Version="4.5.1" PrivateAssets="all" />
 		<PackageReference Include="GitInfo" Version="2.0.20" PrivateAssets="all" />
 	</ItemGroup>
 
