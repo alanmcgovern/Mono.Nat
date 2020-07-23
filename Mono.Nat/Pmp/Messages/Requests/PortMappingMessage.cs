@@ -25,11 +25,7 @@
 //
 
 using System;
-#if NETSTANDARD2_0
-using System.Net;
-#else
 using System.Buffers.Binary;
-#endif
 
 namespace Mono.Nat.Pmp
 {
@@ -43,35 +39,7 @@ namespace Mono.Nat.Pmp
 			Mapping = mapping;
 			Create = create;
 		}
-#if NETSTANDARD2_0
-		public byte [] Encode ()
-		{
-			var package = new byte [12];
-			var i = 0;
 
-			package[0] = PmpConstants.Version;
-			package[1] = Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp;
-			package[2] = 0; //reserved
-			package[3] = 0; //reserved
-
-			var tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PrivatePort));
-			tmp.CopyTo(package, 4);
-
-			if (Create) {
-				tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder ((short) Mapping.PublicPort));
-				tmp.CopyTo(package, 6);
-				tmp = BitConverter.GetBytes (IPAddress.HostToNetworkOrder (Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime));
-				tmp.CopyTo(package, 8);
-			} else {
-				tmp = BitConverter.GetBytes ((short) 0);
-				tmp.CopyTo(package, 6);
-				tmp = BitConverter.GetBytes ((int) 0);
-				tmp.CopyTo(package, 8);
-			}
-
-			return package;
-		}
-#else
 		public byte [] Encode ()
 		{
 			var package = new byte [12];
@@ -93,6 +61,5 @@ namespace Mono.Nat.Pmp
 
 			return package;
 		}
-#endif
 	}
 }
