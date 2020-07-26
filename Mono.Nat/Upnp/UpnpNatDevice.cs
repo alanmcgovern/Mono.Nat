@@ -27,7 +27,6 @@
 //
 
 using System;
-using System.Buffers;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -36,7 +35,7 @@ using System.Collections.Generic;
 
 namespace Mono.Nat.Upnp
 {
-    sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
+	sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
 	{
 		/// <summary>
 		/// The url we can use to control the port forwarding
@@ -172,7 +171,7 @@ namespace Mono.Nat.Upnp
 		{
 			StringBuilder data = new StringBuilder ();
 			int bytesRead;
-			byte [] buffer = ArrayPool<byte>.Shared.Rent (10240);
+			byte [] buffer = BufferHelpers.Rent ();
 			try {
 				// Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
 				if (length != -1) {
@@ -186,7 +185,7 @@ namespace Mono.Nat.Upnp
 						data.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
 				}
 			} finally {
-				ArrayPool<byte>.Shared.Return (buffer);
+				BufferHelpers.Release (buffer);
 			}
 
 			// Once we have our content, we need to see what kind of message it is. If we received
