@@ -45,6 +45,19 @@ namespace Mono.Nat.Upnp
 {
 	class UpnpSearcher : Searcher
 	{
+		static readonly IList<string> SupportedServices = new List<string> {
+			"urn:schemas-upnp-org:service:WANIPConnection:1",
+			"urn:schemas-upnp-org:service:WANIPConnection:2",
+			"urn:schemas-upnp-org:service:WANPPPConnection:1",
+			"urn:schemas-upnp-org:service:WANPPPConnection:2",
+
+			/* Some routers don't correctly implement the version ID on the URN, so we search for the
+			 * unversioned type too.
+			 */
+			"urn:schemas-upnp-org:service:WANIPConnection:",
+			"urn:schemas-upnp-org:service:WANPPPConnection:",
+		}.AsReadOnly();
+
 		public static ISearcher Instance { get; }
 
 		static UpnpSearcher ()
@@ -86,10 +99,11 @@ namespace Mono.Nat.Upnp
 
 		protected override async Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
 		{
-			var buffer = gatewayAddress == null ? DiscoverDeviceMessage.EncodeSSDP () : DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
+			var messages = gatewayAddress == null ? DiscoverDeviceMessage.EncodeSSDP () : DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
 
 			do {
-				await Clients.SendAsync (buffer, gatewayAddress, token);
+				foreach (var message in messages)
+					await Clients.SendAsync (message, gatewayAddress, token);
 				if (!repeatInterval.HasValue)
 					break;
 				await Task.Delay (repeatInterval.Value, token);
@@ -117,18 +131,18 @@ namespace Mono.Nat.Upnp
 				/* TODO: Currently we are assuming version 1 of the protocol. We should figure out which
 				 version it is and apply the correct URN. */
 
-				/* Some routers don't correctly implement the version ID on the URN, so we only search for the type
-				 prefix. */
+				string foundService = null;
+				foreach (var type in SupportedServices.Concat(DiscoverDeviceMessage.SupportedServiceTypes)) {
+					if (dataString.IndexOf(type, StringComparison.OrdinalIgnoreCase) != -1) {
+						foundService = type;
+						break;
+					}
+				}
 
-				string log = "uPnP Search Response: Router advertised a '{0}' service";
-				StringComparison c = StringComparison.OrdinalIgnoreCase;
-				if (dataString.IndexOf ("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1) {
-					NatUtility.Log (log, "urn:schemas-upnp-org:service:WANIPConnection:1");
-				} else if (dataString.IndexOf ("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1) {
-					NatUtility.Log (log, "urn:schemas-upnp-org:service:WANPPPConnection:");
-				} else
+				if (foundService == null)
 					return;
 
+				NatUtility.Log("uPnP Search Response: Router advertised a '{0}' service", foundService);
 				var location = dataString.Split (new [] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
 					.Select (t => t.Trim ())
 					.FirstOrDefault (t => t.StartsWith ("LOCATION", StringComparison.OrdinalIgnoreCase));
@@ -219,13 +233,10 @@ namespace Mono.Nat.Upnp
 			foreach (XmlNode node in nodes) {
 				//Go through each service there
 				foreach (XmlNode service in node.ChildNodes) {
-					//If the service is a WANIPConnection, then we have what we want
 					string serviceType = service ["serviceType"].InnerText;
 					NatUtility.Log ("{0}: Found service: {1}", response.ResponseUri, serviceType);
-					const StringComparison C = StringComparison.OrdinalIgnoreCase;
 					// TODO: Add support for version 2 of UPnP.
-					if (serviceType.Equals ("urn:schemas-upnp-org:service:WANPPPConnection:1", C) ||
-						serviceType.Equals ("urn:schemas-upnp-org:service:WANIPConnection:1", C)) {
+					if (SupportedServices.Contains (serviceType, StringComparer.OrdinalIgnoreCase)) {
 						var controlUrl = new Uri (service ["controlURL"].InnerText, UriKind.RelativeOrAbsolute);
 						IPEndPoint deviceEndpoint = new IPEndPoint (IPAddress.Parse (response.ResponseUri.Host), response.ResponseUri.Port);
 						NatUtility.Log ("{0}: Found upnp service at: {1}", response.ResponseUri, controlUrl.OriginalString);
@@ -246,7 +257,7 @@ namespace Mono.Nat.Upnp
 				}
 			}
 
-			//If we get here, it means that we didn't get WANIPConnection service, which means no uPnP forwarding
+			//If we get here, it means that we didn't get WANIPConnection/WANPPPConnection service, which means no uPnP forwarding
 			//So we don't invoke the callback, so this device is never added to our lists
 			return null;
 		}
