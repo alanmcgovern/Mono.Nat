@@ -29,7 +29,6 @@
 //
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -188,7 +187,7 @@ namespace Mono.Nat.Upnp
 			int abortCount = 0;
 			StringBuilder servicesXml = new StringBuilder ();
 			XmlDocument xmldoc = new XmlDocument ();
-			byte [] buffer = ArrayPool<byte>.Shared.Rent (10240);
+			byte[] buffer = BufferHelpers.Rent();
 			try {
 				while (true) {
 					var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length);
@@ -209,7 +208,7 @@ namespace Mono.Nat.Upnp
 					}
 				}
 			} finally {
-				ArrayPool<byte>.Shared.Return (buffer);
+				BufferHelpers.Release(buffer);
 			}
 
 			NatUtility.Log ("{0}: Parsed services list", response.ResponseUri);

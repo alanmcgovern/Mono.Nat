@@ -25,7 +25,7 @@
 //
 
 using System;
-using System.Buffers.Binary;
+using System.Net;
 
 namespace Mono.Nat.Pmp
 {
@@ -46,17 +46,24 @@ namespace Mono.Nat.Pmp
 
 			package[0] = PmpConstants.Version;
 			package[1] = Mapping.Protocol == Protocol.Tcp ? PmpConstants.OperationCodeTcp : PmpConstants.OperationCodeUdp;
-			package[2] = 0; //reserved
-			package[3] = 0; //reserved
 
-			BinaryPrimitives.WriteInt16BigEndian (package.AsSpan (4), (short)Mapping.PrivatePort);
+			// package[2] and package [3] are reserved and set to zero
 
+			var privatePort = IPAddress.HostToNetworkOrder((short)Mapping.PrivatePort);
+			package[4] = (byte)(privatePort);
+			package[5] = (byte)(privatePort >> 8);
+
+			// package[6] -> package[11] are all zeros if we are no creating a port mapping.
 			if (Create) {
-				BinaryPrimitives.WriteInt16BigEndian (package.AsSpan (6), (short) Mapping.PublicPort);
-				BinaryPrimitives.WriteInt32BigEndian (package.AsSpan (8), Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime);
-			} else {
-				BinaryPrimitives.WriteInt16BigEndian (package.AsSpan (6), 0);
-				BinaryPrimitives.WriteInt32BigEndian (package.AsSpan (8), 0);
+				var publicPort = IPAddress.HostToNetworkOrder((short)Mapping.PublicPort);
+				package[6] = (byte)(publicPort);
+				package[7] = (byte)(publicPort >> 8);
+
+				var lifespan = IPAddress.HostToNetworkOrder(Mapping.Lifetime == 0 ? 7200 : Mapping.Lifetime);
+				package[8] = (byte)(lifespan);
+				package[9] = (byte)(lifespan >> 8);
+				package[10] = (byte)(lifespan >> 16);
+				package[11] = (byte)(lifespan >> 24);
 			}
 
 			return package;

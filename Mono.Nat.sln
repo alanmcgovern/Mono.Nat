@@ -1,9 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat", "Mono.Nat\Mono.Nat.csproj", "{86621E85-B2E0-4740-B2D9-C2B2793072DC}"
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Nat", "Mono.Nat\Mono.Nat.csproj", "{86621E85-B2E0-4740-B2D9-C2B2793072DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat.Test", "Mono.Nat.Test\Mono.Nat.Test.csproj", "{8CE5A580-B988-4B93-86E6-D6A147AD5251}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Nat.Test", "Mono.Nat.Test\Mono.Nat.Test.csproj", "{8CE5A580-B988-4B93-86E6-D6A147AD5251}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{79A6F778-5E92-459D-82C1-37D81512267B}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,6 +29,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D4DA68B-1431-4FC6-929D-012A272FB91F}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Mono.Nat\Mono.Nat.csproj
