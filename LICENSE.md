@@ -3,6 +3,7 @@ The MIT License
 
 Copyright (C) 2006 Alan McGovern
 Copyright (C) 2007 Ben Motmans
+Copyright (C) 2013 Nicholas Terry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
