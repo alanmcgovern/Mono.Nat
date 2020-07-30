@@ -43,11 +43,6 @@ namespace Mono.Nat
 		event EventHandler<DeviceEventArgs> DeviceFound;
 
 		/// <summary>
-		/// This event is raised whenever a device which supports port mapping is no longer available
-		/// </summary>
-		event EventHandler<DeviceEventArgs> DeviceLost;
-
-		/// <summary>
 		/// The port mapping protocol supported by the device
 		/// </summary>
 		NatProtocol Protocol { get; }

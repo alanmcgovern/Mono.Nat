@@ -33,12 +33,16 @@ using System.IO;
 
 using Mono.Nat.Pmp;
 using Mono.Nat.Upnp;
+using System.ComponentModel;
 
 namespace Mono.Nat
 {
 	public static class NatUtility
 	{
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
+
+		[Obsolete("This event is not raised in a usable way.")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
 
 		static readonly object Locker = new object ();
@@ -52,7 +56,6 @@ namespace Mono.Nat
 		{
 			foreach (var searcher in new ISearcher [] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
 				searcher.DeviceFound += (o, e) => DeviceFound?.Invoke (o, e);
-				searcher.DeviceLost += (o, e) => DeviceLost?.Invoke (o, e);
 			}
 		}
 

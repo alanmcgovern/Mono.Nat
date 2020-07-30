@@ -38,7 +38,6 @@ namespace Mono.Nat
 		protected static readonly TimeSpan SearchPeriod = TimeSpan.FromMinutes (5);
 
 		public event EventHandler<DeviceEventArgs> DeviceFound;
-		public event EventHandler<DeviceEventArgs> DeviceLost;
 
 		public bool Listening => ListeningTask != null;
 		public abstract NatProtocol Protocol { get; }
@@ -64,9 +63,9 @@ namespace Mono.Nat
 			if (!Listening) {
 				Cancellation?.Cancel ();
 				Cancellation = new CancellationTokenSource ();
-				ListeningTask = ListenAsync (Cancellation.Token);
 				lock (Devices)
 					Devices.Clear();
+				ListeningTask = ListenAsync (Cancellation.Token);
 			}
 		}
 
@@ -132,19 +131,6 @@ namespace Mono.Nat
 			// we've encountered it!
 			if (actualDevice == null)
 				DeviceFound?.Invoke (this, new DeviceEventArgs (device));
-		}
-
-		protected void RaiseDeviceLost (NatDevice device)
-		{
-			NatDevice actualDevice;
-			lock (Devices) {
-				// If the device is not in the dictionary, bail out.
-				if (!Devices.TryGetValue (device, out actualDevice))
-					return;
-				Devices.Remove (actualDevice);
-			}
-
-			DeviceLost?.Invoke (this, new DeviceEventArgs (actualDevice));
 		}
 	}
 }

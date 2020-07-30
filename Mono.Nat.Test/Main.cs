@@ -30,8 +30,8 @@ using System.Threading;
 namespace Mono.Nat.Test {
 	class NatTest {
 		public NatTest() {
+			// Raised whenever a device is discovered.
 			NatUtility.DeviceFound += DeviceFound;
-			NatUtility.DeviceLost += DeviceLost;
 
 			// If you know the gateway address, you can directly search for a device at that IP
 			//NatUtility.Search (System.Net.IPAddress.Parse ("192.168.0.1"), NatProtocol.Pmp);
@@ -128,13 +128,6 @@ namespace Mono.Nat.Test {
 			} finally {
 				locker.Release ();
 			}
-		}
-
-		private void DeviceLost(object sender, DeviceEventArgs args) {
-			INatDevice device = args.Device;
-
-			Console.WriteLine("Device Lost");
-			Console.WriteLine("Type: {0}", device.GetType().Name);
 		}
 	}
 }
