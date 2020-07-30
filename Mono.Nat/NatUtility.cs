@@ -28,15 +28,11 @@
 
 using System;
 using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using System.Linq;
-using System.Collections.Generic;
 using System.IO;
 
 using Mono.Nat.Pmp;
 using Mono.Nat.Upnp;
-using System.Threading.Tasks;
 
 namespace Mono.Nat
 {

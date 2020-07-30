@@ -65,6 +65,8 @@ namespace Mono.Nat
 				Cancellation?.Cancel ();
 				Cancellation = new CancellationTokenSource ();
 				ListeningTask = ListenAsync (Cancellation.Token);
+				lock (Devices)
+					Devices.Clear();
 			}
 		}
 
@@ -106,6 +108,9 @@ namespace Mono.Nat
 			Cancellation?.Cancel ();
 			ListeningTask?.WaitAndForget ();
 			SearchTask?.WaitAndForget ();
+
+			lock (Devices)
+				Devices.Clear();
 
 			Cancellation = null;
 			ListeningTask = null;
