@@ -35,11 +35,14 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Mono.Nat.Logging;
 
 namespace Mono.Nat.Pmp
 {
 	class PmpSearcher : Searcher
 	{
+		static Logger Log { get; } = Logger.Create();
+
 		public static ISearcher Instance { get; }
 
 		static PmpSearcher ()
@@ -150,7 +153,7 @@ namespace Mono.Nat.Pmp
 
 			int errorcode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (response, 2));
 			if (errorcode != 0)
-				NatUtility.Log ("Non zero error: {0}", errorcode);
+				Log.InfoFormatted("Non zero error: {0}", errorcode);
 
 			var publicIp = new IPAddress (new byte [] { response [8], response [9], response [10], response [11] });
 

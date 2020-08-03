@@ -47,9 +47,6 @@ namespace Mono.Nat
 
 		static readonly object Locker = new object ();
 
-		public static TextWriter Logger { get; set; }
-		static readonly object LoggerLocker = new object();
-
 		public static bool IsSearching => PmpSearcher.Instance.Listening || UpnpSearcher.Instance.Listening;
 
 		static NatUtility ()
@@ -57,14 +54,6 @@ namespace Mono.Nat
 			foreach (var searcher in new ISearcher [] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
 				searcher.DeviceFound += (o, e) => DeviceFound?.Invoke (o, e);
 			}
-		}
-
-		internal static void Log (string format, params object [] args)
-		{
-			TextWriter logger = Logger;
-			if (logger != null)
-				lock (LoggerLocker)
-					logger.WriteLine (format, args);
 		}
 
 		/// <summary>

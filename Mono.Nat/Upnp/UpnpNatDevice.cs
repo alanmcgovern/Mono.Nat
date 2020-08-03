@@ -32,11 +32,14 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Mono.Nat.Logging;
 
 namespace Mono.Nat.Upnp
 {
 	sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
 	{
+		static Logger Log { get; } = Logger.Create();
+
 		/// <summary>
 		/// The url we can use to control the port forwarding
 		/// </summary>
@@ -131,12 +134,11 @@ namespace Mono.Nat.Upnp
 			// is the same as the IPAddress which issues the WebRequest. Most uPnP implementations don't allow a device to
 			// forward a port to a *different* IP address.
 			request.ServicePoint.BindIPEndPointDelegate = delegate (ServicePoint servicePoint, IPEndPoint remoteEndPoint, int retryCount) {
-				NatUtility.Log($"The WebRequest being sent to {remoteEndPoint} has been bound to local IP address {LocalAddress}");
+				Log.InfoFormatted("The WebRequest being sent to {0} has been bound to local IP address {1}", remoteEndPoint, LocalAddress);
 				return new IPEndPoint(LocalAddress, 0);
 			};
 
-			if (NatUtility.Logger != null)
-				NatUtility.Log($"uPnP Request: {Environment.NewLine}{Encoding.UTF8.GetString (body)}");
+			Log.InfoFormatted("uPnP Request: {0}{1}", Environment.NewLine, Encoding.UTF8.GetString (body));
 
 			if (body.Length > 0) {
 				request.ContentLength = body.Length;
@@ -191,8 +193,7 @@ namespace Mono.Nat.Upnp
 			// Once we have our content, we need to see what kind of message it is. If we received
 			// an error message we will immediately throw a MappingException.
 			var dataString = data.ToString();
-			if (NatUtility.Logger != null)
-				NatUtility.Log($"uPnP Response: {Environment.NewLine}{dataString}");
+			Log.InfoFormatted("uPnP Response: {0}, {1}", Environment.NewLine, dataString);
 			return ResponseMessage.Decode (this, dataString);
 		}
 

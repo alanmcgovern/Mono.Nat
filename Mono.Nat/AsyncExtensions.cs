@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Mono.Nat.Logging;
 
 namespace Mono.Nat
 {
 	static class AsyncExtensions
 	{
+		static Logger Log { get; } = Logger.Create();
+
 		class SemaphoreSlimDisposable : IDisposable
 		{
 			SemaphoreSlim Semaphore;
@@ -35,7 +38,7 @@ namespace Mono.Nat
 			} catch (OperationCanceledException) {
 				// If we cancel the task then we don't need to log anything.
 			} catch (Exception ex) {
-				NatUtility.Log ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+				Log.ErrorFormatted ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
 			}
 		}
 
@@ -46,7 +49,7 @@ namespace Mono.Nat
 			} catch (OperationCanceledException) {
 				// If we cancel the task then we don't need to log anything.
 			} catch (Exception ex) {
-				NatUtility.Log ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+				Log.ErrorFormatted("Unhandled exception: {0}{1}", Environment.NewLine, ex);
 			}
 		}
 
@@ -57,7 +60,7 @@ namespace Mono.Nat
 			} catch (OperationCanceledException) {
 				// If we cancel the task then we don't need to log anything.
 			} catch (Exception ex) {
-				NatUtility.Log ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+				Log.ErrorFormatted("Unhandled exception: {0}{1}", Environment.NewLine, ex);
 			}
 		}
 	}

@@ -40,11 +40,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using Mono.Nat.Logging;
 
 namespace Mono.Nat.Upnp
 {
 	class UpnpSearcher : Searcher
 	{
+		static Logger Log { get; } = Logger.Create();
+
 		static readonly IList<string> SupportedServices = new List<string> {
 			"urn:schemas-upnp-org:service:WANIPConnection:1",
 			"urn:schemas-upnp-org:service:WANIPConnection:2",
@@ -121,7 +124,7 @@ namespace Mono.Nat.Upnp
 			try {
 				dataString = Encoding.UTF8.GetString (response);
 
-				NatUtility.Log ("uPnP Search Response: {0}", dataString);
+				Log.InfoFormatted ("uPnP Search Response: {0}", dataString);
 
 				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection.
 				 Any other device type is no good to us for this purpose. See the IGP overview paper
@@ -142,7 +145,7 @@ namespace Mono.Nat.Upnp
 				if (foundService == null)
 					return;
 
-				NatUtility.Log("uPnP Search Response: Router advertised a '{0}' service", foundService);
+				Log.InfoFormatted("uPnP Search Response: Router advertised a '{0}' service", foundService);
 				var location = dataString.Split (new [] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
 					.Select (t => t.Trim ())
 					.FirstOrDefault (t => t.StartsWith ("LOCATION", StringComparison.OrdinalIgnoreCase));
@@ -165,7 +168,7 @@ namespace Mono.Nat.Upnp
 
 				// Once we've parsed the information we need, we tell the device to retrieve it's service list
 				// Once we successfully receive the service list, the callback provided will be invoked.
-				NatUtility.Log ("Fetching service list: {0}", deviceServiceUri);
+				Log.InfoFormatted("Fetching service list: {0}", deviceServiceUri);
 				var d = await GetServicesList (localAddress, deviceServiceUri, token).ConfigureAwait (false);
 				if (d != null)
 					RaiseDeviceFound (d);
@@ -183,7 +186,7 @@ namespace Mono.Nat.Upnp
 			// Create a HTTPWebRequest to download the list of services the device offers
 			var request = new GetServicesMessage (deviceServiceUri).Encode (out byte[] body);
 			if (body.Length > 0)
-				NatUtility.Log ("Error: Services Message contained a body");
+				Log.Error("Services Message unexpectedly contained a message body");
 			using (token.Register (() => request.Abort ()))
 			using (var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false))
 				return await ServicesReceived (localAddress, deviceServiceUri, response).ConfigureAwait (false);
@@ -194,7 +197,7 @@ namespace Mono.Nat.Upnp
 			Stream s = response.GetResponseStream ();
 
 			if (response.StatusCode != HttpStatusCode.OK) {
-				NatUtility.Log ("{0}: Couldn't get services list: {1}", response.ResponseUri, response.StatusCode);
+				Log.ErrorFormatted("Couldn't get services list from: {0}. Return code was: {1}", response.ResponseUri, response.StatusCode);
 				return null; // FIXME: This the best thing to do??
 			}
 
@@ -217,7 +220,7 @@ namespace Mono.Nat.Upnp
 						if (abortCount++ > 5000) {
 							return null;
 						}
-						NatUtility.Log ("{0}: Couldn't parse services list", response.ResponseUri);
+						Log.InfoFormatted("Couldn't parse services list from {0}", response.ResponseUri);
 						await Task.Delay (10);
 					}
 				}
@@ -225,7 +228,7 @@ namespace Mono.Nat.Upnp
 				BufferHelpers.Release(buffer);
 			}
 
-			NatUtility.Log ("{0}: Parsed services list", response.ResponseUri);
+			Log.InfoFormatted ("Parsed services list {0}", response.ResponseUri);
 			XmlNamespaceManager ns = new XmlNamespaceManager (xmldoc.NameTable);
 			ns.AddNamespace ("ns", "urn:schemas-upnp-org:device-1-0");
 			XmlNodeList nodes = xmldoc.SelectNodes ("//*/ns:serviceList", ns);
@@ -234,24 +237,24 @@ namespace Mono.Nat.Upnp
 				//Go through each service there
 				foreach (XmlNode service in node.ChildNodes) {
 					string serviceType = service ["serviceType"].InnerText;
-					NatUtility.Log ("{0}: Found service: {1}", response.ResponseUri, serviceType);
+					Log.InfoFormatted("Found service {1} from service list {0}", response.ResponseUri, serviceType);
 					// TODO: Add support for version 2 of UPnP.
 					if (SupportedServices.Contains (serviceType, StringComparer.OrdinalIgnoreCase)) {
 						var controlUrl = new Uri (service ["controlURL"].InnerText, UriKind.RelativeOrAbsolute);
 						IPEndPoint deviceEndpoint = new IPEndPoint (IPAddress.Parse (response.ResponseUri.Host), response.ResponseUri.Port);
-						NatUtility.Log ("{0}: Found upnp service at: {1}", response.ResponseUri, controlUrl.OriginalString);
+						Log.InfoFormatted ("Found upnp control uri at {1} from service url {0}", response.ResponseUri, controlUrl.OriginalString);
 						try {
 							if (controlUrl.IsAbsoluteUri) {
 								deviceEndpoint = new IPEndPoint (IPAddress.Parse (controlUrl.Host), controlUrl.Port);
-								NatUtility.Log ("{0}: New control url: {1}", deviceEndpoint, controlUrl);
+								Log.InfoFormatted("New control url {1} for device endpoint {0}", deviceEndpoint, controlUrl);
 							} else {
 								controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
 							}
 						} catch {
 							controlUrl = new Uri (deviceServiceUri, controlUrl.OriginalString);
-							NatUtility.Log ("{0}: Assuming control Uri is relative: {1}", deviceEndpoint, controlUrl);
+							Log.InfoFormatted ("{0}: Assuming control Uri is relative: {1}", deviceEndpoint, controlUrl);
 						}
-						NatUtility.Log ("{0}: Handshake Complete", deviceEndpoint);
+						Log.InfoFormatted("Handshake Complete for {0}", deviceEndpoint);
 						return new UpnpNatDevice (localAddress, deviceEndpoint, controlUrl, serviceType);
 					}
 				}

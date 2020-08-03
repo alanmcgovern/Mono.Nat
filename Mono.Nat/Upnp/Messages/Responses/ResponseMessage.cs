@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Xml;
+using Mono.Nat.Logging;
 
 namespace Mono.Nat.Upnp
 {
 	class ResponseMessage
 	{
+		static Logger Log { get; } = Logger.Create();
+
 		public static ResponseMessage Decode (UpnpNatDevice device, string message)
 		{
 			XmlNode node;
@@ -40,8 +43,7 @@ namespace Mono.Nat.Upnp
 			if ((node = doc.SelectSingleNode ("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
 				return new GetSpecificPortMappingEntryResponseMessage (node);
 
-			NatUtility.Log ("Unknown message returned. Please send me back the following XML:");
-			NatUtility.Log (message);
+			Log.ErrorFormatted ("Unknown message returned. Please send me back the following XML: {0}", message);
 			return null;
 		}
 	}
