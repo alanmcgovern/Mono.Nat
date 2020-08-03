@@ -69,6 +69,11 @@ namespace Mono.Nat
 			}
 		}
 
+		public void Dispose ()
+		{
+			Clients.Dispose();
+		}
+
 		async Task ListenAsync (CancellationToken token)
 		{
 			while (!token.IsCancellationRequested) {

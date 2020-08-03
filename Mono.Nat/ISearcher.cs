@@ -35,7 +35,7 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
-	interface ISearcher
+	interface ISearcher : IDisposable
 	{
 		/// <summary>
 		/// This event is raised whenever a device which supports port mapping is discovered

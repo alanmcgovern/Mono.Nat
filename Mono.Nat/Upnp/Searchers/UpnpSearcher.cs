@@ -61,31 +61,38 @@ namespace Mono.Nat.Upnp
 			"urn:schemas-upnp-org:service:WANPPPConnection:",
 		}.AsReadOnly();
 
-		public static ISearcher Instance { get; }
-
-		static UpnpSearcher ()
+		internal static UpnpSearcher Create()
 		{
-			var clients = new Dictionary<UdpClient, List<IPAddress>> ();
-			var gateways = new List<IPAddress> { IPAddress.Parse ("239.255.255.250") };
+			var clients = new Dictionary<UdpClient, List<IPAddress>>();
+			var gateways = new List<IPAddress> { IPAddress.Parse("239.255.255.250") };
 
-			try {
-				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ()) {
-					foreach (UnicastIPAddressInformation address in n.GetIPProperties ().UnicastAddresses) {
-						if (address.Address.AddressFamily == AddressFamily.InterNetwork) {
-							try {
-								var client = new UdpClient (new IPEndPoint (address.Address, 0));
-								clients.Add (client, gateways);
-							} catch {
+			try
+			{
+				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+				{
+					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
+					{
+						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+						{
+							try
+							{
+								var client = new UdpClient(new IPEndPoint(address.Address, 0));
+								clients.Add(client, gateways);
+							}
+							catch
+							{
 								continue; // Move on to the next address.
 							}
 						}
 					}
 				}
-			} catch (Exception) {
-				clients.Add (new UdpClient (0), gateways);
+			}
+			catch (Exception)
+			{
+				clients.Add(new UdpClient(0), gateways);
 			}
 
-			Instance = new UpnpSearcher (new SocketGroup (clients, 1900));
+			return new UpnpSearcher(new SocketGroup(clients, 1900));
 		}
 
 		public override NatProtocol Protocol => NatProtocol.Upnp;

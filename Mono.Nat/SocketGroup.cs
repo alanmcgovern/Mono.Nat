@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
-	class SocketGroup
+	class SocketGroup : IDisposable
 	{
 		Dictionary<UdpClient, List<IPAddress>> Sockets { get; }
 		SemaphoreSlim SocketSendLocker { get; }
@@ -19,6 +19,12 @@ namespace Mono.Nat
 			Sockets = sockets;
 			DefaultPort = defaultPort;
 			SocketSendLocker = new SemaphoreSlim (1, 1);
+		}
+
+		public void Dispose()
+		{
+			foreach (var s in Sockets)
+				s.Key.Dispose();
 		}
 
 		public async Task<(IPAddress, UdpReceiveResult)> ReceiveAsync (CancellationToken token)

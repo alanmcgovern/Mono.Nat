@@ -116,10 +116,5 @@ namespace Mono.Nat.Logging
             if (Writer != null)
                 Writer.Error (string.Format ("{0}{1}{2}", string.Format (formatString, p1), Environment.NewLine, ex));
         }
-
-        internal void DebugFormatted(string v, int errorcode)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

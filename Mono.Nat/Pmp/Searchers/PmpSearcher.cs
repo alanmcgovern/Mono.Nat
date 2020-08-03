@@ -43,63 +43,78 @@ namespace Mono.Nat.Pmp
 	{
 		static Logger Log { get; } = Logger.Create();
 
-		public static ISearcher Instance { get; }
-
-		static PmpSearcher ()
+		internal static PmpSearcher Create()
 		{
-			var clients = new Dictionary<UdpClient, List<IPAddress>> ();
+			var clients = new Dictionary<UdpClient, List<IPAddress>>();
 
-			try {
-				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces ()) {
+			try
+			{
+				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+				{
 					if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
 						continue;
-					IPInterfaceProperties properties = n.GetIPProperties ();
-					var gatewayList = new List<IPAddress> ();
+					IPInterfaceProperties properties = n.GetIPProperties();
+					var gatewayList = new List<IPAddress>();
 
-					foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses) {
-						if (gateway.Address.AddressFamily == AddressFamily.InterNetwork) {
-							gatewayList.Add (gateway.Address);
+					foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
+					{
+						if (gateway.Address.AddressFamily == AddressFamily.InterNetwork)
+						{
+							gatewayList.Add(gateway.Address);
 						}
 					}
-					if (gatewayList.Count == 0) {
+					if (gatewayList.Count == 0)
+					{
 						/* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-						foreach (var gw2 in properties.DnsAddresses) {
-							if (gw2.AddressFamily == AddressFamily.InterNetwork) {
-								gatewayList.Add (gw2);
+						foreach (var gw2 in properties.DnsAddresses)
+						{
+							if (gw2.AddressFamily == AddressFamily.InterNetwork)
+							{
+								gatewayList.Add(gw2);
 							}
 						}
-						foreach (var unicast in properties.UnicastAddresses) {
+						foreach (var unicast in properties.UnicastAddresses)
+						{
 							if (/*unicast.DuplicateAddressDetectionState == DuplicateAddressDetectionState.Preferred
 							    && unicast.AddressPreferredLifetime != UInt32.MaxValue
-							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork) {
-								var bytes = unicast.Address.GetAddressBytes ();
-								bytes [3] = 1;
-								gatewayList.Add (new IPAddress (bytes));
+							    && */unicast.Address.AddressFamily == AddressFamily.InterNetwork)
+							{
+								var bytes = unicast.Address.GetAddressBytes();
+								bytes[3] = 1;
+								gatewayList.Add(new IPAddress(bytes));
 							}
 						}
 					}
 
-					if (gatewayList.Count > 0) {
-						foreach (UnicastIPAddressInformation address in properties.UnicastAddresses) {
-							if (address.Address.AddressFamily == AddressFamily.InterNetwork) {
+					if (gatewayList.Count > 0)
+					{
+						foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
+						{
+							if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+							{
 								UdpClient client;
 
-								try {
-									client = new UdpClient (new IPEndPoint (address.Address, 0));
-								} catch (SocketException) {
+								try
+								{
+									client = new UdpClient(new IPEndPoint(address.Address, 0));
+								}
+								catch (SocketException)
+								{
 									continue; // Move on to the next address.
 								}
 
-								clients.Add (client, gatewayList);
+								clients.Add(client, gatewayList);
 							}
 						}
 					}
 				}
-			} catch (Exception) {
+			}
+			catch (Exception)
+			{
 				// NAT-PMP does not use multicast, so there isn't really a good fallback.
 			}
 
-			Instance = new PmpSearcher (new SocketGroup (clients, PmpConstants.ServerPort));
+			return new PmpSearcher(new SocketGroup(clients, PmpConstants.ServerPort));
 		}
 
 		public override NatProtocol Protocol => NatProtocol.Pmp;

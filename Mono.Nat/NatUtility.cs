@@ -29,11 +29,9 @@
 using System;
 using System.Net;
 using System.Linq;
-using System.IO;
 
 using Mono.Nat.Pmp;
 using Mono.Nat.Upnp;
-using System.ComponentModel;
 
 namespace Mono.Nat
 {
@@ -41,20 +39,12 @@ namespace Mono.Nat
 	{
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 
-		[Obsolete("This event is not raised in a usable way.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public static event EventHandler<DeviceEventArgs> DeviceLost;
-
 		static readonly object Locker = new object ();
 
-		public static bool IsSearching => PmpSearcher.Instance.Listening || UpnpSearcher.Instance.Listening;
+		static ISearcher pmp;
+		static ISearcher upnp;
 
-		static NatUtility ()
-		{
-			foreach (var searcher in new ISearcher [] { UpnpSearcher.Instance, PmpSearcher.Instance }) {
-				searcher.DeviceFound += (o, e) => DeviceFound?.Invoke (o, e);
-			}
-		}
+		public static bool IsSearching => (pmp != null && pmp.Listening) || (upnp != null && upnp.Listening);
 
 		/// <summary>
 		/// Sends a single (non-periodic) message to the specified IP address to see if it supports the
@@ -66,13 +56,27 @@ namespace Mono.Nat
 		{
 			lock (Locker) {
 				if (type == NatProtocol.Pmp) {
-					PmpSearcher.Instance.SearchAsync (gatewayAddress).FireAndForget ();
+					if(pmp == null) {
+						pmp = PmpSearcher.Create();
+						pmp.DeviceFound += HandleDeviceFound;
+					}
+					pmp.SearchAsync (gatewayAddress).FireAndForget ();
 				} else if (type == NatProtocol.Upnp) {
-					UpnpSearcher.Instance.SearchAsync (gatewayAddress).FireAndForget ();
+					if (upnp == null)
+					{
+						upnp = UpnpSearcher.Create();
+						upnp.DeviceFound += HandleDeviceFound;
+					}
+					upnp.SearchAsync (gatewayAddress).FireAndForget ();
 				} else {
 					throw new InvalidOperationException ("Unsuported type given");
 				}
 			}
+		}
+
+		static void HandleDeviceFound(object sender, DeviceEventArgs e)
+		{
+			DeviceFound?.Invoke(sender, e);
 		}
 
 		/// <summary>
@@ -83,11 +87,24 @@ namespace Mono.Nat
 		public static void StartDiscovery (params NatProtocol [] devices)
 		{
 			lock (Locker) {
-				if (devices.Length == 0 || devices.Contains (NatProtocol.Pmp))
-					PmpSearcher.Instance.SearchAsync ().FireAndForget ();
-
-				if (devices.Length == 0 || devices.Contains (NatProtocol.Upnp))
-					UpnpSearcher.Instance.SearchAsync ().FireAndForget ();
+				if (devices.Length == 0 || devices.Contains(NatProtocol.Pmp))
+				{
+					if (pmp == null)
+					{
+						pmp = UpnpSearcher.Create();
+						pmp.DeviceFound += HandleDeviceFound;
+					}
+					pmp.SearchAsync().FireAndForget();
+				}
+				if (devices.Length == 0 || devices.Contains(NatProtocol.Upnp))
+				{
+					if (upnp == null)
+					{
+						upnp = UpnpSearcher.Create();
+						upnp.DeviceFound += HandleDeviceFound;
+					}
+					upnp.SearchAsync().FireAndForget();
+				}
 			}
 		}
 
@@ -97,8 +114,14 @@ namespace Mono.Nat
 		public static void StopDiscovery ()
 		{
 			lock (Locker) {
-				PmpSearcher.Instance.Stop ();
-				UpnpSearcher.Instance.Stop ();
+				pmp?.Stop ();
+				upnp?.Stop();
+
+				pmp.Dispose();
+				upnp.Dispose();
+
+				pmp = null;
+				upnp = null;
 			}
 		}
 	}
