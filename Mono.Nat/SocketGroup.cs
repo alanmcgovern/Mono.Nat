@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -29,7 +29,7 @@ namespace Mono.Nat
 
 		public async Task<(IPAddress, UdpReceiveResult)> ReceiveAsync (CancellationToken token)
 		{
-			while (!token.IsCancellationRequested) {
+			while (true) {
 				foreach (var keypair in Sockets) {
 					try {
 						if (keypair.Key.Available > 0) {
@@ -43,9 +43,8 @@ namespace Mono.Nat
 				}
 
 				await Task.Delay (10, token);
+				token.ThrowIfCancellationRequested();
 			}
-
-			throw new Exception ("Should not be reached");
 		}
 
 		public async Task SendAsync (byte [] buffer, IPAddress gatewayAddress, CancellationToken token)
