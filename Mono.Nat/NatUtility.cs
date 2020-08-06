@@ -38,8 +38,9 @@ namespace Mono.Nat
 	public static class NatUtility
 	{
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
+        public static event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
 
-		static readonly object Locker = new object ();
+        static readonly object Locker = new object ();
 
 		static ISearcher pmp;
 		static ISearcher upnp;
@@ -59,13 +60,15 @@ namespace Mono.Nat
 					if(pmp == null) {
 						pmp = PmpSearcher.Create();
 						pmp.DeviceFound += HandleDeviceFound;
-					}
+;                       pmp.DeviceUnknown += HandleDeviceUnknown;
+                    }
 					pmp.SearchAsync (gatewayAddress).FireAndForget ();
 				} else if (type == NatProtocol.Upnp) {
 					if (upnp == null)
 					{
 						upnp = UpnpSearcher.Create();
 						upnp.DeviceFound += HandleDeviceFound;
+                        upnp.DeviceUnknown += HandleDeviceUnknown;
 					}
 					upnp.SearchAsync (gatewayAddress).FireAndForget ();
 				} else {
@@ -74,17 +77,22 @@ namespace Mono.Nat
 			}
 		}
 
-		static void HandleDeviceFound(object sender, DeviceEventArgs e)
-		{
-			DeviceFound?.Invoke(sender, e);
-		}
+        static void HandleDeviceFound(object sender, DeviceEventArgs e)
+        {
+            DeviceFound?.Invoke(sender, e);
+        }
 
-		/// <summary>
-		/// Periodically send a multicast UDP message to scan for new devices, and begin listening indefinitely
-		/// for responses.
-		/// </summary>
-		/// <param name="devices">The protocols which should be searched for. An empty array will result in all supported protocols being used.</param>
-		public static void StartDiscovery (params NatProtocol [] devices)
+        static void HandleDeviceUnknown(object sender, DeviceEventUnknownArgs e)
+        {
+            DeviceUnknown?.Invoke(sender, e);
+        }
+
+        /// <summary>
+        /// Periodically send a multicast UDP message to scan for new devices, and begin listening indefinitely
+        /// for responses.
+        /// </summary>
+        /// <param name="devices">The protocols which should be searched for. An empty array will result in all supported protocols being used.</param>
+        public static void StartDiscovery (params NatProtocol [] devices)
 		{
 			lock (Locker) {
 				if (devices.Length == 0 || devices.Contains(NatProtocol.Pmp))
@@ -93,7 +101,8 @@ namespace Mono.Nat
 					{
 						pmp = UpnpSearcher.Create();
 						pmp.DeviceFound += HandleDeviceFound;
-					}
+                        pmp.DeviceUnknown += HandleDeviceUnknown;
+                    }
 					pmp.SearchAsync().FireAndForget();
 				}
 				if (devices.Length == 0 || devices.Contains(NatProtocol.Upnp))
@@ -102,7 +111,8 @@ namespace Mono.Nat
 					{
 						upnp = UpnpSearcher.Create();
 						upnp.DeviceFound += HandleDeviceFound;
-					}
+                        upnp.DeviceUnknown += HandleDeviceUnknown;
+                    }
 					upnp.SearchAsync().FireAndForget();
 				}
 			}

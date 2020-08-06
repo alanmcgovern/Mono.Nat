@@ -1,4 +1,4 @@
-﻿//
+//
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //
@@ -38,6 +38,7 @@ namespace Mono.Nat
 		protected static readonly TimeSpan SearchPeriod = TimeSpan.FromMinutes (5);
 
 		public event EventHandler<DeviceEventArgs> DeviceFound;
+        public event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
 
 		public bool Listening => ListeningTask != null;
 		public abstract NatProtocol Protocol { get; }
@@ -121,6 +122,11 @@ namespace Mono.Nat
 			SearchTask = null;
 		}
 
+        protected void RaiseDeviceUnknown(IPAddress address, EndPoint remote, string response)
+        {
+            DeviceUnknown?.Invoke(this, new DeviceEventUnknownArgs(address, remote, response));
+        }
+
 		protected void RaiseDeviceFound (NatDevice device)
 		{
 			CurrentSearchCancellation?.Cancel ();
@@ -135,7 +141,7 @@ namespace Mono.Nat
 			// If we did not find the device in the dictionary, raise an event as it's the first time
 			// we've encountered it!
 			if (actualDevice == null)
-				DeviceFound?.Invoke (this, new DeviceEventArgs (device));
-		}
+                DeviceFound?.Invoke(this, new DeviceEventArgs(device));
+        }
 	}
 }

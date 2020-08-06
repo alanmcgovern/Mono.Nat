@@ -37,15 +37,20 @@ namespace Mono.Nat
 {
 	interface ISearcher : IDisposable
 	{
-		/// <summary>
-		/// This event is raised whenever a device which supports port mapping is discovered
-		/// </summary>
-		event EventHandler<DeviceEventArgs> DeviceFound;
+        /// <summary>
+        /// This event is raised whenever a device which supports port mapping is discovered
+        /// </summary>
+        event EventHandler<DeviceEventArgs> DeviceFound;
 
-		/// <summary>
-		/// The port mapping protocol supported by the device
-		/// </summary>
-		NatProtocol Protocol { get; }
+        /// <summary>
+        /// This event is raised whenever a device which doesn't supports port mapping is discovered.
+        /// </summary>
+        event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
+
+        /// <summary>
+        /// The port mapping protocol supported by the device
+        /// </summary>
+        NatProtocol Protocol { get; }
 
 		/// <summary>
 		/// While running the searcher constantly listens for UDP broadcasts when new devices come online.
