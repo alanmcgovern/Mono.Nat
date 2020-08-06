@@ -1,4 +1,4 @@
-﻿//
+//
 // Authors:
 //   Alan McGovern alan.mcgovern@gmail.com
 //
@@ -38,6 +38,7 @@ namespace Mono.Nat
 		protected static readonly TimeSpan SearchPeriod = TimeSpan.FromMinutes (5);
 
 		public event EventHandler<DeviceEventArgs> DeviceFound;
+		public event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
 
 		public bool Listening => ListeningTask != null;
 		public abstract NatProtocol Protocol { get; }
@@ -46,7 +47,7 @@ namespace Mono.Nat
 		Task ListeningTask { get; set; }
 		protected SocketGroup Clients { get; }
 
-		CancellationTokenSource Cancellation;
+		protected CancellationTokenSource Cancellation;
 		protected CancellationTokenSource CurrentSearchCancellation;
 		CancellationTokenSource OverallSearchCancellation;
 		Task SearchTask { get; set; }
@@ -78,13 +79,13 @@ namespace Mono.Nat
 		{
 			while (!token.IsCancellationRequested) {
 				(var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
-				await HandleMessageReceived (localAddress, data, token).ConfigureAwait (false);
+				await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, token).ConfigureAwait (false);
 			}
 		}
 
-		protected abstract Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token);
+        public abstract Task HandleMessageReceived(IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token);
 
-		public async Task SearchAsync ()
+        public async Task SearchAsync ()
 		{
 			// Cancel any existing continuous search operation.
 			OverallSearchCancellation?.Cancel ();
@@ -121,6 +122,11 @@ namespace Mono.Nat
 			SearchTask = null;
 		}
 
+		protected void RaiseDeviceUnknown(IPAddress address, EndPoint remote, string response, NatProtocol protocol)
+		{
+			DeviceUnknown?.Invoke(this, new DeviceEventUnknownArgs(address, remote, response, protocol));
+		}
+
 		protected void RaiseDeviceFound (NatDevice device)
 		{
 			CurrentSearchCancellation?.Cancel ();
@@ -135,7 +141,7 @@ namespace Mono.Nat
 			// If we did not find the device in the dictionary, raise an event as it's the first time
 			// we've encountered it!
 			if (actualDevice == null)
-				DeviceFound?.Invoke (this, new DeviceEventArgs (device));
-		}
+                DeviceFound?.Invoke(this, new DeviceEventArgs(device));
+        }
 	}
 }

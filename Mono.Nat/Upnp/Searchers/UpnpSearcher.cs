@@ -78,9 +78,16 @@ namespace Mono.Nat.Upnp
 							{
 								var client = new UdpClient(new IPEndPoint(address.Address, 0));
 								clients.Add(client, gateways);
+
+								client = new UdpClient();
+								client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+								client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(gateways[0], IPAddress.Any));
+								client.Client.Bind(new IPEndPoint(address.Address, 1900));
+								clients.Add(client, gateways);
 							}
-							catch
+							catch (Exception ex)
 							{
+								Log.Error(ex.Message);
 								continue; // Move on to the next address.
 							}
 						}
@@ -120,45 +127,51 @@ namespace Mono.Nat.Upnp
 			} while (true);
 		}
 
-		protected override async Task HandleMessageReceived (IPAddress localAddress, UdpReceiveResult result, CancellationToken token)
-		{
-			// Convert it to a string for easy parsing
-			string dataString = null;
-			var response = result.Buffer;
+        public override async Task HandleMessageReceived(IPAddress localAddress, byte[] response, IPEndPoint remoteEndPoint, CancellationToken token)
+        {
+            if (token == CancellationToken.None)
+            {
+                token = Cancellation.Token;
+            }
 
-			// No matter what, this method should never throw an exception. If something goes wrong
-			// we should still be in a position to handle the next reply correctly.
-			try {
-				dataString = Encoding.UTF8.GetString (response);
+            string dataString = null;
 
-				Log.InfoFormatted ("uPnP Search Response: {0}", dataString);
+            // No matter what, this method should never throw an exception. If something goes wrong
+            // we should still be in a position to handle the next reply correctly.
+            try
+            {
+                dataString = Encoding.UTF8.GetString (response);
 
-				/* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection.
+                Log.InfoFormatted ("uPnP Search Response: {0}", dataString);
+
+                /* For UPnP Port Mapping we need ot find either WANPPPConnection or WANIPConnection.
 				 Any other device type is no good to us for this purpose. See the IGP overview paper
 				 page 5 for an overview of device types and their hierarchy.
 				 http://upnp.org/specs/gw/UPnP-gw-InternetGatewayDevice-v1-Device.pdf */
 
-				/* TODO: Currently we are assuming version 1 of the protocol. We should figure out which
+                /* TODO: Currently we are assuming version 1 of the protocol. We should figure out which
 				 version it is and apply the correct URN. */
 
-				string foundService = null;
-				foreach (var type in SupportedServices.Concat(DiscoverDeviceMessage.SupportedServiceTypes)) {
+                string foundService = null;
+                foreach (var type in SupportedServices.Concat(DiscoverDeviceMessage.SupportedServiceTypes)) {                    
 					if (dataString.IndexOf(type, StringComparison.OrdinalIgnoreCase) != -1) {
-						foundService = type;
-						break;
-					}
-				}
+                        foundService = type;
+                        break;
+                    }
+                }
 
-				if (foundService == null)
-					return;
-
+                if (foundService == null) {
+                    RaiseDeviceUnknown(localAddress, remoteEndPoint, dataString, NatProtocol.Upnp);
+                    return;
+                }
+                    
 				Log.InfoFormatted("uPnP Search Response: Router advertised a '{0}' service", foundService);
 				var location = dataString.Split (new [] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
 					.Select (t => t.Trim ())
 					.FirstOrDefault (t => t.StartsWith ("LOCATION", StringComparison.OrdinalIgnoreCase));
 
-				if (location == null)
-					return;
+                if (location == null)
+                    return;
 
 				var deviceLocation = location.Split (new [] { ':' }, 2).Skip (1).FirstOrDefault ();
 				var deviceServiceUri = new Uri (deviceLocation);
@@ -178,8 +191,8 @@ namespace Mono.Nat.Upnp
 				Log.InfoFormatted("Fetching service list: {0}", deviceServiceUri);
 				var d = await GetServicesList (localAddress, deviceServiceUri, token).ConfigureAwait (false);
 				if (d != null)
-					RaiseDeviceFound (d);
-			} catch (Exception ex) {
+                    RaiseDeviceFound (d);
+            } catch (Exception ex) {
 				Trace.WriteLine ("Unhandled exception when trying to decode a device's response Send me the following data: ");
 				Trace.WriteLine ("ErrorMessage:");
 				Trace.WriteLine (ex.Message);

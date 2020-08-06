@@ -30,6 +30,7 @@
 
 using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,15 +38,20 @@ namespace Mono.Nat
 {
 	interface ISearcher : IDisposable
 	{
-		/// <summary>
-		/// This event is raised whenever a device which supports port mapping is discovered
-		/// </summary>
-		event EventHandler<DeviceEventArgs> DeviceFound;
+        /// <summary>
+        /// This event is raised whenever a device which supports port mapping is discovered
+        /// </summary>
+        event EventHandler<DeviceEventArgs> DeviceFound;
 
-		/// <summary>
-		/// The port mapping protocol supported by the device
-		/// </summary>
-		NatProtocol Protocol { get; }
+        /// <summary>
+        /// This event is raised whenever a device which doesn't supports port mapping is discovered.
+        /// </summary>
+        event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
+
+        /// <summary>
+        /// The port mapping protocol supported by the device
+        /// </summary>
+        NatProtocol Protocol { get; }
 
 		/// <summary>
 		/// While running the searcher constantly listens for UDP broadcasts when new devices come online.
@@ -69,5 +75,14 @@ namespace Mono.Nat
 		/// The searcher will no longer listen for new devices.
 		/// </summary>
 		void Stop ();
-	}
+
+        /// <summary>
+        /// Permits Mono.NAT to process messages not received internally.
+        /// </summary>
+        /// <param name="localAddress">Interface ip.</param>
+        /// <param name="response">Response received.</param>
+        /// <param name="endpoint">Destination ip.</param>
+        /// <param name="token">Cancellation token.</param>
+        Task HandleMessageReceived(IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token);
+    }
 }
