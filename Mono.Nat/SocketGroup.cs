@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
-	class SocketGroup : IDisposable
+	public class SocketGroup : IDisposable
 	{
 		Dictionary<UdpClient, List<IPAddress>> Sockets { get; }
 		SemaphoreSlim SocketSendLocker { get; }
