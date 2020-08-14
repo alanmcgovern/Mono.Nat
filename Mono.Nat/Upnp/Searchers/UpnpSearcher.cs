@@ -74,20 +74,34 @@ namespace Mono.Nat.Upnp
 					{
 						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
 						{
-							try
-							{
-								var client = new UdpClient(new IPEndPoint(address.Address, 0));
-								clients.Add(client, gateways);
-							}
-							catch
-							{
-								continue; // Move on to the next address.
-							}
-						}
-					}
-				}
-			}
-			catch (Exception)
+                            try
+                            {
+                                var client = new UdpClient(new IPEndPoint(address.Address, 0));
+                                clients.Add(client, gateways);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Message);
+                                continue; // Move on to the next address.
+                            }
+                        }
+                    }
+                }
+
+                // This enables NOTIFY messages to be received when M$ SSDPSRV service is running under Windows.
+                try
+                {
+                    var listener = new UdpClient(new IPEndPoint(IPAddress.Any, 1900));
+                   listener.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(gateways[0], IPAddress.Any));
+                    clients.Add(listener, gateways);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Message + "\r\nMono.NAT will be unable to listen on windows systems if cmd is running.");
+                }
+
+            }
+            catch (Exception)
 			{
 				clients.Add(new UdpClient(0), gateways);
 			}
