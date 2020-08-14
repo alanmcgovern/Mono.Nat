@@ -59,7 +59,7 @@ namespace Mono.Nat.Upnp
 			 */
 			"urn:schemas-upnp-org:service:WANIPConnection:",
 			"urn:schemas-upnp-org:service:WANPPPConnection:",
-        }.AsReadOnly();
+		}.AsReadOnly();
 
 		internal static UpnpSearcher Create()
 		{
@@ -74,39 +74,32 @@ namespace Mono.Nat.Upnp
 					{
 						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
 						{
-                            try
-                            {
-                                var client = new UdpClient(new IPEndPoint(address.Address, 0));
-                                clients.Add(client, gateways);
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Message);
-                                continue; // Move on to the next address.
-                            }
-                        }
-                    }
-                }
+							try
+							{
+								var client = new UdpClient(new IPEndPoint(address.Address, 0));
+								clients.Add(client, gateways);
 
-                // This enables NOTIFY messages to be received when M$ SSDPSRV service is running under Windows.
-                try
-                {
-                    var listener = new UdpClient(new IPEndPoint(IPAddress.Any, 1900));
-                   listener.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(gateways[0], IPAddress.Any));
-                    clients.Add(listener, gateways);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Message + "\r\nMono.NAT will be unable to listen on windows systems if cmd is running.");
-                }
-
-            }
-            catch (Exception)
+								client = new UdpClient();
+								client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+								client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(gateways[0], IPAddress.Any));
+								client.Client.Bind(new IPEndPoint(address.Address, 1900));
+								clients.Add(client, gateways);
+							}
+							catch (Exception ex)
+							{
+								Log.Error(ex.Message);
+								continue; // Move on to the next address.
+							}
+						}
+					}
+				}
+			}
+			catch (Exception)
 			{
 				clients.Add(new UdpClient(0), gateways);
 			}
 
-            return new UpnpSearcher(new SocketGroup(clients, 1900));
+			return new UpnpSearcher(new SocketGroup(clients, 1900));
 		}
 
 		public override NatProtocol Protocol => NatProtocol.Upnp;
