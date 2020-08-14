@@ -164,7 +164,7 @@ namespace Mono.Nat.Upnp
                 }
 
                 if (foundService == null) {
-                    RaiseDeviceUnknown(localAddress, result.RemoteEndPoint, dataString);
+                    RaiseDeviceUnknown(localAddress, result.RemoteEndPoint, dataString, NatProtocol.Upnp);
                     return;
                 }
                     
