@@ -82,7 +82,7 @@ namespace Mono.Nat
         /// <param name="localAddress">Interface ip.</param>
         /// <param name="response">Response received.</param>
         /// <param name="endpoint">Destination ip.</param>
-        /// <pamam name="token">Cancellation token.</pamam>
+        /// <param name="token">Cancellation token.</pamam>
         Task HandleMessageReceived(IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token);
     }
 }
