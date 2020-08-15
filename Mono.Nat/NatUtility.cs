@@ -37,8 +37,8 @@ using System.Collections.Generic;
 
 namespace Mono.Nat
 {
-	public static class NatUtility
-	{
+    public static class NatUtility
+    {
 
         public static event EventHandler<DeviceEventArgs> DeviceFound;
         public static event EventHandler<DeviceEventUnknownArgs> UnknownDeviceFound;
@@ -66,26 +66,26 @@ namespace Mono.Nat
 
         public static bool IsSearching => (pmp != null && pmp.Listening) || (upnp != null && upnp.Listening);
 
-		/// <summary>
-		/// Sends a single (non-periodic) message to the specified IP address to see if it supports the
-		/// specified port mapping protocol, and begin listening indefinitely for responses.
-		/// </summary>
-		/// <param name="gatewayAddress">The IP address</param>
-		/// <param name="type"></param>
-		public static void Search (IPAddress gatewayAddress, NatProtocol type)
-		{
-			lock (Locker)
-				GetOrCreate(type).SearchAsync (gatewayAddress).FireAndForget ();
-		}
-
-        static void HandleDeviceFound(object sender, DeviceEventArgs e)
+        /// <summary>
+        /// Sends a single (non-periodic) message to the specified IP address to see if it supports the
+        /// specified port mapping protocol, and begin listening indefinitely for responses.
+        /// </summary>
+        /// <param name="gatewayAddress">The IP address</param>
+        /// <param name="type"></param>
+        public static void Search (IPAddress gatewayAddress, NatProtocol type)
         {
-            DeviceFound?.Invoke(sender, e);
+            lock (Locker)
+                GetOrCreate (type).SearchAsync (gatewayAddress).FireAndForget ();
         }
 
-        static void HandleUnknownDeviceFound(object sender, DeviceEventUnknownArgs e)
+        static void HandleDeviceFound (object sender, DeviceEventArgs e)
         {
-            UnknownDeviceFound?.Invoke(sender, e);
+            DeviceFound?.Invoke (sender, e);
+        }
+
+        static void HandleUnknownDeviceFound (object sender, DeviceEventUnknownArgs e)
+        {
+            UnknownDeviceFound?.Invoke (sender, e);
         }
 
         /// <summary>
@@ -93,14 +93,14 @@ namespace Mono.Nat
         /// for responses.
         /// </summary>
         /// <param name="devices">The protocols which should be searched for. An empty array will result in all supported protocols being used.</param>
-        public static void StartDiscovery (params NatProtocol [] devices)
-		{
-			lock (Locker) {
+        public static void StartDiscovery (params NatProtocol[] devices)
+        {
+            lock (Locker) {
                 devices = devices.Length == 0 ? AllProtocols : devices;
-                foreach(var protocol in devices)
-					GetOrCreate(protocol).SearchAsync().FireAndForget();
-			}
-		}
+                foreach (var protocol in devices)
+                    GetOrCreate (protocol).SearchAsync ().FireAndForget ();
+            }
+        }
 
         /// <summary>
         /// Parses a message received elsewhere.
@@ -109,24 +109,24 @@ namespace Mono.Nat
         /// <param name="localAddress"></param>
         /// <param name="content"></param>
         /// <param name="source"></param>
-        public static void ParseMessage(NatProtocol type, IPAddress localAddress, byte[] content, IPEndPoint source)
+        public static void ParseMessage (NatProtocol type, IPAddress localAddress, byte[] content, IPEndPoint source)
         {
             lock (Locker)
                 GetOrCreate (type).HandleMessageReceived (localAddress, content, source, CancellationToken.None);
         }
 
-		/// <summary>
-		/// Stop listening for responses to the search messages, and cancel any pending searches.
-		/// </summary>
-		public static void StopDiscovery ()
-		{
-			lock (Locker) {
-				foreach (var searcher in Searchers) {
+        /// <summary>
+        /// Stop listening for responses to the search messages, and cancel any pending searches.
+        /// </summary>
+        public static void StopDiscovery ()
+        {
+            lock (Locker) {
+                foreach (var searcher in Searchers) {
                     searcher.Value.Stop ();
                     searcher.Value.Dispose ();
                 }
                 Searchers.Clear ();
-			}
-		}
-	}
+            }
+        }
+    }
 }

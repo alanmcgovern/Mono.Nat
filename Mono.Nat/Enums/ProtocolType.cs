@@ -26,9 +26,9 @@
 
 namespace Mono.Nat
 {
-	public enum Protocol
-	{
-		Tcp,
-		Udp
-	}
+    public enum Protocol
+    {
+        Tcp,
+        Udp
+    }
 }

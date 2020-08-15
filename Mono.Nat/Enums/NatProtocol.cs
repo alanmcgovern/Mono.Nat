@@ -26,9 +26,9 @@
 
 namespace Mono.Nat
 {
-	public enum NatProtocol
-	{
-		Upnp = 0,
-		Pmp = 1
-	}
+    public enum NatProtocol
+    {
+        Upnp = 0,
+        Pmp = 1
+    }
 }

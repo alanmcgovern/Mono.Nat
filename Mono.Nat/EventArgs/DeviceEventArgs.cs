@@ -28,13 +28,13 @@ using System;
 
 namespace Mono.Nat
 {
-	public class DeviceEventArgs : EventArgs
-	{
-		public INatDevice Device { get; }
+    public class DeviceEventArgs : EventArgs
+    {
+        public INatDevice Device { get; }
 
-		public DeviceEventArgs (INatDevice device)
-		{
-			Device = device;
-		}
-	}
+        public DeviceEventArgs (INatDevice device)
+        {
+            Device = device;
+        }
+    }
 }
