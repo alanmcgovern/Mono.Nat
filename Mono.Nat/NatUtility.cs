@@ -33,20 +33,38 @@ using System.Linq;
 using Mono.Nat.Pmp;
 using Mono.Nat.Upnp;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-		public static event EventHandler<DeviceEventArgs> DeviceFound;
-        public static event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
+
+        public static event EventHandler<DeviceEventArgs> DeviceFound;
+        public static event EventHandler<DeviceEventUnknownArgs> UnknownDeviceFound;
+
+        static readonly NatProtocol[] AllProtocols = Enum.GetValues (typeof (NatProtocol)).Cast<NatProtocol> ().ToArray ();
 
         static readonly object Locker = new object ();
 
-		static ISearcher pmp;
-		static ISearcher upnp;
+        static readonly Dictionary<NatProtocol, ISearcher> Searchers = new Dictionary<NatProtocol, ISearcher> ();
 
-		public static bool IsSearching => (pmp != null && pmp.Listening) || (upnp != null && upnp.Listening);
+        static ISearcher pmp => Searchers.TryGetValue (NatProtocol.Pmp, out ISearcher value) ? value : null;
+        static ISearcher upnp => Searchers.TryGetValue (NatProtocol.Pmp, out ISearcher value) ? value : null;
+
+        static ISearcher GetOrCreate (NatProtocol protocol)
+        {
+            if (!Searchers.TryGetValue (protocol, out ISearcher searcher)) {
+                searcher = protocol == NatProtocol.Pmp ? (ISearcher) PmpSearcher.Create () : UpnpSearcher.Create ();
+                searcher.DeviceFound += HandleDeviceFound;
+                searcher.UnknownDeviceFound += HandleUnknownDeviceFound;
+                Searchers[protocol] = searcher;
+            }
+
+            return searcher;
+        }
+
+        public static bool IsSearching => (pmp != null && pmp.Listening) || (upnp != null && upnp.Listening);
 
 		/// <summary>
 		/// Sends a single (non-periodic) message to the specified IP address to see if it supports the
@@ -56,26 +74,8 @@ namespace Mono.Nat
 		/// <param name="type"></param>
 		public static void Search (IPAddress gatewayAddress, NatProtocol type)
 		{
-			lock (Locker) {
-				if (type == NatProtocol.Pmp) {
-					if(pmp == null) {
-						pmp = PmpSearcher.Create();
-						pmp.DeviceFound += HandleDeviceFound;
-						pmp.DeviceUnknown += HandleDeviceUnknown;
-					}
-					pmp.SearchAsync (gatewayAddress).FireAndForget ();
-				} else if (type == NatProtocol.Upnp) {
-					if (upnp == null)
-					{
-						upnp = UpnpSearcher.Create();
-						upnp.DeviceFound += HandleDeviceFound;
-						upnp.DeviceUnknown += HandleDeviceUnknown;
-					}
-					upnp.SearchAsync (gatewayAddress).FireAndForget ();
-				} else {
-					throw new InvalidOperationException ("Unsuported type given");
-				}
-			}
+			lock (Locker)
+				GetOrCreate(type).SearchAsync (gatewayAddress).FireAndForget ();
 		}
 
         static void HandleDeviceFound(object sender, DeviceEventArgs e)
@@ -83,9 +83,9 @@ namespace Mono.Nat
             DeviceFound?.Invoke(sender, e);
         }
 
-        static void HandleDeviceUnknown(object sender, DeviceEventUnknownArgs e)
+        static void HandleUnknownDeviceFound(object sender, DeviceEventUnknownArgs e)
         {
-            DeviceUnknown?.Invoke(sender, e);
+            UnknownDeviceFound?.Invoke(sender, e);
         }
 
         /// <summary>
@@ -96,26 +96,9 @@ namespace Mono.Nat
         public static void StartDiscovery (params NatProtocol [] devices)
 		{
 			lock (Locker) {
-				if (devices.Length == 0 || devices.Contains(NatProtocol.Pmp))
-				{
-					if (pmp == null)
-					{
-						pmp = UpnpSearcher.Create();
-						pmp.DeviceFound += HandleDeviceFound;
-                        pmp.DeviceUnknown += HandleDeviceUnknown;
-                    }
-					pmp.SearchAsync().FireAndForget();
-				}
-				if (devices.Length == 0 || devices.Contains(NatProtocol.Upnp))
-				{
-					if (upnp == null)
-					{
-						upnp = UpnpSearcher.Create();
-						upnp.DeviceFound += HandleDeviceFound;
-                        upnp.DeviceUnknown += HandleDeviceUnknown;
-                    }
-					upnp.SearchAsync().FireAndForget();
-				}
+                devices = devices.Length == 0 ? AllProtocols : devices;
+                foreach(var protocol in devices)
+					GetOrCreate(protocol).SearchAsync().FireAndForget();
 			}
 		}
 
@@ -129,33 +112,7 @@ namespace Mono.Nat
         public static void ParseMessage(NatProtocol type, IPAddress localAddress, byte[] content, IPEndPoint source)
         {
             lock (Locker)
-            {
-                if (type == NatProtocol.Pmp)
-                {
-                    if (pmp == null)
-                    {
-                        pmp = UpnpSearcher.Create();
-                        pmp.DeviceFound += HandleDeviceFound;
-                        pmp.DeviceUnknown += HandleDeviceUnknown;
-                    }
-                    pmp.HandleMessageReceived(localAddress, content, source, CancellationToken.None);
-                }
-                else if (type == NatProtocol.Upnp)
-                {
-                    if (upnp == null)
-                    {
-                        upnp = UpnpSearcher.Create();
-                        upnp.DeviceFound += HandleDeviceFound;
-                        upnp.DeviceUnknown += HandleDeviceUnknown;
-                    }
-                    upnp.HandleMessageReceived(localAddress, content, source, CancellationToken.None);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unsuported type given");
-                }
-                { }
-            }
+                GetOrCreate (type).HandleMessageReceived (localAddress, content, source, CancellationToken.None);
         }
 
 		/// <summary>
@@ -164,14 +121,11 @@ namespace Mono.Nat
 		public static void StopDiscovery ()
 		{
 			lock (Locker) {
-				pmp?.Stop ();
-				upnp?.Stop();
-
-				pmp.Dispose();
-				upnp.Dispose();
-
-				pmp = null;
-				upnp = null;
+				foreach (var searcher in Searchers) {
+                    searcher.Value.Stop ();
+                    searcher.Value.Dispose ();
+                }
+                Searchers.Clear ();
 			}
 		}
 	}
