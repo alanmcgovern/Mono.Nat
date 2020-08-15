@@ -46,7 +46,7 @@ namespace Mono.Nat
         /// <summary>
         /// This event is raised whenever a device which doesn't supports port mapping is discovered.
         /// </summary>
-        event EventHandler<DeviceEventUnknownArgs> DeviceUnknown;
+        event EventHandler<DeviceEventUnknownArgs> UnknownDeviceFound;
 
         /// <summary>
         /// The port mapping protocol supported by the device
