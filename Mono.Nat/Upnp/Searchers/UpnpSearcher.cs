@@ -149,6 +149,8 @@ namespace Mono.Nat.Upnp
                     RaiseDeviceUnknown (localAddress, remoteEndPoint, dataString, NatProtocol.Upnp);
                     return;
                 }
+                else if (foundService == null)
+                    return;
 
                 if (token == CancellationToken.None) {
                     token = Cancellation.Token;
