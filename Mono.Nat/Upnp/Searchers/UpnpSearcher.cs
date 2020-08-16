@@ -120,10 +120,6 @@ namespace Mono.Nat.Upnp
 
         public override async Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint remoteEndPoint, CancellationToken token)
         {
-            if (token == CancellationToken.None) {
-                token = Cancellation.Token;
-            }
-
             string dataString = null;
 
             // No matter what, this method should never throw an exception. If something goes wrong
@@ -149,9 +145,13 @@ namespace Mono.Nat.Upnp
                     }
                 }
 
-                if (foundService == null) {
+                if (foundService == null && token != CancellationToken.None) {
                     RaiseDeviceUnknown (localAddress, remoteEndPoint, dataString, NatProtocol.Upnp);
                     return;
+                }
+
+                if (token == CancellationToken.None) {
+                    token = Cancellation.Token;
                 }
 
                 Log.InfoFormatted ("uPnP Search Response: Router advertised a '{0}' service", foundService);
