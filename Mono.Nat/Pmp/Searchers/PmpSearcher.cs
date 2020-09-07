@@ -142,7 +142,7 @@ namespace Mono.Nat.Pmp
             }
         }
 
-        public override Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token)
+        protected override Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, bool externalEvent, CancellationToken token)
         {
             if (response.Length != 12)
                 return Task.CompletedTask;

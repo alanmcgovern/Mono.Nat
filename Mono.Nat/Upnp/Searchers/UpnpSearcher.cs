@@ -118,7 +118,7 @@ namespace Mono.Nat.Upnp
             } while (true);
         }
 
-        public override async Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint remoteEndPoint, CancellationToken token)
+        protected override async Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint remoteEndPoint, bool externalEvent, CancellationToken token)
         {
             if (token == CancellationToken.None) {
                 token = Cancellation.Token;
@@ -149,7 +149,7 @@ namespace Mono.Nat.Upnp
                     }
                 }
 
-                if (foundService == null) {
+                if (foundService == null && !externalEvent) {
                     RaiseDeviceUnknown (localAddress, remoteEndPoint, dataString, NatProtocol.Upnp);
                     return;
                 }

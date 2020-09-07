@@ -79,11 +79,13 @@ namespace Mono.Nat
         {
             while (!token.IsCancellationRequested) {
                 (var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
-                await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, token).ConfigureAwait (false);
+                await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
             }
         }
+        public Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token)
+            => HandleMessageReceived (localAddress, response, endpoint, true, token);
 
-        public abstract Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token);
+        protected abstract Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, bool externalEvent, CancellationToken token);
 
         public async Task SearchAsync ()
         {
