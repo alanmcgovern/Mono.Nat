@@ -48,12 +48,12 @@ namespace Mono.Nat.Pmp
             var resultCode = (ErrorCode) IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
             uint epoch = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-            int privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
-            int publicPort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
+            int privatePort = (ushort)IPAddress.NetworkToHostOrder ((short) BitConverter.ToUInt16 (data, 8));
+            int publicPort = (ushort)IPAddress.NetworkToHostOrder ((short) BitConverter.ToUInt16 (data, 10));
 
             uint lifetime = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 
-            if (publicPort < 0 || privatePort < 0 || resultCode != ErrorCode.Success)
+            if (resultCode != ErrorCode.Success)
                 throw new MappingException ((ErrorCode) resultCode, "Could not modify the port map");
 
             var mapping = new Mapping (protocol, privatePort, publicPort, (int) lifetime, null);
