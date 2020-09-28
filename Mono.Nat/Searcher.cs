@@ -99,7 +99,7 @@ namespace Mono.Nat
             OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
 
             SearchTask = SearchAsync (null, SearchPeriod, OverallSearchCancellation.Token);
-            await SearchTask;
+            await SearchTask.ConfigureAwait(false);
         }
 
         public async Task SearchAsync (IPAddress gatewayAddress)
