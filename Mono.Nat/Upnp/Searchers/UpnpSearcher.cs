@@ -111,10 +111,10 @@ namespace Mono.Nat.Upnp
 
             do {
                 foreach (var message in messages)
-                    await Clients.SendAsync (message, gatewayAddress, token);
+                    await Clients.SendAsync (message, gatewayAddress, token).ConfigureAwait (false);
                 if (!repeatInterval.HasValue)
                     break;
-                await Task.Delay (repeatInterval.Value, token);
+                await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
             } while (true);
         }
 
@@ -165,7 +165,7 @@ namespace Mono.Nat.Upnp
                 var deviceLocation = location.Split (new[] { ':' }, 2).Skip (1).FirstOrDefault ();
                 var deviceServiceUri = new Uri (deviceLocation);
 
-                using (await Locker.DisposableWaitAsync (token)) {
+                using (await Locker.DisposableWaitAsync (token).ConfigureAwait (false)) {
                     // If we send 3 requests at a time, ensure we only fetch the services list once
                     // even if three responses are received
                     if (LastFetched.TryGetValue (deviceServiceUri, out DateTime last))
@@ -181,6 +181,8 @@ namespace Mono.Nat.Upnp
                 var d = await GetServicesList (localAddress, deviceServiceUri, token).ConfigureAwait (false);
                 if (d != null)
                     RaiseDeviceFound (d);
+            } catch (OperationCanceledException) {
+                throw;
             } catch (Exception ex) {
                 Trace.WriteLine ("Unhandled exception when trying to decode a device's response Send me the following data: ");
                 Trace.WriteLine ("ErrorMessage:");
@@ -197,11 +199,11 @@ namespace Mono.Nat.Upnp
             if (body.Length > 0)
                 Log.Error ("Services Message unexpectedly contained a message body");
             using (token.Register (() => request.Abort ()))
-            using (var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false))
-                return await ServicesReceived (localAddress, deviceServiceUri, response).ConfigureAwait (false);
+            using (var response = (HttpWebResponse) await request.GetResponseAsync ().WithCancellation (token).ConfigureAwait (false))
+                return await ServicesReceived (localAddress, deviceServiceUri, response, token).ConfigureAwait (false);
         }
 
-        async Task<UpnpNatDevice> ServicesReceived (IPAddress localAddress, Uri deviceServiceUri, HttpWebResponse response)
+        async Task<UpnpNatDevice> ServicesReceived (IPAddress localAddress, Uri deviceServiceUri, HttpWebResponse response, CancellationToken token)
         {
             Stream s = response.GetResponseStream ();
 
@@ -216,7 +218,7 @@ namespace Mono.Nat.Upnp
             byte[] buffer = BufferHelpers.Rent ();
             try {
                 while (true) {
-                    var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length);
+                    var bytesRead = await s.ReadAsync (buffer, 0, buffer.Length, token).ConfigureAwait (false);
                     servicesXml.Append (Encoding.UTF8.GetString (buffer, 0, bytesRead));
                     try {
                         xmldoc.LoadXml (servicesXml.ToString ());
@@ -230,7 +232,7 @@ namespace Mono.Nat.Upnp
                             return null;
                         }
                         Log.InfoFormatted ("Couldn't parse services list from {0}", response.ResponseUri);
-                        await Task.Delay (10);
+                        await Task.Delay (10, token).ConfigureAwait (false);
                     }
                 }
             } finally {

@@ -120,13 +120,13 @@ namespace Mono.Nat.Pmp
                 Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch)?.Cancel ();
 
                 try {
-                    await SearchOnce (gatewayAddress, currentSearch.Token);
+                    await SearchOnce (gatewayAddress, currentSearch.Token).ConfigureAwait (false);
                 } catch (OperationCanceledException) {
                     token.ThrowIfCancellationRequested ();
                 }
                 if (!repeatInterval.HasValue)
                     break;
-                await Task.Delay (repeatInterval.Value, token);
+                await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
             } while (true);
         }
 
@@ -136,8 +136,8 @@ namespace Mono.Nat.Pmp
             var delay = PmpConstants.RetryDelay;
 
             for (int i = 0; i < PmpConstants.RetryAttempts; i++) {
-                await Clients.SendAsync (buffer, gatewayAddress, token);
-                await Task.Delay (delay, token);
+                await Clients.SendAsync (buffer, gatewayAddress, token).ConfigureAwait (false);
+                await Task.Delay (delay, token).ConfigureAwait (false);
                 delay = TimeSpan.FromTicks (delay.Ticks * 2);
             }
         }
