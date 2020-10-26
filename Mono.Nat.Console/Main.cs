@@ -83,7 +83,7 @@ namespace Mono.Nat.Test
                 /******************************************/
 
                 // Try to create a new port map:
-                var mapping = new Mapping (Protocol.Tcp, 6001, 6011);
+                var mapping = new Mapping (Protocol.Tcp, 56001, 56011);
                 await device.CreatePortMapAsync (mapping);
                 Console.WriteLine ("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort,
                                   mapping.PrivatePort);
