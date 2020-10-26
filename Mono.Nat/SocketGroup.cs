@@ -51,7 +51,7 @@ namespace Mono.Nat
 
         public async Task SendAsync (byte[] buffer, IPAddress gatewayAddress, CancellationToken token)
         {
-            using (await SocketSendLocker.DisposableWaitAsync (token)) {
+            using (await SocketSendLocker.EnterAsync (token)) {
                 foreach (var keypair in Sockets) {
                     token.ThrowIfCancellationRequested ();
                     try {

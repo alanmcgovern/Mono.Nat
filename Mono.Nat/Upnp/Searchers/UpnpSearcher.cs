@@ -165,7 +165,7 @@ namespace Mono.Nat.Upnp
                 var deviceLocation = location.Split (new[] { ':' }, 2).Skip (1).FirstOrDefault ();
                 var deviceServiceUri = new Uri (deviceLocation);
 
-                using (await Locker.DisposableWaitAsync (token).ConfigureAwait (false)) {
+                using (await Locker.EnterAsync (token).ConfigureAwait (false)) {
                     // If we send 3 requests at a time, ensure we only fetch the services list once
                     // even if three responses are received
                     if (LastFetched.TryGetValue (deviceServiceUri, out DateTime last))
