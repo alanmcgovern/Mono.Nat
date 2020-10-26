@@ -27,14 +27,17 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Mono.Nat.Logging;
 
 namespace Mono.Nat
 {
     abstract class Searcher : ISearcher
     {
+        static Logger Log { get; } = Logger.Create ();
+
         protected static readonly TimeSpan SearchPeriod = TimeSpan.FromMinutes (5);
 
         public event EventHandler<DeviceEventArgs> DeviceFound;
@@ -82,6 +85,7 @@ namespace Mono.Nat
                 await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
             }
         }
+
         public Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, CancellationToken token)
             => HandleMessageReceived (localAddress, response, endpoint, true, token);
 
@@ -91,15 +95,23 @@ namespace Mono.Nat
         {
             // Cancel any existing continuous search operation.
             OverallSearchCancellation?.Cancel ();
-            if (SearchTask != null)
-                await SearchTask.CatchExceptions ();
+            if (SearchTask != null) {
+                try {
+                    await SearchTask.ConfigureAwait (false);
+                } catch (OperationCanceledException) {
+                    // If we cancel the task then we don't need to log anything.
+                } catch (Exception ex) {
+                    Log.ErrorFormatted ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
+                }
+            }
+
 
             // Create a CancellationTokenSource for the search we're about to perform.
             BeginListening ();
             OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
 
             SearchTask = SearchAsync (null, SearchPeriod, OverallSearchCancellation.Token);
-            await SearchTask.ConfigureAwait(false);
+            await SearchTask.ConfigureAwait (false);
         }
 
         public async Task SearchAsync (IPAddress gatewayAddress)
