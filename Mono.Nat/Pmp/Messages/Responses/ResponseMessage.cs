@@ -31,7 +31,7 @@ namespace Mono.Nat.Pmp
 {
     class ResponseMessage
     {
-        public static ResponseMessage Decode (byte[] data)
+        public static MappingResponseMessage Decode (byte[] data)
         {
             if (data.Length < 16)
                 throw new MappingException ($"The received message was too short, only {data.Length} bytes");
@@ -44,12 +44,16 @@ namespace Mono.Nat.Pmp
             Protocol protocol = Protocol.Tcp;
             if (opCode == PmpConstants.OperationCodeUdp)
                 protocol = Protocol.Udp;
+            else if (opCode == PmpConstants.OperationCodeTcp)
+                protocol = Protocol.Tcp;
+            else if (opCode > PmpConstants.OperationCodeTcp)
+                throw new NotSupportedException ($"Unknown opcode: #{opCode}");
 
             var resultCode = (ErrorCode) IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
             uint epoch = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-            int privatePort = (ushort)IPAddress.NetworkToHostOrder ((short) BitConverter.ToUInt16 (data, 8));
-            int publicPort = (ushort)IPAddress.NetworkToHostOrder ((short) BitConverter.ToUInt16 (data, 10));
+            int privatePort = (ushort) IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
+            int publicPort = (ushort) IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
 
             uint lifetime = (uint) IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 
