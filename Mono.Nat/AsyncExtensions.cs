@@ -26,7 +26,7 @@ namespace Mono.Nat
             }
         }
 
-        public static async Task<IDisposable> DisposableWaitAsync (this SemaphoreSlim semaphore, CancellationToken token)
+        public static async Task<IDisposable> EnterAsync (this SemaphoreSlim semaphore, CancellationToken token)
         {
             await semaphore.WaitAsync (token);
             return new SemaphoreSlimDisposable (semaphore);
