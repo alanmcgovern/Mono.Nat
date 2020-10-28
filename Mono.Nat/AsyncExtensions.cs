@@ -43,16 +43,6 @@ namespace Mono.Nat
             }
         }
 
-        public static void WaitAndForget (this Task task)
-        {
-            try {
-                task.ConfigureAwait (false).GetAwaiter().GetResult();
-            } catch (OperationCanceledException) {
-                // If we cancel the task then we don't need to log anything.
-            } catch (Exception ex) {
-                Log.ErrorFormatted ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
-            }
-        }
         /// <summary>
         /// Adds cancellation functionality to a task that does not accept a CancellationToken otherwise.
         /// https://stackoverflow.com/questions/19404199/how-to-to-make-udpclient-receiveasync-cancelable#:~:text=There's%20no%20built%2Din%20way,Delay()%20to%20implement%20timeouts).

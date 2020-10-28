@@ -26,7 +26,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -122,11 +124,18 @@ namespace Mono.Nat
 
         protected abstract Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token);
 
-        public void Stop ()
+        public async Task StopAsync ()
         {
             Cancellation?.Cancel ();
-            ListeningTask?.WaitAndForget ();
-            SearchTask?.WaitAndForget ();
+            foreach (var task in new[] { ListeningTask, SearchTask}.Where (t => t != null)) {
+                try {
+                    await task;
+                } catch (OperationCanceledException) {
+                    // Ignore normal cancellation
+                } catch (Exception ex) {
+                    Log.Exception (ex, "Unexpected exception stopping the Searcher");
+                }
+            }
 
             lock (Devices)
                 Devices.Clear ();
