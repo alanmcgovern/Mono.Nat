@@ -121,9 +121,9 @@ namespace Mono.Nat
         public static void StopDiscovery ()
         {
             lock (Locker) {
-                foreach (var searcher in Searchers) {
-                    searcher.Value.Stop ();
-                    searcher.Value.Dispose ();
+                foreach (var searcher in Searchers.Values) {
+                    searcher.StopAsync ().FireAndForget ();
+                    searcher.Dispose ();
                 }
                 Searchers.Clear ();
             }

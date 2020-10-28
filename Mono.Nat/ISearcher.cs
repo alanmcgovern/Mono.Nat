@@ -74,7 +74,7 @@ namespace Mono.Nat
         /// <summary>
         /// The searcher will no longer listen for new devices.
         /// </summary>
-        void Stop ();
+        Task StopAsync ();
 
         /// <summary>
         /// Permits Mono.NAT to process messages not received internally.
