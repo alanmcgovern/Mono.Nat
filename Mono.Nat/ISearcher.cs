@@ -62,19 +62,14 @@ namespace Mono.Nat
         /// Periodically send a multicast UDP message to scan for new devices.
         /// If the searcher is not listening, it will begin listening until 'Stop' is invoked.
         /// </summary>
-        Task SearchAsync ();
+        void SearchAsync ();
 
         /// <summary>
         /// Immediately sends a unicast UDP message to this IP address to check for a compatible device.
         /// If the searcher is not listening, it will begin listening until 'Stop' is invoked.
         /// </summary>
         /// <param name="gatewayAddress">The IP address which should</param>
-        Task SearchAsync (IPAddress gatewayAddress);
-
-        /// <summary>
-        /// The searcher will no longer listen for new devices.
-        /// </summary>
-        Task StopAsync ();
+        void SearchAsync (IPAddress gatewayAddress);
 
         /// <summary>
         /// Permits Mono.NAT to process messages not received internally.

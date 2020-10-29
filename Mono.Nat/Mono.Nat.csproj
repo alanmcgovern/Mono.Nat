@@ -33,6 +33,10 @@
 		<CoreCompileDependsOn>SetBuildVersion;$(CoreCompileDependsOn)</CoreCompileDependsOn>
 	</PropertyGroup>
 
+	<PropertyGroup>
+	  <NoWarn>1701;1702;1591</NoWarn>
+	</PropertyGroup>
+
 	<Target Name="SetBuildVersion" DependsOnTargets="GitInfo">
 		<PropertyGroup>
 			<SourceRevisionId>$(GitSha)</SourceRevisionId>
