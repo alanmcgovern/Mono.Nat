@@ -112,10 +112,6 @@ namespace Mono.Nat.Pmp
 
         protected override async void SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
         {
-            if (token == CancellationToken.None) {
-                token = Cancellation.Token;
-            }
-
             do {
                 CurrentSearchCancellation?.Cancel ();
                 var currentSearch = CurrentSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (token);
