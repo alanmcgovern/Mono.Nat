@@ -101,6 +101,7 @@ namespace Mono.Nat.Pmp
             return new PmpSearcher (new SocketGroup (clients, PmpConstants.ServerPort));
         }
 
+        CancellationTokenSource CurrentSearchCancellation { get; set; }
         public override NatProtocol Protocol => NatProtocol.Pmp;
 
         PmpSearcher (SocketGroup sockets)
@@ -109,24 +110,32 @@ namespace Mono.Nat.Pmp
 
         }
 
-        protected override async Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
+        protected override async void SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
         {
             if (token == CancellationToken.None) {
                 token = Cancellation.Token;
             }
 
             do {
-                var currentSearch = CancellationTokenSource.CreateLinkedTokenSource (token);
-                Interlocked.Exchange (ref CurrentSearchCancellation, currentSearch)?.Cancel ();
+                CurrentSearchCancellation?.Cancel ();
+                var currentSearch = CurrentSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (token);
 
                 try {
                     await SearchOnce (gatewayAddress, currentSearch.Token).ConfigureAwait (false);
                 } catch (OperationCanceledException) {
-                    token.ThrowIfCancellationRequested ();
+                    if (token.IsCancellationRequested)
+                        break;
                 }
+
                 if (!repeatInterval.HasValue)
                     break;
-                await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
+
+                try {
+                    await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
+                } catch (OperationCanceledException) {
+                    break;
+                }
+
             } while (true);
         }
 
@@ -155,8 +164,8 @@ namespace Mono.Nat.Pmp
             if (errorcode != 0)
                 Log.InfoFormatted ("Non zero error: {0}", errorcode);
 
+            CurrentSearchCancellation?.Cancel ();
             var publicIp = new IPAddress (new byte[] { response[8], response[9], response[10], response[11] });
-
             RaiseDeviceFound (new PmpNatDevice (endpoint, publicIp));
             return Task.CompletedTask;
         }

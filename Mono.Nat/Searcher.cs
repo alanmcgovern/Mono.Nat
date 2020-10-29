@@ -45,21 +45,17 @@ namespace Mono.Nat
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventUnknownArgs> UnknownDeviceFound;
 
-        public bool Listening => ListeningTask != null;
+        public bool Listening { get; private set; }
         public abstract NatProtocol Protocol { get; }
 
         Dictionary<NatDevice, NatDevice> Devices { get; }
-        Task ListeningTask { get; set; }
         protected SocketGroup Clients { get; }
 
-        protected CancellationTokenSource Cancellation;
-        protected CancellationTokenSource CurrentSearchCancellation;
-        CancellationTokenSource OverallSearchCancellation;
-        Task SearchTask { get; set; }
-
+        protected CancellationTokenSource Cancellation { get; }
         protected Searcher (SocketGroup clients)
         {
             Clients = clients;
+            Cancellation = new CancellationTokenSource ();
             Devices = new Dictionary<NatDevice, NatDevice> ();
         }
 
@@ -67,24 +63,28 @@ namespace Mono.Nat
         {
             // Begin listening, if we are not already listening.
             if (!Listening) {
-                Cancellation?.Cancel ();
-                Cancellation = new CancellationTokenSource ();
-                lock (Devices)
-                    Devices.Clear ();
-                ListeningTask = ListenAsync (Cancellation.Token);
+                ListenAsync (Cancellation.Token);
+                Listening = true;
             }
         }
 
         public void Dispose ()
         {
             Clients.Dispose ();
+            Cancellation.Cancel ();
         }
 
-        async Task ListenAsync (CancellationToken token)
+        async void ListenAsync (CancellationToken token)
         {
             while (!token.IsCancellationRequested) {
-                (var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
-                await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
+                try {
+                    (var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
+                    await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
+                } catch (OperationCanceledException) {
+                    return;
+                } catch(Exception ex) {
+                    Log.ExceptionFormated (ex, "Unhandled exception listening for clients in {0}", GetType().Name);
+                }
             }
         }
 
@@ -93,57 +93,20 @@ namespace Mono.Nat
 
         protected abstract Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, bool externalEvent, CancellationToken token);
 
-        public async Task SearchAsync ()
+        public void SearchAsync ()
         {
-            // Cancel any existing continuous search operation.
-            OverallSearchCancellation?.Cancel ();
-            if (SearchTask != null) {
-                try {
-                    await SearchTask.ConfigureAwait (false);
-                } catch (OperationCanceledException) {
-                    // If we cancel the task then we don't need to log anything.
-                } catch (Exception ex) {
-                    Log.ErrorFormatted ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
-                }
-            }
-
-
             // Create a CancellationTokenSource for the search we're about to perform.
             BeginListening ();
-            OverallSearchCancellation = CancellationTokenSource.CreateLinkedTokenSource (Cancellation.Token);
-
-            SearchTask = SearchAsync (null, SearchPeriod, OverallSearchCancellation.Token);
-            await SearchTask.ConfigureAwait (false);
+            SearchAsync (null, SearchPeriod, Cancellation.Token);
         }
 
-        public async Task SearchAsync (IPAddress gatewayAddress)
+        public void SearchAsync (IPAddress gatewayAddress)
         {
             BeginListening ();
-            await SearchAsync (gatewayAddress, null, Cancellation.Token).ConfigureAwait (false);
+            SearchAsync (gatewayAddress, null, Cancellation.Token);
         }
 
-        protected abstract Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token);
-
-        public async Task StopAsync ()
-        {
-            Cancellation?.Cancel ();
-            foreach (var task in new[] { ListeningTask, SearchTask}.Where (t => t != null)) {
-                try {
-                    await task;
-                } catch (OperationCanceledException) {
-                    // Ignore normal cancellation
-                } catch (Exception ex) {
-                    Log.Exception (ex, "Unexpected exception stopping the Searcher");
-                }
-            }
-
-            lock (Devices)
-                Devices.Clear ();
-
-            Cancellation = null;
-            ListeningTask = null;
-            SearchTask = null;
-        }
+        protected abstract void SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token);
 
         protected void RaiseDeviceUnknown (IPAddress address, EndPoint remote, string response, NatProtocol protocol)
         {
@@ -152,8 +115,6 @@ namespace Mono.Nat
 
         protected void RaiseDeviceFound (NatDevice device)
         {
-            CurrentSearchCancellation?.Cancel ();
-
             NatDevice actualDevice;
             lock (Devices) {
                 if (Devices.TryGetValue (device, out actualDevice))

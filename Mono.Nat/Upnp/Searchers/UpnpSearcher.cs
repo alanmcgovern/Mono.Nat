@@ -105,7 +105,7 @@ namespace Mono.Nat.Upnp
             Locker = new SemaphoreSlim (1, 1);
         }
 
-        protected override async Task SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
+        protected override async void SearchAsync (IPAddress gatewayAddress, TimeSpan? repeatInterval, CancellationToken token)
         {
             var messages = gatewayAddress == null ? DiscoverDeviceMessage.EncodeSSDP () : DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
 
