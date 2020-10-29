@@ -102,6 +102,7 @@ namespace Mono.Nat.Pmp
         }
 
         CancellationTokenSource CurrentSearchCancellation { get; set; }
+
         public override NatProtocol Protocol => NatProtocol.Pmp;
 
         PmpSearcher (SocketGroup sockets)

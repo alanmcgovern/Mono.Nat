@@ -31,16 +31,5 @@ namespace Mono.Nat
             await semaphore.WaitAsync (token);
             return new SemaphoreSlimDisposable (semaphore);
         }
-
-        public static async void FireAndForget (this Task task)
-        {
-            try {
-                await task.ConfigureAwait (false);
-            } catch (OperationCanceledException) {
-                // If we cancel the task then we don't need to log anything.
-            } catch (Exception ex) {
-                Log.ErrorFormatted ("Unhandled exception: {0}{1}", Environment.NewLine, ex);
-            }
-        }
     }
 }
