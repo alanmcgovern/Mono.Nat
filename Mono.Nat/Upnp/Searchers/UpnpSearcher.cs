@@ -199,7 +199,7 @@ namespace Mono.Nat.Upnp
             if (body.Length > 0)
                 Log.Error ("Services Message unexpectedly contained a message body");
             using (token.Register (() => request.Abort ()))
-            using (var response = (HttpWebResponse) await request.GetResponseAsync ().WithCancellation (token).ConfigureAwait (false))
+            using (var response = (HttpWebResponse) await request.GetResponseAsync ().ConfigureAwait (false))
                 return await ServicesReceived (localAddress, deviceServiceUri, response, token).ConfigureAwait (false);
         }
 

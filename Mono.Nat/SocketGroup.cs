@@ -31,10 +31,12 @@ namespace Mono.Nat
         {
             while (true) {
                 foreach (var keypair in Sockets) {
+                    token.ThrowIfCancellationRequested ();
+
                     try {
                         if (keypair.Key.Available > 0) {
                             var localAddress = ((IPEndPoint) keypair.Key.Client.LocalEndPoint).Address;
-                            var data = await keypair.Key.ReceiveAsync ().WithCancellation (token);
+                            var data = await keypair.Key.ReceiveAsync ();
                             return (localAddress, data);
                         }
                     } catch (OperationCanceledException) {
@@ -45,7 +47,6 @@ namespace Mono.Nat
                 }
 
                 await Task.Delay (10, token);
-                token.ThrowIfCancellationRequested ();
             }
         }
 
@@ -57,9 +58,9 @@ namespace Mono.Nat
                     try {
                         if (gatewayAddress == null) {
                             foreach (var defaultGateway in keypair.Value)
-                                await keypair.Key.SendAsync (buffer, buffer.Length, new IPEndPoint (defaultGateway, DefaultPort)).WithCancellation (token).ConfigureAwait (false);
+                                await keypair.Key.SendAsync (buffer, buffer.Length, new IPEndPoint (defaultGateway, DefaultPort)).ConfigureAwait (false);
                         } else {
-                            await keypair.Key.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, DefaultPort)).WithCancellation (token).ConfigureAwait (false);
+                            await keypair.Key.SendAsync (buffer, buffer.Length, new IPEndPoint (gatewayAddress, DefaultPort)).ConfigureAwait (false);
                         }
                     } catch (OperationCanceledException) {
                         throw;
