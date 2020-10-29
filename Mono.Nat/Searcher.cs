@@ -63,8 +63,8 @@ namespace Mono.Nat
         {
             // Begin listening, if we are not already listening.
             if (!Listening) {
-                ListenAsync (Cancellation.Token);
                 Listening = true;
+                ListenAsync (Cancellation.Token);
             }
         }
 
@@ -79,8 +79,11 @@ namespace Mono.Nat
             while (!token.IsCancellationRequested) {
                 try {
                     (var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
+
+                    token.ThrowIfCancellationRequested ();
                     await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
                 } catch (OperationCanceledException) {
+                    Listening = false;
                     return;
                 } catch(Exception ex) {
                     Log.ExceptionFormated (ex, "Unhandled exception listening for clients in {0}", GetType().Name);

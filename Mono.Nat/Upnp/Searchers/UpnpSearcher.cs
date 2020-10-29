@@ -109,21 +109,23 @@ namespace Mono.Nat.Upnp
         {
             var messages = gatewayAddress == null ? DiscoverDeviceMessage.EncodeSSDP () : DiscoverDeviceMessage.EncodeUnicast (gatewayAddress);
 
-            do {
-                foreach (var message in messages)
-                    await Clients.SendAsync (message, gatewayAddress, token).ConfigureAwait (false);
-                if (!repeatInterval.HasValue)
+            while (!token.IsCancellationRequested) {
+                try {
+                    foreach (var message in messages)
+                        await Clients.SendAsync (message, gatewayAddress, token).ConfigureAwait (false);
+                    if (!repeatInterval.HasValue)
+                        break;
+                    await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
+                } catch (OperationCanceledException) {
                     break;
-                await Task.Delay (repeatInterval.Value, token).ConfigureAwait (false);
-            } while (true);
+                } catch (Exception ex) {
+                    Log.Exception (ex, "Unhandled exception searching for a upnp device");
+                }
+            }
         }
 
         protected override async Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint remoteEndPoint, bool externalEvent, CancellationToken token)
         {
-            if (token == CancellationToken.None) {
-                token = Cancellation.Token;
-            }
-
             string dataString = null;
 
             // No matter what, this method should never throw an exception. If something goes wrong
@@ -182,13 +184,9 @@ namespace Mono.Nat.Upnp
                 if (d != null)
                     RaiseDeviceFound (d);
             } catch (OperationCanceledException) {
-                throw;
+                // Do nothing
             } catch (Exception ex) {
-                Trace.WriteLine ("Unhandled exception when trying to decode a device's response Send me the following data: ");
-                Trace.WriteLine ("ErrorMessage:");
-                Trace.WriteLine (ex.Message);
-                Trace.WriteLine ("Data string:");
-                Trace.WriteLine (dataString);
+                Log.ExceptionFormated (ex, "Unhandled exception when trying to decode a device's response. Please file a bug with the following data: {0}", dataString);
             }
         }
 
