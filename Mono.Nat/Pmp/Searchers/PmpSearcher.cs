@@ -133,7 +133,7 @@ namespace Mono.Nat.Pmp
                     break;
                 }
 
-            } while (true);
+            } while (!token.IsCancellationRequested);
         }
 
         async Task SearchOnce (IPAddress gatewayAddress, CancellationToken token)
