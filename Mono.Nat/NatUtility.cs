@@ -75,7 +75,7 @@ namespace Mono.Nat
         public static void Search (IPAddress gatewayAddress, NatProtocol type)
         {
             lock (Locker)
-                GetOrCreate (type).SearchAsync (gatewayAddress);
+                GetOrCreate (type).BeginSearching (gatewayAddress);
         }
 
         static void HandleDeviceFound (object sender, DeviceEventArgs e)
@@ -98,7 +98,7 @@ namespace Mono.Nat
             lock (Locker) {
                 devices = devices.Length == 0 ? AllProtocols : devices;
                 foreach (var protocol in devices)
-                    GetOrCreate (protocol).SearchAsync ();
+                    GetOrCreate (protocol).BeginSearching ();
             }
         }
 

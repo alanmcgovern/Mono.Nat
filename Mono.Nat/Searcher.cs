@@ -96,14 +96,14 @@ namespace Mono.Nat
 
         protected abstract Task HandleMessageReceived (IPAddress localAddress, byte[] response, IPEndPoint endpoint, bool externalEvent, CancellationToken token);
 
-        public void SearchAsync ()
+        public void BeginSearching ()
         {
             // Create a CancellationTokenSource for the search we're about to perform.
             BeginListening ();
             SearchAsync (null, SearchPeriod, Cancellation.Token);
         }
 
-        public void SearchAsync (IPAddress gatewayAddress)
+        public void BeginSearching (IPAddress gatewayAddress)
         {
             BeginListening ();
             SearchAsync (gatewayAddress, null, Cancellation.Token);
