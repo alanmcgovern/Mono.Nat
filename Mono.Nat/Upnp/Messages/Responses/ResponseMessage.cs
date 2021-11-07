@@ -7,7 +7,7 @@ namespace Mono.Nat.Upnp
 {
     class ResponseMessage
     {
-        static Logger Log { get; } = Logger.Create ();
+        static Logger Log { get; } = Logger.Create (nameof (ResponseMessage));
 
         public static ResponseMessage Decode (UpnpNatDevice device, string message)
         {

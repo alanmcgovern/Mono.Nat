@@ -42,7 +42,7 @@ namespace Mono.Nat.Pmp
 {
     class PmpSearcher : Searcher
     {
-        static Logger Log { get; } = Logger.Create ();
+        static Logger Log { get; } = Logger.Create (nameof (PmpSearcher));
 
         internal static PmpSearcher Create ()
         {

@@ -8,7 +8,7 @@ namespace Mono.Nat
 {
     static class AsyncExtensions
     {
-        static Logger Log { get; } = Logger.Create ();
+        static Logger Log { get; } = Logger.Create (nameof (AsyncExtensions));
 
         class SemaphoreSlimDisposable : IDisposable
         {

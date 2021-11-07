@@ -45,7 +45,7 @@
 
 	<Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' == 'true' And '$(Configuration)' == 'Release' " DependsOnTargets="GitVersion">
 		<PropertyGroup>
-			<MonoNatFileVersion>3.0.1</MonoNatFileVersion>
+			<MonoNatFileVersion>3.0.2</MonoNatFileVersion>
 			<MonoNatInformationalVersion>$(MonoNatFileVersion)-$(GitBranch)+$(GitCommit)</MonoNatInformationalVersion>
 
 			<AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(MonoNatABIVersion)</AssemblyVersion>

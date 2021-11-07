@@ -38,7 +38,7 @@ namespace Mono.Nat.Upnp
 {
     sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
     {
-        static Logger Log { get; } = Logger.Create ();
+        static Logger Log { get; } = Logger.Create (nameof (UpnpNatDevice));
 
         /// <summary>
         /// The url we can use to control the port forwarding

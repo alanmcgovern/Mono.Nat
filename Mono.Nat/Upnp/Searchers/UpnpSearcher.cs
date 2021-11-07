@@ -46,7 +46,7 @@ namespace Mono.Nat.Upnp
 {
     class UpnpSearcher : Searcher
     {
-        static Logger Log { get; } = Logger.Create ();
+        static Logger Log { get; } = Logger.Create (nameof (UpnpSearcher));
 
         static readonly IList<string> SupportedServices = new List<string> {
             "urn:schemas-upnp-org:service:WANIPConnection:1",

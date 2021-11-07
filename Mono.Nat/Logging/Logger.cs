@@ -42,13 +42,8 @@ namespace Mono.Nat.Logging
         /// </summary>
         public static Func<string, ILogger> Factory { get; set; }
 
-        [MethodImpl (MethodImplOptions.NoInlining)]
-        internal static Logger Create ()
-        {
-            var callingClassName = new StackFrame (1).GetMethod ().ReflectedType.FullName;
-            var writer = Factory?.Invoke (callingClassName);
-            return new Logger (writer);
-        }
+        internal static Logger Create (string callingClassName)
+            => new Logger (Factory?.Invoke (callingClassName));
 
         ILogger Writer { get; }
 
