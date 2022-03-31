@@ -52,6 +52,8 @@ namespace Mono.Nat
         protected SocketGroup Clients { get; }
 
         protected CancellationTokenSource Cancellation { get; }
+        SemaphoreSlim Locker = new SemaphoreSlim (1, 1);
+
         protected Searcher (SocketGroup clients)
         {
             Clients = clients;
@@ -76,17 +78,34 @@ namespace Mono.Nat
 
         async void ListenAsync (CancellationToken token)
         {
+            try {
+                var listens = new List<Task> ();
+                foreach (var udpClient in Clients.Clients)
+                    listens.Add (ListenOneAsync (udpClient, token));
+                await Task.WhenAll (listens);
+                token.ThrowIfCancellationRequested ();
+            } catch (OperationCanceledException) {
+                Listening = false;
+                return;
+            } catch(Exception ex) {
+                Log.ExceptionFormated (ex, "Unhandled exception listening for clients in {0}", GetType().Name);
+            }
+        }
+
+        async Task ListenOneAsync (System.Net.Sockets.UdpClient udpClient, CancellationToken token)
+        {
             while (!token.IsCancellationRequested) {
                 try {
-                    (var localAddress, var data) = await Clients.ReceiveAsync (token).ConfigureAwait (false);
-
+                    var data = await udpClient.ReceiveAsync ();
+                    var localEndPoint = (IPEndPoint) udpClient.Client.LocalEndPoint;
                     token.ThrowIfCancellationRequested ();
-                    await HandleMessageReceived (localAddress, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
+
+                    using (await Locker.EnterAsync (token))
+                        await HandleMessageReceived (localEndPoint.Address, data.Buffer, data.RemoteEndPoint, false, token).ConfigureAwait (false);
                 } catch (OperationCanceledException) {
-                    Listening = false;
                     return;
-                } catch(Exception ex) {
-                    Log.ExceptionFormated (ex, "Unhandled exception listening for clients in {0}", GetType().Name);
+                } catch (Exception) {
+                    // Ignore any errors
                 }
             }
         }

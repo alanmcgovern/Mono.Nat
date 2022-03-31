@@ -9,6 +9,8 @@ namespace Mono.Nat
 {
     class SocketGroup : IDisposable
     {
+        public ICollection<UdpClient> Clients => Sockets.Keys;
+
         Dictionary<UdpClient, List<IPAddress>> Sockets { get; }
         SemaphoreSlim SocketSendLocker { get; }
 
@@ -25,29 +27,6 @@ namespace Mono.Nat
         {
             foreach (var s in Sockets)
                 s.Key.Dispose ();
-        }
-
-        public async Task<(IPAddress, UdpReceiveResult)> ReceiveAsync (CancellationToken token)
-        {
-            while (true) {
-                foreach (var keypair in Sockets) {
-                    token.ThrowIfCancellationRequested ();
-
-                    try {
-                        if (keypair.Key.Available > 0) {
-                            var localAddress = ((IPEndPoint) keypair.Key.Client.LocalEndPoint).Address;
-                            var data = await keypair.Key.ReceiveAsync ();
-                            return (localAddress, data);
-                        }
-                    } catch (OperationCanceledException) {
-                        throw;
-                    } catch (Exception) {
-                        // Ignore any errors
-                    }
-                }
-
-                await Task.Delay (10, token);
-            }
         }
 
         public async Task SendAsync (byte[] buffer, IPAddress gatewayAddress, CancellationToken token)
