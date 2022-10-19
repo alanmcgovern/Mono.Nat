@@ -96,7 +96,11 @@ namespace Mono.Nat
         {
             while (!token.IsCancellationRequested) {
                 try {
+#if NETSTANDARD2_0 || NETSTANDARD2_1
                     var data = await udpClient.ReceiveAsync ();
+#else
+                    var data = await udpClient.ReceiveAsync (token);
+#endif
                     var localEndPoint = (IPEndPoint) udpClient.Client.LocalEndPoint;
                     token.ThrowIfCancellationRequested ();
 

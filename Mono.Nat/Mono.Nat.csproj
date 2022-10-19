@@ -5,7 +5,7 @@
 
 	<PropertyGroup>
 		<GitThisAssembly>false</GitThisAssembly>
-		<TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks>net6.0;netstandard2.1;netstandard2.0</TargetFrameworks>
 
 		<MonoNatABIVersion>3.0.0.0</MonoNatABIVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -45,7 +45,7 @@
 
 	<Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' == 'true' And '$(Configuration)' == 'Release' " DependsOnTargets="GitVersion">
 		<PropertyGroup>
-			<MonoNatFileVersion>3.0.3</MonoNatFileVersion>
+			<MonoNatFileVersion>3.0.4</MonoNatFileVersion>
 			<MonoNatInformationalVersion>$(MonoNatFileVersion)-$(GitBranch)+$(GitCommit)</MonoNatInformationalVersion>
 
 			<AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(MonoNatABIVersion)</AssemblyVersion>

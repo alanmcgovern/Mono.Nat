@@ -81,14 +81,22 @@ namespace Mono.Nat.Pmp
             tcs.Token.Register (() => udpClient.Dispose ());
 
             var data = message.Encode ();
+#if NETSTANDARD2_0 || NETSTANDARD2_1
             await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
+#else
+            await udpClient.SendAsync (data, deviceEndpoint, CancellationToken.None).ConfigureAwait (false);
+#endif
             var receiveTask = ReceiveMessageAsync (udpClient);
 
             var delay = PmpConstants.RetryDelay;
             for (int i = 0; i < PmpConstants.RetryAttempts && !receiveTask.IsCompleted; i++) {
                 await Task.Delay (delay).ConfigureAwait (false);
                 delay = TimeSpan.FromTicks (delay.Ticks * 2);
+#if NETSTANDARD2_0 || NETSTANDARD2_1
                 await udpClient.SendAsync (data, data.Length, deviceEndpoint).ConfigureAwait (false);
+#else
+                await udpClient.SendAsync (data, deviceEndpoint, tcs.Token).ConfigureAwait (false);
+#endif
             }
 
             tcs.Dispose ();
@@ -98,7 +106,11 @@ namespace Mono.Nat.Pmp
         static async Task<ResponseMessage> ReceiveMessageAsync (UdpClient udpClient)
         {
             while (true) {
+#if NETSTANDARD2_0 || NETSTANDARD2_1
                 var receiveResult = await udpClient.ReceiveAsync ().ConfigureAwait (false);
+#else
+                var receiveResult = await udpClient.ReceiveAsync (CancellationToken.None).ConfigureAwait (false);
+#endif
                 var message = ResponseMessage.Decode (receiveResult.Buffer);
                 return message;
             }
