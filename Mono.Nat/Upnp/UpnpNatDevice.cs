@@ -27,11 +27,12 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Generic;
+
 using Mono.Nat.Logging;
 
 namespace Mono.Nat.Upnp
@@ -99,9 +100,10 @@ namespace Mono.Nat.Upnp
                     mappings.Add (new Mapping (response.Protocol, response.InternalPort, response.ExternalPort, response.LeaseDuration, response.PortMappingDescription));
                 }
             } catch (MappingException ex) {
-                // Error code 713 means we successfully iterated to the end of the array and have all the mappings.
+                // Error code 713 or 714 means we successfully iterated to the end of the array and have all the mappings.
                 // Exception driven code flow ftw!
-                if (ex.ErrorCode != ErrorCode.SpecifiedArrayIndexInvalid)
+                if (ex.ErrorCode != ErrorCode.SpecifiedArrayIndexInvalid &&
+                    ex.ErrorCode != ErrorCode.NoSuchEntryInArray)
                     throw;
             }
 

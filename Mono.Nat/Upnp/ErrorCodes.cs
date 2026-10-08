@@ -51,6 +51,11 @@ namespace Mono.Nat
         SpecifiedArrayIndexInvalid = 713,
 
         /// <summary>
+        /// Wrong index specified in the array
+        /// </summary>
+        NoSuchEntryInArray = 714,
+
+        /// <summary>
         /// The source IP address cannot be wild-carded.
         /// </summary>
         WildCardNotPermittedInSourceIP = 715,
